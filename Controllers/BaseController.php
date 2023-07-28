@@ -81,13 +81,20 @@ abstract class BaseController extends Controller
 
 	}
     
-    protected function show_message($severity, $text){
+    protected function die_message($severity, $text){
 
         $this->viewData['message']=compact('severity','text');
 
-        return $this->load_view(['message']); 
+        echo $this->load_view(['message']); 
+
+        exit();
     }
 
+    protected function login_check(){
+        if (false == $this->session->get('logged_in')) {
+            $this->die_message('Access denied',  'Not logged in.');
+        }
+    }
 
 	
 

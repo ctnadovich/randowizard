@@ -91,7 +91,7 @@ class Login extends BaseController
                     $this->session->set('last_name', $user['last']);
                     $this->session->set('first_last', $user['first'] . ' ' . $user['last']);
                     
-                    return redirect()->route('dashboard');
+                    return redirect()->route('events');
                                 } else {
                     // If login fails, reload the login view with an error message
                     $this->viewData['login_error'] = 'Invalid username or password.';

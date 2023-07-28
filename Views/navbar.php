@@ -9,7 +9,7 @@
             <?php else: ?>
             <a href="/login" class="w3-bar-item w3-button">Log In</a>
             <?php endif; ?>
-            <a href="/contact" class="w3-bar-item w3-button">Contact</a>
+            <a href="/license" class="w3-bar-item w3-button">License</a>
             <a href="https://randonneuring.org/phpmyadmin/index.php" class="w3-bar-item w3-button">phpMyAdmin</a>
         </div>
     </div>
@@ -20,13 +20,12 @@
     <div class="w3-right">
 
         <?php if ($session['logged_in']==1): ?>
-        <a href="/profile" class="w3-bar-item w3-button  w3-hide-small">Profile
+        <a href="/profile/edit/<?=$session['user_id']?>" class="w3-bar-item w3-button  w3-hide-small">Profile
             (<?= $session['first_last'] ?? ''; ?>)</a>
         <a href="/logout" class="w3-bar-item w3-button  w3-hide-small">Log Out</a>
         <?php else: ?>
         <a href="/login" class="w3-bar-item w3-button  w3-hide-small">Log In</a>
         <?php endif; ?>
-        <a href="/contact" class="w3-bar-item w3-button w3-hide-small">Contact</a>
 
         <!-- <?= print_r($session,true); ?>  -->
 

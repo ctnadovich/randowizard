@@ -19,48 +19,25 @@
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace App\Controllers;
+
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 use App\Libraries\GroceryCrud;
 
-class Dashboard extends BaseController
+class About extends BaseController
 {
-
-    protected $helpers = ['form'];
-    protected $regionModel;
-    protected $userModel;
-
     public function initController(
         RequestInterface $request,
         ResponseInterface $response,
         LoggerInterface $logger
     ) {
         parent::initController($request, $response, $logger);
-
-        $this->userModel = model('User');
-    }
-   
-    public function events(){
-
-        $this->login_check();
-
-        $crud = new GroceryCrud();
-        $crud->setTable('event');
-        $crud->setAdd();
-        $crud->setSubject('Event', 'Events');
-        $crud->columns(['name','distance','start_ontime']);
-        $crud->displayAs('start_ontime', 'Start Date/Time');
-        $crud->displayAs('distance', 'Official Dist (km)');
-
-        $output = $crud->render();
-
-        $this->viewData = array_merge ((array)$output, $this->viewData);
-
-        return $this->load_view(['dashboard']); 
-        // return view('head', $this->viewData) . view('dashboard') . view('foot');
     }
 
-    
+    public function license()
+    {
+        return $this->load_view(['license']);
+    }
 }

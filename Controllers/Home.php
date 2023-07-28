@@ -66,7 +66,7 @@ class Home extends BaseController
                         $regionModel = model('Region');
                         $r = $regionModel->find($value);
                         if(empty($r)) 
-                          throw new Exception("Unknown region ID ($value). Registration failed.");
+                          throw new \Exception("Unknown region ID ($value). Registration failed.");
                         if (empty($r['user_id'])) {
                             return true;
                         }
@@ -93,7 +93,7 @@ class Home extends BaseController
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             if (! $validation->run($requestData)) {
-                $this->view_data['errors']=$validation->getErrors();
+                $this->viewData['errors']=$validation->getErrors();
             }else{
                  $this->register_new_user($requestData);
                  return $this->load_view(['register_success']);

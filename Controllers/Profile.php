@@ -28,6 +28,10 @@ use App\Libraries\GroceryCrud;
 
 class Profile extends BaseController
 {
+
+    protected $not_a_password = "not_a_password";
+
+
     public function initController(
         RequestInterface $request,
         ResponseInterface $response,
@@ -62,30 +66,29 @@ class Profile extends BaseController
         $crud->setSubject($subject);
         $crud->setTable('user');
         $crud->unsetAdd();
-        $crud->fieldType('password', 'password');
-        $crud->callbackEditField('password', array($this, 'set_password_input_to_empty'));
-        $crud->callbackBeforeUpdate(array($this, 'encrypt_password_callback'));
+        $crud->fieldType('password_hash', 'password');
+        $crud->displayAs('password_hash', 'Password');
+        $crud->callbackEditField('password_hash', [$this, 'clear_password_field']);
+        $crud->callbackBeforeUpdate([$this, 'encrypt_password_callback']);
         $output = $crud->render();
         $this->viewData = array_merge((array)$output, $this->viewData);
         return $this->load_view(['profile']);
     }
 
-    public function encrypt_password_callback($post_array, $primary_key = null)
+    public function clear_password_field($fieldValue, $primaryKeyValue, $rowData)
     {
-        if (!empty($post_array['password'])) {
-            $post_array['password'] = password_hash($post_array['password'], PASSWORD_DEFAULT);
-        } else {
-            unset($post_array['password']);
-        }
-
-        //	  $this->die_error(__METHOD__,print_r($post_array,true));
-
-
-        return $post_array;
+        return "<input type='password' name='password_hash' value='{$this->not_a_password}' />";
     }
 
-    public function set_password_input_to_empty()
+    public function encrypt_password_callback($stateParameters)
     {
-        return "<input type='password' name='password' value='' />";
+        $password = $stateParameters->data['password_hash'];
+        if (!empty($password) && $password != $this->not_a_password) {
+            $stateParameters->data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+        } else {
+            unset($stateParameters->data['password_hash']);
+        }
+
+        return $stateParameters;
     }
 }

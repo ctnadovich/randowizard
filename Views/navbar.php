@@ -4,12 +4,13 @@
         <button class="w3-bar-item w3-button w3-white"><i class="fa fa-bars w3-xlarge"></i></button>
         <div class="w3-dropdown-content w3-bar-block w3-border">
             <?php if ($session['logged_in']==1): ?>
-            <a href="/events" class="w3-bar-item w3-button">Events</a>
+            <a href="/events" class="w3-bar-item w3-button">My Events</a>
+            <a href="/profile/edit/<?=$session['user_id']?>" class="w3-bar-item w3-button">My Profile</a>
             <a href="/logout" class="w3-bar-item w3-button">Log Out</a>
             <?php else: ?>
             <a href="/login" class="w3-bar-item w3-button">Log In</a>
             <?php endif; ?>
-            <a href="/license" class="w3-bar-item w3-button">License</a>
+            <a href="/about" class="w3-bar-item w3-button">About</a>
             <a href="https://randonneuring.org/phpmyadmin/index.php" class="w3-bar-item w3-button">phpMyAdmin</a>
         </div>
     </div>
@@ -20,11 +21,12 @@
     <div class="w3-right">
 
         <?php if ($session['logged_in']==1): ?>
-        <a href="/profile/edit/<?=$session['user_id']?>" class="w3-bar-item w3-button  w3-hide-small">Profile
-            (<?= $session['first_last'] ?? ''; ?>)</a>
-        <a href="/logout" class="w3-bar-item w3-button  w3-hide-small">Log Out</a>
+            <span style="font-style: italic;" class="w3-bar-item w3-hide-small w3-medium "><?= $session['first_last'] ?></span>
+            <a href="/profile/edit/<?=$session['user_id']?>" class="w3-bar-item w3-button"><i class="fa fa-user"></i></a>
+            <a href="/events" class="w3-bar-item w3-button"><i class="fas fa-biking"></i></a>
+            <a href="/logout" class="w3-bar-item w3-hide-small">Log Out</a>
         <?php else: ?>
-        <a href="/login" class="w3-bar-item w3-button  w3-hide-small">Log In</a>
+        <a href="/login" class="w3-bar-item w3-hide-small">Log In</a>
         <?php endif; ?>
 
         <!-- <?= print_r($session,true); ?>  -->

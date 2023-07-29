@@ -28,5 +28,5 @@ class Region extends Model
     protected $table      = 'region';
     protected $primaryKey = 'id';
     protected $returnType     = 'array';
-    protected $allowedFields = ['user_id'];
+    protected $allowedFields = ['rba_user_id'];
 }

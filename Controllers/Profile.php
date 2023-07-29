@@ -69,8 +69,19 @@ class Profile extends BaseController
         $crud->fieldType('password_hash', 'password');
         $crud->displayAs('password_hash', 'Password');
         $crud->callbackEditField('password_hash', [$this, 'clear_password_field']);
-        $crud->callbackBeforeUpdate([$this, 'encrypt_password_callback']);
+        $crud->callbackBeforeUpdate([$this, 'update_callback']);
         $output = $crud->render();
+
+
+        // Horrid hack required to work around the removal of unset_list and unset_back_to_list functions
+        // in v2.x of Grocery Crud.  This str_replace relabels the buttons. The Routes system in CodeIgniter
+        // is used to redirect update_success back to the home page rather than the list. This isolation
+        // is somewhat dicey. Note the if ($primary_key != $member_id) test above that attempts to maintain
+        // the isolation. 
+
+        $output->output = str_replace("value='Update changes'", "value='Save'", $output->output);
+        $output->output = str_replace("value='Update and go back to list'", "value='Save and Return'", $output->output);
+
         $this->viewData = array_merge((array)$output, $this->viewData);
         return $this->load_view(['profile']);
     }
@@ -80,7 +91,7 @@ class Profile extends BaseController
         return "<input type='password' name='password_hash' value='{$this->not_a_password}' />";
     }
 
-    public function encrypt_password_callback($stateParameters)
+    public function update_callback($stateParameters)
     {
         $password = $stateParameters->data['password_hash'];
         if (!empty($password) && $password != $this->not_a_password) {

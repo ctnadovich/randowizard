@@ -28,7 +28,7 @@ use Psr\Log\LoggerInterface;
 class Login extends BaseController
 {
 
-    protected $helpers = ['form','rando'];
+    protected $helpers = ['form', 'rando'];
     protected $userModel;
 
     public function initController(
@@ -39,74 +39,70 @@ class Login extends BaseController
         parent::initController($request, $response, $logger);
 
         $this->userModel = model('User');
-
     }
-   
-    public function logout(){
+
+    public function logout()
+    {
         $this->session->set('logged_in', FALSE);
-        return redirect()->route('home'); 
+        return redirect()->route('home');
     }
 
-    public function index(){return $this->login();}
- 
-    public function login(){
+    public function index()
+    {
+        return $this->login();
+    }
 
-         if ($this->session->get('logged_in')) {
+    public function login()
+    {
+
+        if ($this->session->get('logged_in')) {
             return redirect()->to('/events'); // Was already logged in
-         }
+        }
 
         if ($this->request->is('post')) {
-            
-            if($this->request->getVar('submit')=='cancel') {
+
+            if ($this->request->getVar('submit') == 'cancel') {
                 return redirect()->to('/home');
-            }else{
+            } else {
 
+                $validation = \Config\Services::validation();
+                $rules = [
+                    'password'  => 'trim|required',
+                    'email'  => 'trim|required|valid_email'
+                ];
+                $validation->setRules($rules);
 
-           
-            $validation = \Config\Services::validation();
+                $requestData = $this->request->getVar(
+                    array_keys($rules),
+                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
+                );
 
+                if (!$validation->run($requestData)) {
+                    $this->viewData['errors'] = $validation->getErrors();
+                } else {
+                    $email = $this->request->getVar('email');
+                    $password = $this->request->getVar('password');
 
-            $rules = [
-                'password'  => 'trim|required',
-                'email'  => 'trim|required|valid_email'
-            ];
+                    $user = $this->userModel->where('email', $email)->first();
+                    if (!empty($user) && password_verify($password, $user['password_hash'])) {
+                        $this->session->set('logged_in', TRUE);
+                        $this->session->set('user_id', $user['id']);
+                        $this->session->set('first_name', $user['first']);
+                        $this->session->set('last_name', $user['last']);
+                        $this->session->set('first_last', $user['first'] . ' ' . $user['last']);
 
-
-            $validation->setRules($rules);
-
-            $requestData = $this->request->getVar(array_keys($rules),
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-            if (! $validation->run($requestData)) {
-                $this->viewData['errors']=$validation->getErrors();
-            }else{
-                $email = $this->request->getVar('email');
-                $password = $this->request->getVar('password');
-    
-                $user = $this->userModel->where('email', $email)->first();
-                if (!empty($user) && password_verify($password, $user['password_hash'])) {        
-                    $this->session->set('logged_in', TRUE);
-                    $this->session->set('user_id', $user['id']);
-                    $this->session->set('first_name', $user['first']);
-                    $this->session->set('last_name', $user['last']);
-                    $this->session->set('first_last', $user['first'] . ' ' . $user['last']);
-                    
-                    return redirect()->route('events');
-                                } else {
-                    // If login fails, reload the login view with an error message
-                    $this->viewData['login_error'] = 'Invalid username or password.';
-                    return $this->load_view(['hero','login']);
+                        return redirect()->route('home');
+                    } else {
+                        // If login fails, reload the login view with an error message
+                        $this->viewData['login_error'] = 'Invalid username or password.';
+                        return $this->load_view(['hero', 'login']);
+                    }
                 }
-
             }
-        }     }
+        }
 
 
 
-        return $this->load_view(['hero','login']);
-
-    }   
-
-    
-
+        return $this->load_view(['hero', 'login']);
+    }
 }

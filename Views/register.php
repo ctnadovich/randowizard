@@ -2,8 +2,7 @@
 
 <div class="w3-container">
     <h2>Tools for Randonneuring</h2>
-    <p>IT tools that make randonneuring events more fun. More fun 
-for participants. More fun for organizers and RBAs. <em>Register now to get started.</em></p>
+    <p>IT tools  that make randonneuring events more enjoyable. More fun for participants. Easier on volunteer organizers and RBAs. <em>Register now to get started.</em></p>
     <p><button onclick="document.getElementById('register-card').style.display='block'" 
 class="w3-button w3-black">Register &raquo;</button></p>
   </div>

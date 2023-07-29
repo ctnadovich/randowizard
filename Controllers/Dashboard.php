@@ -48,11 +48,16 @@ class Dashboard extends BaseController
 
         $crud = new GroceryCrud();
         $crud->setTable('event');
+        $crud->setRelation('region_id', 'region', '{state_code}:{region_name}');
+        $crud->where('rba_user_id',$this->session->get('user_id'));
         $crud->setAdd();
         $crud->setSubject('Event', 'Events');
-        $crud->columns(['name','distance','start_ontime']);
-        $crud->displayAs('start_ontime', 'Start Date/Time');
+        $crud->columns(['region_id','name','distance','start_datetime']);
+        $crud->unsetEditFields(['region_id']);
+        $crud->displayAs('start_datetime', 'Start Date/Time');
         $crud->displayAs('distance', 'Official Dist (km)');
+        $crud->displayAs('region_id', 'Region');
+        $crud->displayAs('gravel_distance', 'Official Gravel (km)');
 
         $output = $crud->render();
 
@@ -61,6 +66,14 @@ class Dashboard extends BaseController
         return $this->load_view(['dashboard']); 
         // return view('head', $this->viewData) . view('dashboard') . view('foot');
     }
+
+
+    function unique_field_name($field_name) {
+
+	    return 's'.substr(md5($field_name),0,8); //This s is because is better for a string to begin with a letter and not with a number
+
+    }
+
 
     
 }

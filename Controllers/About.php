@@ -36,8 +36,8 @@ class About extends BaseController
         parent::initController($request, $response, $logger);
     }
 
-    public function license()
+    public function index()
     {
-        return $this->load_view(['license']);
+        return $this->load_view(['about']);
     }
 }

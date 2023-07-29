@@ -18,7 +18,6 @@
 //    You should have received a copy of the GNU Affero General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 namespace App\Controllers;
 //use Config\Services;
 use CodeIgniter\HTTP\RequestInterface;
@@ -45,7 +44,6 @@ class Home extends BaseController
    
  
     public function index(){
-        // $regionModel = model('Region');
 
  
         $this->viewData['errors'] = [];
@@ -67,7 +65,7 @@ class Home extends BaseController
                         $r = $regionModel->find($value);
                         if(empty($r)) 
                           throw new \Exception("Unknown region ID ($value). Registration failed.");
-                        if (empty($r['user_id'])) {
+                        if (empty($r['rba_user_id'])) {
                             return true;
                         }
                         $region_text = $r['state_code'] . ':' . $r['region_name'];            
@@ -117,7 +115,7 @@ class Home extends BaseController
         $userID = $u['id'];
 
         // $regionModel = model('Region');
-        $this->regionModel->update($region,['user_id'=>$userID]);
+        $this->regionModel->update($region,['rba_user_id'=>$userID]);
     }
 
     

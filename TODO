@@ -1,0 +1,23 @@
+Private Pages
+=============
+            DONE: Private page for editing region details
+Private page for cue-wizard route munging
+Cue-wizard extensions that provide defaults for #tags
+            DONE: eBrevet JSON page for event details
+eBrevet JSON rider check in
+
+Public Pages
+============
+Public page that lists events for a given region
+Public page that gives details of a particular event
+Public page displaying eBrevet Check in  (indexed by event and RUSA ID -- no roster mapping)
+
+Rosters and Results
+===================
+Event roster editing page
+Roster mapping to eBrevet check in
+Event roster CSV upload
+Event results CSV download
+
+Email Capabilities
+==================

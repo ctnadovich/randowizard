@@ -48,13 +48,19 @@ class Dashboard extends BaseController
 
         $crud = new GroceryCrud();
         $crud->setTable('event');
-        $crud->setRelation('region_id', 'region', '{state_code}:{region_name}');
+        $crud->setRelation('region_id', 'region', '{club_name}',['rba_user_id' => $this->session->get('user_id')]);
+        $crud->setRelation('start_state_id', 'state', '{fullname}');
+        $crud->setRelation('start_country_id', 'country', '{fullname}');
         $crud->where('rba_user_id',$this->session->get('user_id'));
         $crud->setAdd();
+        $crud->setRead();
         $crud->setSubject('Event', 'Events');
-        $crud->columns(['region_id','name','distance','start_datetime']);
-        $crud->unsetEditFields(['region_id']);
+        $crud->callbackColumn('status', array($this,'_status_icons'));
+        $crud->columns(['region_id','name','distance','start_datetime','status']);
+        // $crud->unsetEditFields(['region_id']);
         $crud->displayAs('start_datetime', 'Start Date/Time');
+        $crud->displayAs('start_state_id', 'State');
+        $crud->displayAs('start_country_id', 'Country');
         $crud->displayAs('distance', 'Official Dist (km)');
         $crud->displayAs('region_id', 'Region');
         $crud->displayAs('gravel_distance', 'Official Gravel (km)');
@@ -64,16 +70,61 @@ class Dashboard extends BaseController
         $this->viewData = array_merge ((array)$output, $this->viewData);
 
         return $this->load_view(['dashboard']); 
-        // return view('head', $this->viewData) . view('dashboard') . view('foot');
     }
 
+    private $status_icon=[
+		'hidden'=>"<i class='fas fa-mask'  style='color: blue;'></i>",
+		'canceled'=>"<i class='fas fa-thumbs-down'  style='color: blue;'></i>",
+		'locked'=>"<i class='fas fa-lock'  style='color: blue;'></i>",
+		'suspended'=>"<i class='fas fa-question-circle'  style='color: blue;'></i>"];
 
-    function unique_field_name($field_name) {
 
-	    return 's'.substr(md5($field_name),0,8); //This s is because is better for a string to begin with a letter and not with a number
+	public function _status_icons($value,$row){
+		$attribs=explode(',',$value);
 
+		$d="";
+
+		foreach ($attribs as $a){
+			$icon = ((!empty($this->status_icon[$a]))?$this->status_icon[$a]:"$a ");
+			$d .= "<span title='$a'>$icon</span>";
+		}
+
+		return $d;
+	}
+
+
+
+
+   public function region(){
+
+        $this->login_check();
+
+        $crud = new GroceryCrud();
+        $crud->setTable('region');
+        $crud->setRelation('event_timezone_id', 'tz', '{name}');
+        $crud->setRelation('state_id', 'state', '{fullname}');
+        $crud->setRelation('rba_user_id', 'user', '{first} {last}');
+        $crud->where('rba_user_id',$this->session->get('user_id'));
+        $crud->unsetAdd();
+        $crud->setRead();
+        $crud->unsetDelete();
+        $crud->setSubject('Region', 'Regions');
+        $crud->columns(['state_id','region_name','club_name', 'rba_user_id', 'event_timezone_id']);
+        $crud->unsetEditFields(['rba_user_id','id','state_code','state_name','region_name','club_name']);
+        $crud->displayAs('rba_user_id', 'RBA');
+        $crud->displayAs('event_timezone_id', 'Time Zone');
+        $crud->displayAs('state_id',"State");
+        $crud->fieldType('website_url','url');
+        $crud->displayAs('id', 'ACP Code');
+
+        $output = $crud->render();
+
+        $this->viewData = array_merge ((array)$output, $this->viewData);
+
+        return $this->load_view(['dashboard']); 
     }
 
-
+    
+    
     
 }

@@ -29,4 +29,19 @@ class Region extends Model
     protected $primaryKey = 'id';
     protected $returnType     = 'array';
     protected $allowedFields = ['rba_user_id'];
+
+    public function getClub($club_acp_code)
+    {
+        $this->select('region.*, tz.name as event_timezone_name');
+        $this->join('tz', 'region.event_timezone_id=tz.id');
+        $this->where('region.id', $club_acp_code);
+        $result = $this->first();
+
+        if (empty($result)) {
+            return null;
+        } else {
+            $result['event_timezone'] = new \DateTimeZone($result['event_timezone_name']);
+            return $result;
+        }
+    }
 }

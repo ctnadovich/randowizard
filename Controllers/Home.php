@@ -27,9 +27,8 @@ use Psr\Log\LoggerInterface;
 class Home extends BaseController
 {
 
-    protected $helpers = ['form','rando'];
+    protected $helpers = ['form', 'rando'];
     protected $regionModel;
-
 
 
     public function initController(
@@ -38,21 +37,32 @@ class Home extends BaseController
         LoggerInterface $logger
     ) {
         parent::initController($request, $response, $logger);
+            $this->regionModel = model('Region');
+            $this->viewData['errors'] = [];
+            $this->viewData['region'] = $this->regionModel->findAll();    }
 
-        $this->regionModel = model('Region');
+    public function index()
+    {
+        if ($this->session->get('logged_in')) {
+            return $this->load_view(['hero', 'home']);
+        } else {
+
+            return $this->load_view(['hero', 'home', 'register']);
+        }
     }
-   
- 
-    public function index(){
 
- 
-        $this->viewData['errors'] = [];
-        $this->viewData['region'] = $this->regionModel->findAll();
+
+    public function register()
+    {
 
         // Registration Form submitted
         if ($this->request->is('post')) {
 
             $validation = \Config\Services::validation();
+
+            if ($this->session->get('logged_in')) {
+                $this->die_message("Logged In", "Please log out before registering as a new user.");
+            }
 
 
             $rules = [
@@ -63,13 +73,13 @@ class Home extends BaseController
                     static function ($value, $data, &$error, $field) {
                         $regionModel = model('Region');
                         $r = $regionModel->find($value);
-                        if(empty($r)) 
-                          throw new \Exception("Unknown region ID ($value). Registration failed.");
+                        if (empty($r))
+                            throw new \Exception("Unknown region ID ($value). Registration failed.");
                         if (empty($r['rba_user_id'])) {
                             return true;
                         }
-                        $region_text = $r['state_code'] . ':' . $r['region_name'];            
-                        $error = "The region selected ($region_text) already has an organizer/rba assigned.";            
+                        $region_text = $r['state_code'] . ':' . $r['region_name'];
+                        $error = "The region selected ($region_text) already has an organizer/rba assigned.";
                         return false;
                     },
                 ],
@@ -85,39 +95,41 @@ class Home extends BaseController
                 ]
             ];
 
-            $validation->setRules($rules,$errorMessages);
+            $validation->setRules($rules, $errorMessages);
 
-            $requestData = $this->request->getVar(array_keys($rules),
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $requestData = $this->request->getVar(
+                array_keys($rules),
+                FILTER_SANITIZE_FULL_SPECIAL_CHARS
+            );
 
-            if (! $validation->run($requestData)) {
-                $this->viewData['errors']=$validation->getErrors();
-            }else{
-                 $this->register_new_user($requestData);
-                 return $this->load_view(['register_success']);
+            if (!$validation->run($requestData)) {
+                $this->viewData['errors'] = $validation->getErrors();
+            } else {
+                $this->register_new_user($requestData);
+                return $this->load_view(['register_success']);
             }
-        }     
+        }
 
-        return $this->load_view(['hero','home']);
-        
+        return $this->load_view(['hero', 'home', 'register']);
     }
 
-    protected function register_new_user($requestData){
+    protected function register_new_user($requestData)
+    {
         extract($requestData);
-        $password_hash = 
+        $password_hash =
             password_hash($password, PASSWORD_DEFAULT);
 
         //$userModel = model('User');
-        $userData = compact(['first','last','email','password_hash']);
+        $userData = compact(['first', 'last', 'email', 'password_hash']);
         $this->userModel->insert($userData);
 
         $u = $this->userModel->where('email', $email)->first();
+
+        if(empty($u)) trigger_error("Could not find user_id of user just inserted!?", E_USER_ERROR);
+
         $userID = $u['id'];
 
         // $regionModel = model('Region');
-        $this->regionModel->update($region,['rba_user_id'=>$userID]);
+        $this->regionModel->update($region, ['rba_user_id' => $userID]);
     }
-
-    
-
 }

@@ -37,4 +37,11 @@ class Event extends Model
         return $this->findAll();
     }
 
+    public function getEvent($club_acp_code, $local_event_id){
+        $this->select('event.*, state.fullname as start_state');
+        $this->join('state','state.id=event.start_state_id');
+        $this->where(['event.region_id'=>$club_acp_code, 'event.id'=>$local_event_id ]);  // overconstrained
+        return $this->first();
+    }
+
 }

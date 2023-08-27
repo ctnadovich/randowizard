@@ -103,6 +103,7 @@ class Dashboard extends BaseController
         $crud->setTable('region');
         $crud->setRelation('event_timezone_id', 'tz', '{name}');
         $crud->setRelation('state_id', 'state', '{fullname}');
+        $crud->setRelation('country_id', 'country', '{fullname}');
         $crud->setRelation('rba_user_id', 'user', '{first} {last}');
         $crud->where('rba_user_id',$this->session->get('user_id'));
         $crud->unsetAdd();
@@ -110,12 +111,19 @@ class Dashboard extends BaseController
         $crud->unsetDelete();
         $crud->setSubject('Region', 'Regions');
         $crud->columns(['state_id','region_name','club_name', 'rba_user_id', 'event_timezone_id']);
-        $crud->unsetEditFields(['rba_user_id','id','state_code','state_name','region_name','club_name']);
+        $crud->unsetEditFields(['rba_user_id','id','state_code','state_id','country_id','region_name','club_name']);
         $crud->displayAs('rba_user_id', 'RBA');
         $crud->displayAs('event_timezone_id', 'Time Zone');
         $crud->displayAs('state_id',"State");
         $crud->fieldType('website_url','url');
         $crud->displayAs('id', 'ACP Code');
+
+        $crud->fieldType('epp_secret', 'password');
+        $crud->displayAs('epp_secret', 'EPP Secret');
+        $crud->unsetReadFields(['epp_secret']);
+        $crud->callbackEditField('epp_secret', [$this, 'clear_epp_secret_field']);
+        $crud->callbackBeforeUpdate([$this, 'update_callback']);
+
 
         $output = $crud->render();
 
@@ -124,7 +132,24 @@ class Dashboard extends BaseController
         return $this->load_view(['dashboard']); 
     }
 
-    
+    protected $not_a_password = "not_a_password";
+
+    public function clear_epp_secret_field($fieldValue, $primaryKeyValue, $rowData)
+    {
+        return "<input type='password' name='epp_secret' value='{$this->not_a_password}' />";
+    }
+
+    public function update_callback($stateParameters)
+    {
+        $password = $stateParameters->data['epp_secret'];
+        if (!empty($password) && $password != $this->not_a_password) {
+            $stateParameters->data['epp_secret'] = $password;
+        } else {
+            unset($stateParameters->data['epp_secret']);
+        }
+
+        return $stateParameters;
+    }
     
     
 }

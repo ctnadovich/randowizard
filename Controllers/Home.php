@@ -39,15 +39,15 @@ class Home extends BaseController
         parent::initController($request, $response, $logger);
             $this->regionModel = model('Region');
             $this->viewData['errors'] = [];
-            $this->viewData['region'] = $this->regionModel->findAll();    }
+            $this->viewData['region'] = $this->regionModel->getRegions();    }
 
     public function index()
     {
         if ($this->session->get('logged_in')) {
-            return $this->load_view(['hero', 'home']);
+            return $this->load_view(['hero', 'home', 'apps']);
         } else {
 
-            return $this->load_view(['hero', 'home', 'register']);
+            return $this->load_view(['hero', 'home', 'register', 'apps']);
         }
     }
 

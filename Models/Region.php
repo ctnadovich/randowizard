@@ -30,6 +30,15 @@ class Region extends Model
     protected $returnType     = 'array';
     protected $allowedFields = ['rba_user_id'];
 
+    public function getRegions()
+    {
+        $this->select('region.*, tz.name as event_timezone_name, state.code as state_code, country.code as country_code');
+        $this->join('tz', 'region.event_timezone_id=tz.id');
+        $this->join('state', 'region.state_id=state.id');
+        $this->join('country', 'region.country_id=country.id');
+        return $this->findAll();
+    }
+
     public function getClub($club_acp_code)
     {
         $this->select('region.*, tz.name as event_timezone_name');

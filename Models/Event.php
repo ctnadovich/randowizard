@@ -44,4 +44,23 @@ class Event extends Model
         return $this->first();
     }
 
+
+    public function getEventTable(){
+
+        $sql =   
+            "SELECT event.id as event_id, event.*, region.*, 
+            s1.code as event_start_state, s2.code as region_state,
+            tz.name as event_timezone_name
+            from event, region, state as s1, state as s2, tz
+            WHERE event.region_id=region.id and 
+            s1.id=event.start_state_id and 
+            s2.id=region.state_id  and
+            tz.id=region.event_timezone_id
+            order by region_state, region_name, start_datetime";
+        $q=$this->query($sql);
+        $r = $q->getResultArray();
+
+        return $r;
+    }
+
 }

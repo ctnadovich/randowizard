@@ -29,6 +29,7 @@ class Home extends BaseController
 
     protected $helpers = ['form', 'rando'];
     protected $regionModel;
+    protected $eventModel;
 
 
     public function initController(
@@ -37,17 +38,22 @@ class Home extends BaseController
         LoggerInterface $logger
     ) {
         parent::initController($request, $response, $logger);
-            $this->regionModel = model('Region');
-            $this->viewData['errors'] = [];
-            $this->viewData['region'] = $this->regionModel->getRegions();    }
+        $this->regionModel = model('Region');
+        $this->eventModel = model('Event');
+        $this->viewData['errors'] = [];
+            $this->viewData['region'] = $this->regionModel->getRegions();    
+            $this->viewData['event_table'] = $this->eventModel->getEventTable();
+        }
 
     public function index()
     {
+
+
         if ($this->session->get('logged_in')) {
-            return $this->load_view(['hero', 'home', 'apps']);
+            return $this->load_view(['hero', 'home', 'events','apps']);
         } else {
 
-            return $this->load_view(['hero', 'home', 'register', 'apps']);
+            return $this->load_view(['hero', 'home' , 'events','apps','register']);
         }
     }
 

@@ -30,10 +30,39 @@ class Checkin extends Model
 	protected $returnType     = 'array';
 	protected $allowedFields = ['rider_id', 'event_id', 'control_number', 'time', 'preride', 'comment', 'notes'];
 
+	public function get_checkin($local_event_id, $rider_id, $control_index, $timezone_name = 'utc'){
+		$this->where([
+			'event_id' => $local_event_id,
+			'rider_id' => $rider_id,
+			'control_number' => $control_index
+		]);
+
+		$checkin = $this->first();
+
+		if(empty($checkin)) return null;
+
+		$checkin_time = new \DateTime($checkin['time'], new \DateTimeZone('utc'));
+		if($timezone_name != 'utc') $checkin_time->setTimezone(new \DateTimeZone($timezone_name));
+
+		$checkin['checkin_time']=$checkin_time;
+
+		return $checkin;
+
+	}
+
+	public function riders_seen($local_event_id){
+		$this->distinct();
+		$this->select('rider_id');
+		$this->where([
+			'event_id' => $local_event_id
+		]);
+		return array_map( function ($r){return reset($r);} ,$this->findAll());  // remove array encapsulation of rider_id
+
+	}
+
 	public function record(
 		$local_event_id,
 		$rider_id,
-		$overall_outcome,
 		$check_in_times,
 		$preride,
 		$comment = '',
@@ -66,6 +95,5 @@ class Checkin extends Model
 				if (false === $result) throw new \Exception('FAILED TO SAVE CHECK IN');
 			}
 		}
-		return "OK";
 	}
 }

@@ -22,6 +22,7 @@ namespace App\Controllers;
 
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
+use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
 class Ebrevet extends BaseController
@@ -29,6 +30,8 @@ class Ebrevet extends BaseController
 	protected $eventModel;
 	protected $regionModel;
 	protected $checkinModel;
+	protected $rosterModel;
+
 	protected $rwgpsLibrary;
 	protected $controletimesLibrary;
 	protected $unitsLibrary;
@@ -43,20 +46,12 @@ class Ebrevet extends BaseController
 		$this->eventModel = model('Event');
 		$this->regionModel = model('Region');
 		$this->checkinModel = model('Checkin');
-
-		// $this->load->library('route_event');
-		// $this->load->library('rwgps');
+		$this->rosterModel = model('Roster');
 
 		$this->unitsLibrary = new \App\Libraries\Units();
 		$this->rwgpsLibrary = new \App\Libraries\Rwgps();
 		$this->controletimesLibrary = new \App\Libraries\Controletimes();
-
-		// $this->load->library('controletimes');
 	}
-
-
-	// Published in future_event data, and used to 
-	// reject checkins
 
 	public $minimum_app_version = '1.2.4';
 
@@ -144,7 +139,6 @@ class Ebrevet extends BaseController
 				$comment = $d['comment'];
 			else
 				$comment = "";
-			// if(!empty($comment)){ $notes[]="Comment: $comment"; }else{$comment='';}
 
 			if (key_exists('outcome', $d)) $outcome = $d['outcome'];
 
@@ -157,22 +151,25 @@ class Ebrevet extends BaseController
 				$overall_outcome = $outcome['overall_outcome'];
 				$check_in_times = $outcome['check_in_times'];
 
-				$status = $this->checkinModel->record(
+				$this->checkinModel->record(
 					$local_event_id,
 					$rider_id,
-					$overall_outcome,
 					$check_in_times,
 					($preride) ? 1 : 0,
 					$comment,
 					$d
 				);
-				// if ($status == 'OK' && 
-				// 	$overall_outcome=='finish' && 
-				// 	array_key_exists('finish_elapsed_time', $d)){
-				// 		$status = $this->record_finish($club_event_id, $rider_id, $d['finish_elapsed_time']);
-				// 	// if($status=='OK') $notes[]="Recorded FINISH in " . $d['finish_elapsed_time'];
-				// }
 
+				$result = $this->rosterModel->get_result($local_event_id, $rider_id);
+
+				if ($result != 'finish' ) {  // roster finish is immutable
+					if ($overall_outcome == 'finish') {
+							if (array_key_exists('finish_elapsed_time', $d))
+								$this->rosterModel->record_finish($local_event_id, $rider_id, $d['finish_elapsed_time']);
+					}else{
+							$this->rosterModel->upsert_result($local_event_id, $rider_id, $overall_outcome);
+					}
+				}
 			} else {
 				throw new \Exception('NO OUTCOMES');
 			}
@@ -223,152 +220,31 @@ class Ebrevet extends BaseController
 
 		foreach ($future_events as $event) {
 
-			// Create globally unique event ID
-			$local_event_id = $event['id'];
-			$event_id = "$club_acp_code-$local_event_id";
-
-			// Skip if hidden or canceled
 			$event_status = $event['status'];
 			if ($event_status == 'hidden' || $event_status == 'canceled') continue;
 
+			$event_code = $event['region_id'] . "-" . $event['id'];
+
 			// Skip if no route mape
 			if (empty($event['route_url'])) {
-				$event_errors[] = "No route map URL, skipped";
+				$event_errors[] = "No route map URL for Event ID=$event_code, skipped";
 				continue;
 			}
 
 			// Skip if no start time
 			if (empty($event['start_datetime'])) {
-				$event_errors[] = "No start Date and Time for Event ID=$event_id, skipped";
-				continue;
-			}
-
-			// Try to get route data
-			$route_id = $this->rwgpsLibrary->extract_route_id($event['route_url']);
-
-
-
-			if ($route_id == null) {
-				$event_errors[] = "No RWGPS map for Event $local_event_id, skipped";
-				continue;  // will only consider RWGPS maps
-			} else {
-				$route = $this->rwgpsLibrary->get_route($route_id);
-			}
-
-			// Figure out time zone
-			$event_timezone_name = $club['event_timezone_name'];  // For now, events can't have individual TZ
-			$event_tz = new \DateTimeZone($event_timezone_name);
-
-			// Figure out start time
-			$start_datetime_str = $event['start_datetime'];
-			$event_datetime = @date_create($start_datetime_str, $event_tz);
-			if (false == $event_datetime) {
-				$event_errors[] = "Invalid Date and Time for Event ID=$event_id, skipped";
-				continue;
-			}
-			$utc_tz = new \DateTimeZone('UTC');
-			$event_datetime->SetTimezone($utc_tz);
-			$start_datetime_utc = $event_datetime->format('c'); // Y-m-d H:i T';);
-			$start_time_window = [
-				'on_time' => $start_datetime_utc,
-				'start_style' => 'massStart'
-			];
-
-			list($controles, $controle_warnings) = $this->rwgpsLibrary->extract_controles($route);
-
-			$event_distance = $event['distance'];
-			$event_gravel_distance = $event['gravel_distance'];
-			$event_type = strtolower($event['sanction']);
-			$route_event = compact('event_datetime', 'event_type', 'event_distance', 'event_gravel_distance', 'event_tz');
-
-			$this->controletimesLibrary->compute_open_close($controles, $route_event);
-
-			if (sizeof($controles) == 0) {
-				$event_errors[] = "No controls for Event $local_event_id, skipped";
-				continue;
-			}
-
-			if (sizeof($controle_warnings) > 0) {
-				$event_errors[] = "Errors or warnings in controls for Event $local_event_id, skipped";
+				$event_errors[] = "No start Date and Time for Event ID=$event_code, skipped";
 				continue;
 			}
 
 
-			$controls = [];
-			foreach ($controles as $cdata) {
-
-				$a = $cdata['attributes'];
-
-				//	$sif=(array_key_exists('start', $cdata))?'start':
-				//		((array_key_exists('finish', $cdata))?'finish':'intermediate');
-
-				if (empty($cdata['open']) || empty($cdata['close']))
-					$this->die_message(__METHOD__, "Controls for event $local_event_id: " . print_r($controles, true));
-
-				$openDatetime = $cdata['open'];
-				$closeDatetime = $cdata['close'];
-				$openDatetime->setTimezone($utc_tz);
-				$closeDatetime->setTimezone($utc_tz);
-
-				$reclass = $this->unitsLibrary;
-
-				$cd_mi = round($cdata['d'] / ($reclass::m_per_km * $reclass::km_per_mi), 1);
-				$cd_km = round($cdata['d'] / ($reclass::m_per_km), 1);
-
-				$question = (array_key_exists('question', $a)) ? $a['question'] : '';
-
-				$controls[] = [
-					'dist_mi' => $cd_mi,
-					// 'dist_km'=>$cd_km,
-					'long' => $cdata['x'],
-					'lat' => $cdata['y'],
-					'name' => $a['name'],
-					'style' => $a['style'],
-					'address' => $a['address'],
-					'open' => $openDatetime->format('c'),
-					'close' => $closeDatetime->format('c')
-					// 'question'=>$question,
-					// 'sif'=>$sif
-
-				];
+			try {
+				$published_edata = $this->process_event($event);
+			} catch (\Exception $e) {
+				$status = $e->GetMessage();
+				$event_errors[] = $status;
+				continue;
 			}
-
-			$name = $event['name'];
-			$distance = $event['distance'];
-			$gravel_distance = $event['gravel_distance'];
-			$sanction = $event['sanction'];
-			$type = $event['type'];
-			$start_city = $event['start_city'];
-			$start_state = $event['start_state'];
-			$cue_version = $event['cue_version'];
-			$checkin_post_url = site_url("/ebrevet/post_checkin/$club_acp_code");
-			$event_info_url = $event['info_url'];
-			$organizer_name = $event['emergency_contact'];
-			$organizer_phone = $event['emergency_phone'];
-
-
-			$published_edata = compact(
-				'event_id',
-				'name',
-				'distance',
-				'gravel_distance',
-				'sanction',
-				'type',
-				'start_city',
-				'start_state',
-				'cue_version',
-				// 'club_name',
-				'club_acp_code',
-				// 'region','club_logo_url',
-				// 'club_website_url',
-				'checkin_post_url',
-				'event_info_url',
-				// 'event_tzname',
-				'organizer_name',
-				'organizer_phone',
-				'start_time_window',
-				'controls'
-			);
 
 			$event_list[] = $published_edata;
 		}
@@ -386,16 +262,159 @@ class Ebrevet extends BaseController
 		exit();
 	}
 
+
+	private function process_event($event)
+	{
+
+		// Create globally unique event ID
+		$local_event_id = $event['id'];
+		$club_acp_code = $event['region_id'];
+		$event_id = "$club_acp_code-$local_event_id";
+
+		if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE');
+		if (empty($event['start_datetime'])) throw new \Exception('NO START TIME FOR EVENT');
+
+		$club = $this->regionModel->getClub($club_acp_code);
+		if (empty($club)) {
+			throw new \Exception("UNKNOWN CLUB");
+		}
+		$epp_secret = $club['epp_secret'];
+
+		// Try to get route data
+		$route_id = $this->rwgpsLibrary->extract_route_id($event['route_url']);
+
+		if ($route_id == null) {
+			throw new \Exception('NO RWGPS MAP FOR ROUTE');
+		} else {
+			$route = $this->rwgpsLibrary->get_route($route_id);
+		}
+
+		// Figure out time zone
+		$event_timezone_name = $club['event_timezone_name'];  // For now, events can't have individual TZ
+		$event_tz = new \DateTimeZone($event_timezone_name);
+
+		// Figure out start time
+		$start_datetime_str = $event['start_datetime'];
+		$event_datetime = @date_create($start_datetime_str, $event_tz);
+		if (false == $event_datetime) {
+			throw new \Exception("INVALID DATE OR TIME");
+		}
+		$utc_tz = new \DateTimeZone('UTC');
+		$event_datetime->SetTimezone($utc_tz);
+		$start_datetime_utc = $event_datetime->format('c'); // Y-m-d H:i T';);
+		$start_time_window = [
+			'on_time' => $start_datetime_utc,
+			'start_style' => 'massStart'   // The only start style supported
+		];
+
+		list($controles, $controle_warnings) = $this->rwgpsLibrary->extract_controles($route);
+
+		$event_distance = $event['distance'];
+		$event_gravel_distance = $event['gravel_distance'];
+		$event_type = strtolower($event['sanction']);
+		$route_event = compact('event_datetime', 'event_type', 'event_distance', 'event_gravel_distance', 'event_tz');
+
+		$this->controletimesLibrary->compute_open_close($controles, $route_event);
+
+		if (sizeof($controles) == 0) {
+			throw new \Exception("NO CONTROLS");
+		}
+
+		if (sizeof($controle_warnings) > 0) {
+			throw new \Exception("ERRORS IN CONTROLS");
+		}
+
+
+		$controls = [];
+		foreach ($controles as $cdata) {
+
+			$a = $cdata['attributes'];
+
+			//	$sif=(array_key_exists('start', $cdata))?'start':
+			//		((array_key_exists('finish', $cdata))?'finish':'intermediate');
+
+			if (empty($cdata['open']) || empty($cdata['close'])) {
+				throw new \Exception("OPEN/ClOSE MISSING: " . print_r($controles, true));
+			}
+
+			$openDatetime = $cdata['open'];
+			$closeDatetime = $cdata['close'];
+			$openDatetime->setTimezone($utc_tz);
+			$closeDatetime->setTimezone($utc_tz);
+
+			$reclass = $this->unitsLibrary;
+
+			$cd_mi = round($cdata['d'] / ($reclass::m_per_km * $reclass::km_per_mi), 1);
+			$cd_km = round($cdata['d'] / ($reclass::m_per_km), 1);
+
+			$question = (array_key_exists('question', $a)) ? $a['question'] : '';
+
+			$controls[] = [
+				'dist_mi' => $cd_mi,
+				'dist_km'=>$cd_km,
+				'long' => $cdata['x'],
+				'lat' => $cdata['y'],
+				'name' => $a['name'],
+				'style' => $a['style'],
+				'address' => $a['address'],
+				'open' => $openDatetime->format('c'),
+				'close' => $closeDatetime->format('c')
+				// 'question'=>$question,
+				// 'sif'=>$sif
+
+			];
+		}
+
+		$name = $event['name'];
+		$distance = $event['distance'];
+		$gravel_distance = $event['gravel_distance'];
+		$sanction = $event['sanction'];
+		$type = $event['type'];
+		$start_city = $event['start_city'];
+		$start_state = $event['start_state'];
+		$cue_version = $event['cue_version'];
+		$checkin_post_url = site_url("/ebrevet/post_checkin/$club_acp_code");
+		$event_info_url = $event['info_url'];
+		$organizer_name = $event['emergency_contact'];
+		$organizer_phone = $event['emergency_phone'];
+
+
+		$published_edata = compact(
+			'event_id',
+			'name',
+			'distance',
+			'gravel_distance',
+			'sanction',
+			'type',
+			'start_city',
+			'start_state',
+			'cue_version',
+			// 'club_name',
+			'club_acp_code',
+			// 'region','club_logo_url',
+			// 'club_website_url',
+			'checkin_post_url',
+			'event_info_url',
+			// 'event_tzname',
+			'organizer_name',
+			'organizer_phone',
+			'start_time_window',
+			'controls'
+		);
+
+		return $published_edata;
+	}
+
+
+
 	////////////////////////////////////////////////
-	// EVENT STATUS
+	// EVENT CHECKIN STATUS
 	//
 
-	const km_per_mi = 1.609344;
-	const ft_per_m = 3.2808398950131;
-	const m_per_km = 1000.0;
-
-	public function event_status($event_code = null)
+	public function checkin_status($event_code = null)
 	{
+
+		$checkin_table = '';
 
 		try {
 
@@ -418,9 +437,7 @@ class Ebrevet extends BaseController
 				throw new \Exception("NO SUCH EVENT");
 			}
 
-			$event_name = $event['name'];
-			$event_distance = $event['distance'];
-			$event_name_dist = "$event_name $event_distance K";
+			$edata = $this->process_event($event);
 		} catch (\Exception $e) {
 			$status = $e->GetMessage();
 
@@ -429,30 +446,33 @@ class Ebrevet extends BaseController
 
 		// Establish 'event','route','controles','warnings','cues','route_event'
 
-		$controles = [];
-		$roster = [];
+		$event_name_dist = $edata['name'] . ' ' . $edata['distance'] . 'K';
+		$controles = $edata['controls'];
+		$ncontroles = count($controles);
 
-		$title = "Control Check-Ins for $event_name_dist";
+
+		// $this->die_message(__METHOD__, print_r($controles,true));
+
+		$title = "$event_name_dist";
 		$subject = $title;
-		$form_body = <<<EOT
-<div class='narrower'>
-<H3>$event_name_dist</H3>
-<h4>Control Check-In Status</h4>
-<div class=vspace></div>
-EOT;
+
+
+		$reclass = $this->unitsLibrary;
 
 		$headlist = [];
 		$controle_num = 0;
 		foreach ($controles as $c) {
 			$controle_num++;
-			$cd_mi = round($c['d'] / (self::m_per_km * self::km_per_mi), 1) . ' mi';
-			$cd_km = round($c['d'] / (self::m_per_km), 1) . ' km';
+			$cd_mi = $c['dist_mi'] . " mi";
+			$cd_km = $c['dist_km'];
 			$is_start = isset($c['start']);
 			$is_finish = isset($c['finish']);
 			$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");
-			$open = $c['open']->format('D-H:i');
-			$close = $c['close']->format('D-H:i');
-			$name = $c['attributes']['name'];
+			$open = (new \DateTime($c['open']))->setTimezone(new DateTimeZone($club['event_timezone_name']))->format('D-H:i');
+			$close = (new \DateTime($c['close']))->setTimezone(new DateTimeZone($club['event_timezone_name']))->format('D-H:i');
+			
+			// $close = $c['close']; // ->format('D-H:i');
+			$name = $c['name'];
 			$headlist[] = compact('number', 'cd_mi', 'cd_km', 'is_start', 'is_finish', 'open', 'close', 'name');
 		}
 
@@ -460,41 +480,38 @@ EOT;
 		foreach ($headlist as $key => $row) {
 			$head_row[$key] = '<TH></TH><TH>' . implode('</TH><TH>', $row) . '</TH>';
 		}
-		$form_body .= <<<EOT
-<div class='cktable'>
-<TABLE WIDTH=100%>
-EOT;
-		$form_body .= "<TR>" . $head_row['number'] . "<TH ROWSPAN=4>Finish</TH></TR>";
+		$checkin_table .= "<TR class='w3-blue'>" . $head_row['number'] . "<TH ROWSPAN=4>Final</TH></TR>";
+		$checkin_table .= "<TR class='w3-light-blue' style='font-size: 0.7em;'>" . $head_row['name'] . "</TR>";
+		$checkin_table .= "<TR class='w3-light-blue'>" . $head_row['cd_mi'] . "</TR>";
+		$checkin_table .= "<TR class='w3-light-blue'>" . $head_row['close'] . "</TR>";
 
 
-		$form_body .= "<TR>" . $head_row['name'] . "</TR>";
-		$form_body .= "<TR>" . $head_row['cd_mi'] . "</TR>";
-		$form_body .= "<TR>" . $head_row['close'] . "</TR>";
+		$riders_seen = $this->checkinModel->riders_seen($local_event_id);
+
+		foreach ($riders_seen as $rider_id) {
 
 
-		$ncontroles = count($controles);
-		foreach ($roster as $r) {
-			$first_name = $r->first_name;
-			$last_name = $r->last_name;
-			$member_id = $r->member_id;
-			$rusa_id = $r->rusa_id;
-			$rider = "$first_name $last_name";
+			// $this->die_message(__METHOD__, print_r($club,true));
 
-			$rider_id = $rusa_id; // assumption
+			$first_name = "?";
+			$last_name = "?";
+			$rider = "$first_name $last_name ($rider_id)";
+
+			// Assume $rider_id = $rusa_id; // assumption
 
 			$checklist = [];
 			for ($i = 0; $i < $ncontroles; $i++) {
 				$open = $controles[$i]['open'];
 				$close = $controles[$i]['close'];
-				$c = $this->eventModel->get_checkin($event_code, $rider_id, $i);
-				if (null === $c) {
+				$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $club['event_timezone_name']);
+				if (empty($c)) {
 					$checklist[] = '-';
 				} else {
-					extract($c);
-					$checkin_time->setTimezone($this->regionModel->get_local_time_zone());
-					//                    if(true || $i>0){
+
+					$checkin_time = $c['checkin_time'];
+
 					$el = "";
-					if ($preride) {
+					if ($c['preride']) {
 						$el = "<br><span class='green italic sans smaller'>Preride</span>";
 					} elseif ($checkin_time < $open) {
 						$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
@@ -503,7 +520,7 @@ EOT;
 					}
 
 					$control_index = $i;
-					$d = compact('control_index', 'global_event_id', 'rider_id');
+					$d = compact('control_index', 'event_code', 'rider_id');
 					$checkin_code = $this->make_checkin_code($d, $epp_secret);
 
 					if ($this->isAdmin()) {
@@ -516,19 +533,17 @@ EOT;
 					}
 
 					$checklist[] = $checkin_time->format('H:i') . $el;
-					//                     }else{
-					// 						if($checkin_time<$close)
-					// 							$checklist[]=$open->format('H:i');
-					//                     	else
-					// 							$checklist[]=$checkin_time->format('H:i') . "<br><span class='red italic sans smaller'>LATE!</span>";
-					//                     }
 				}
 			}
 			$checkins = implode('</TD><TD>', $checklist);
 
 			$finish_text = "";
-			if ($r->result == "FINISH") {
-				$elapsed_array = explode(':', $r->elapsed_time, 3);
+			$r = $this->rosterModel->get_record($local_event_id, $rider_id);
+
+			if(empty($r)) $this->die_message('ERROR',"Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
+
+			if ($r['result'] == "finish") {
+				$elapsed_array = explode(':', $r['elapsed_time'], 3);
 				if (count($elapsed_array) == 3) {
 					list($hh, $mm, $ss) = $elapsed_array;
 					$elapsed_hhmm =  "$hh$mm";
@@ -543,21 +558,21 @@ EOT;
 				}
 			}
 
-			$form_body .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
+			$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
 		}
 
-		$form_body .= <<<EOT
-</TABLE></DIV></DIV>
-EOT;
 
-
-		$body = $form_body;
 
 		$view_data = compact(
 			'title',
 			'subject',
-			'body'
+			'checkin_table'
 		);
+
+		$this->viewData = array_merge($this->viewData, $view_data);
+		return $this->load_view(['head','checkin_status','foot']);
+
+
 
 		// $this->load->view('simple_header', array_merge($view_data, ['page_styles' => ['table']]));
 		// $this->load->view('simple_body', $view_data);
@@ -566,7 +581,7 @@ EOT;
 
 	private function isAdmin()
 	{
-		return $this->session->get_data('login_is_admin');
+		return true; // $this->session->get_data('login_is_admin');
 	}
 
 	private function flipDiagonally($arr)
@@ -583,7 +598,7 @@ EOT;
 	private function make_checkin_code($d, $epp_secret)
 	{
 		extract($d);
-		$plaintext = "$control_index-$global_event_id-$rider_id-$epp_secret";
+		$plaintext = "$control_index-$event_code-$rider_id-$epp_secret";
 		$ciphertext = hash('sha256', $plaintext);
 		$plain_code = strtoupper(substr($ciphertext, 0, 4));
 		$xycode = str_replace(['0', '1'], ['X', 'Y'], $plain_code);

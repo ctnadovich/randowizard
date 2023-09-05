@@ -38,19 +38,29 @@ class Event extends Model
     }
 
     public function getEvent($club_acp_code, $local_event_id){
-        $this->select('event.*, state.fullname as start_state');
-        $this->join('state','state.id=event.start_state_id');
-        $this->where(['event.region_id'=>$club_acp_code, 'event.id'=>$local_event_id ]);  // overconstrained
-        return $this->first();
-    }
 
+        $sql =   
+            "SELECT event.id as event_id, event.*, region.*, 
+            s1.code as start_state, s2.code as region_state,
+            tz.name as timezone_name
+            from event, region, state as s1, state as s2, tz
+            WHERE event.id = '$local_event_id' and
+            region.id = '$club_acp_code' and 
+            event.region_id=region.id and 
+            s1.id=event.start_state_id and 
+            s2.id=region.state_id  and
+            tz.id=region.event_timezone_id
+            order by region_state, region_name, start_datetime";
+        $q=$this->query($sql);
+        return $q->getRowArray();
+    }
 
     public function getEventTable(){
 
         $sql =   
             "SELECT event.id as event_id, event.*, region.*, 
-            s1.code as event_start_state, s2.code as region_state,
-            tz.name as event_timezone_name
+            s1.code as start_state, s2.code as region_state,
+            tz.name as timezone_name
             from event, region, state as s1, state as s2, tz
             WHERE event.region_id=region.id and 
             s1.id=event.start_state_id and 
@@ -58,9 +68,28 @@ class Event extends Model
             tz.id=region.event_timezone_id
             order by region_state, region_name, start_datetime";
         $q=$this->query($sql);
-        $r = $q->getResultArray();
-
-        return $r;
+        return $q->getResultArray();
     }
+
+
+    public function eventByCode($event_code){
+
+
+			if ($event_code === null) throw new \Exception("MISSING PARAMETER");
+
+			if (0 == preg_match('/^(\d+)-(\d+)$/', $event_code, $m)) {
+				throw new \Exception('INVALID EVENT ID');
+			}
+
+			list($all, $club_acp_code, $local_event_id) = $m;
+
+			$event = $this->getEvent($club_acp_code, $local_event_id);
+			if (empty($event)) {
+				throw new \Exception("NO SUCH EVENT");
+			}
+
+		return $event;
+
+	}
 
 }

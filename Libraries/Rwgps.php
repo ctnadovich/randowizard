@@ -155,7 +155,7 @@ ini_set('memory_limit', '1024M'); // or you could use 1G
 		}
 
 
-		public $cache_data_extensions = ['json','gpx','tcx'];
+		public $cache_data_extensions = ['json','gpx'];
 
 		public function route_is_cached($route_id){
 			if(empty($route_id) || !$this->is_good_route_id($route_id)) throw new \Exception(__METHOD__ . ": Bad route ID");

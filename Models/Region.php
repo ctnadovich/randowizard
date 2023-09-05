@@ -41,8 +41,10 @@ class Region extends Model
 
     public function getClub($club_acp_code)
     {
-        $this->select('region.*, tz.name as event_timezone_name');
+        $this->select('region.*, tz.name as event_timezone_name, state.code as region_state_code, country.code as region_country_code');
         $this->join('tz', 'region.event_timezone_id=tz.id');
+        $this->join('state', 'region.state_id=state.id');
+        $this->join('country', 'region.country_id=country.id');
         $this->where('region.id', $club_acp_code);
         $result = $this->first();
 

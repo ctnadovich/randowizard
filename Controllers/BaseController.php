@@ -55,47 +55,100 @@ abstract class BaseController extends Controller
 
         // Preload any models, libraries, etc, here.
 
-        $this->session = \Config\Services::session();    
+        $this->session = \Config\Services::session();
         $this->viewData['session'] = $this->session->get();
-        if(!isset($this->viewData['session']['logged_in'])) $this->viewData['session']['logged_in']=false;
+        if (!isset($this->viewData['session']['logged_in'])) $this->viewData['session']['logged_in'] = false;
         $this->viewData['errors'] = [];
 
         $this->userModel = model('User');
-
     }
 
-    protected function load_view($view_list){
+    protected function load_view($view_list)
+    {
 
-        $views =         
-            view('head',$this->viewData) .
-            view('navbar',$this->viewData) ;
+        $views =
+            view('head', $this->viewData) .
+            view('navbar', $this->viewData);
 
-        if (is_array($view_list)){
-            foreach($view_list as $v) $views .= view($v);
-        }else{
-            $views .= view($view_list);
+        if (is_array($view_list)) {
+            foreach ($view_list as $v) {
+                if (is_array($v)){
+                    $v[] = ['saveData' => false];
+                    $views .= view(...$v);
+                }else{
+                    $views .= view($v,$this->viewData);
+                }
+            }
+        } else {
+            $views .= view($view_list,$this->viewData);
         }
-		
-		$views .= view('foot');
+
+        $views .= view('foot');
         return $views;
+    }
 
-	}
-    
-    protected function die_message($severity, $text){
+    protected function die_info($severity, $text){
+        $this->die_message($severity, $text, ['backtrace'=>false]);
+    }
 
-        $this->viewData['message']=compact('severity','text');
+    protected function die_message($severity, $text, $options=[])
+    {
 
-        echo $this->load_view(['message']); 
+        $text = is_string($text) ? $text : print_r($text,true);
+
+        $backtrace = ($options['backtrace'] ?? true) ? $this->formatted_backtrace() : '';
+        $file_line = ($options['file_line'] ?? '');
+
+        $viewData = compact('severity', 'text', 'backtrace', 'file_line');
+
+        echo $this->load_view([['message',$viewData]]);
 
         exit();
     }
 
-    protected function login_check(){
+    protected function die_exception($e){
+        $file_line = $e->getFile() . '(' . $e->getLine() . ')';
+        $file_line = str_replace(APPPATH,'',$file_line);
+        $status = $e->GetMessage();
+        $this->die_message("Exception", $status, ['file_line' => $file_line]);
+    }
+
+    protected function login_check()
+    {
         if (false == $this->session->get('logged_in')) {
             $this->die_message('Access denied',  'Not logged in.');
         }
     }
 
-	
+
+function formatted_backtrace()
+{
+   $result = '';
+
+   foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace)
+   {
+      if ($trace['function'] ==__FUNCTION__)
+          continue;
+
+      $parameters = isset($trace['args']) && is_array($trace['args']) ? print_r($trace['args'],true) : "";
+
+      if (array_key_exists('class', $trace))
+         $result .= sprintf("%s:%s %s::%s(%s)<br>",   
+                              $trace['file'],   
+                              $trace['line'],    
+                              $trace['class'],  
+                              $trace['function'],  
+                              $parameters);
+      else
+         $result .= sprintf("%s:%s %s(%s)<br>", 
+                              $trace['file'], 
+                              $trace['line'], 
+                              $trace['function'], 
+                              $parameters);
+    }
+
+    return $result;
+}
+
 
 }

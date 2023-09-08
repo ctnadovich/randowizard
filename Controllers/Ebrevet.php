@@ -36,6 +36,9 @@ class Ebrevet extends BaseController
 	protected $controletimesLibrary;
 	protected $unitsLibrary;
 
+	protected $url;
+
+
 	public function initController(
 		RequestInterface $request,
 		ResponseInterface $response,
@@ -51,9 +54,12 @@ class Ebrevet extends BaseController
 		$this->unitsLibrary = new \App\Libraries\Units();
 		$this->rwgpsLibrary = new \App\Libraries\Rwgps();
 		$this->controletimesLibrary = new \App\Libraries\Controletimes();
+
+		$this->url = site_url('ebrevet');
 	}
 
 	public $minimum_app_version = '1.2.4';
+
 
 
 	protected function emit_json($data)
@@ -95,7 +101,7 @@ class Ebrevet extends BaseController
 			throw new \Exception(__METHOD__ . ": BAD PARAMETER. NOT ARRAY.");
 		}
 		// Create globally unique event ID
-		$local_event_id = $event['id'];
+		$local_event_id = $event['event_id'];
 		$club_acp_code = $event['region_id'];
 		$event_code = "$club_acp_code-$local_event_id";
 
@@ -127,9 +133,18 @@ class Ebrevet extends BaseController
 		}
 
 		if (sizeof($controle_warnings) > 0) {
-			throw new \Exception("ERRORS IN CONTROLS: <ul><li>" . implode('</li><li>',$controle_warnings) . "</li></ul>");
+			throw new \Exception("ERRORS IN CONTROLS: <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
 		}
 
+		list($cues, $cue_warnings) = $this->rwgpsLibrary->extract_cues($route);
+
+		if (sizeof($cues) == 0) {
+			throw new \Exception("NO CUES");
+		}
+
+		if (sizeof($cue_warnings) > 0) {
+			throw new \Exception("ERRORS IN CUES: <ul><li>" . implode('</li><li>', $cue_warnings) . "</li></ul>");
+		}
 
 		/////////////////////////////////////////////////////////
 		// Now that we have the route and controls, we can start 
@@ -141,14 +156,19 @@ class Ebrevet extends BaseController
 		$event_timezone_name = $club['event_timezone_name'];  // For now, events can't have individual TZ
 		$event_tz = new \DateTimeZone($event_timezone_name);
 
+		$now = new \DateTime('now', $event_tz);
+		$now_str = $now->format($this->controletimesLibrary->event_datetime_format);
+
 		$start_datetime_str = $event['start_datetime'];
 		$event_datetime = @date_create($start_datetime_str, $event_tz);
 		if (false == $event_datetime) {
 			throw new \Exception("INVALID DATE OR TIME");
 		}
 
-		$event_datetime_str = $event_datetime->format('Y-m-d H:i T');
+		$event_datetime_str = $event_datetime->format($this->controletimesLibrary->event_datetime_format);
+		$event_datetime_str_verbose = $event_datetime->format($this->controletimesLibrary->event_datetime_format_verbose);
 		$event_date_str = $event_datetime->format('l, j F');
+		$event_date_str_ymd = $event_datetime->format('Y-m-d');
 		$event_time_str = $event_datetime->format('g:i A T');
 
 		$utc_tz = new \DateTimeZone('UTC');
@@ -219,30 +239,54 @@ class Ebrevet extends BaseController
 		$event_location = "$start_city, $start_state";
 		$event_name = $event['name'];
 		$distance = $event['distance'];
+		$event_name_dist = $event_name . ' ' . $distance . 'K';
 		$gravel_distance = $event['gravel_distance'];
 		$sanction = $event['sanction'];
 		$type = $event['type'];
 		$start_city = $event['start_city'];
 		$start_state = $event['start_state'];
 		$cue_version = $event['cue_version'];
-		$checkin_post_url = site_url("/ebrevet/post_checkin/$club_acp_code");  // TODO, should go someplace else
 		$event_info_url = $event['info_url'];
 		$organizer_name = $event['emergency_contact'];
 		$organizer_phone = $event['emergency_phone'];
 		$event_description = $event['description'];
 
-		$has_cuesheet = (isset($event['cue_version']) && $event['cue_version']>0);
-		
+		$event_tagname_components = [$sanction, $distance . "K", $club_acp_code, $event_date_str_ymd];
+		$event_tagname = strtoupper(implode('-', $event_tagname_components));
+
+		$has_cuesheet = (isset($event['cue_version']) && $event['cue_version'] > 0);
+
 		$cue_version = $has_cuesheet ? $event['cue_version'] : 0;
-        $cue_version_str=$cue_version ?: "None";
-		$cue_next_version=$cue_version+1;
-		
+		$cue_version_str = $cue_version ?: "None";
+		$cue_next_version = $cue_version + 1;
+
+		// URLs  (Maybe these should go someplace else?)
+		$checkin_post_url = site_url("/ebrevet/post_checkin/$club_acp_code");  // TODO, should go someplace else
+
+		$route_event_id = "$route_id/$local_event_id";
+		$download_url = "$this->url/recache/$event_code";
+		$event_info_url = "$this->url/event_info/$event_code";
+		$event_publish_url = "$this->url/publish/$event_code";
+		$event_preview_url = "$this->url/preview/$event_code";
+
+
+		$download_note = 'Download Note';
+		$this_organization = $club_name = $club['club_name'];
 
 		// Route
 
 		$route_name = $route['name'];
-		$last_update = date("Y-m-j H:i:s T", $route['updated_at']);
-		$last_download = date("Y-m-j H:i:s T", $route['downloaded_at']);
+
+		$route_updated_at = $route['updated_at'];
+		$last_update_datetime = new \DateTime('@'.$route['updated_at']);
+		$last_update_datetime->SetTimezone($event_tz);
+		$last_update =$last_update_datetime->format("Y-m-j H:i:s T");
+
+		$last_download_datetime = new \DateTime('@'.$route['downloaded_at']);
+		$last_download_datetime->SetTimezone($event_tz);
+		$last_download =$last_download_datetime->format("Y-m-j H:i:s T");
+
+		$download_note = $route['download_note'];
 
 		if (!empty($route['description']))
 			$route_tags = $this->rwgpsLibrary->parse_description($route['description'], $this->rwgpsLibrary->valid_event_description_keys);
@@ -275,45 +319,64 @@ class Ebrevet extends BaseController
 
 
 		$edata = compact(
-			'event_code',
-			'event_name',
-			'distance',
+			'checkin_post_url',
+			'climbing_ft',
+			'club_acp_code',
+			'club_name',
+			'controls',
+			'cue_next_version',
+			'cue_version_str',
+			'cue_version',
+			'cues',
+			'df_links_txt',
+			'difficulty',
 			'distance_km',
 			'distance_mi',
-			'climbing_ft',
-			'has_rwgps_route',
-			'last_update',
-			'last_download',
-			'df_links_txt',
-			'rwgps_url',
-			'route_name',
-			'route_tags',
-			'gravel_distance',
-			'terrain',
-			'surface',
-			'pavement_type',
-			'difficulty',
-			'unpaved_pct',
-			'sanction',
-			'event_type',
-			'event_description',
-			'event_type_uc',
-			'start_city',
-			'start_state',
-			'event_location',
-			'has_cuesheet',
-			'cue_version',
-			'club_acp_code',
-			'checkin_post_url',
-			'event_info_url',
+			'distance',
+			'download_url',
+			'download_note',
+			'event_code',
 			'event_date_str',
+			'event_datetime_str',
+			'event_datetime_str_verbose',
+			'event_description',
+			'event_info_url',
+			'event_location',
+			'event_name_dist',
+			'event_name',
+			'event_preview_url',
+			'event_publish_url',
+			'event_tagname',
 			'event_time_str',
+			'event_type_uc',
+			'event_type',
 			'event_tz',
+			'event_info_url',
+			'gravel_distance',
+			'has_cuesheet',
+			'has_rwgps_route',
+			'last_download',
+			'last_update',
+			'local_event_id',
+			'now',
+			'now_str',
 			'organizer_name',
 			'organizer_phone',
+			'pavement_type',
+			'route_controles',
+			'route_id',
+			'route_name',
+			'route_tags',
+			'route_updated_at',
+			'rwgps_url',
+			'sanction',
+			'start_city',
+			'start_state',
 			'start_time_window',
-			'controls',
-			'route_controles'
+			'surface',
+			'terrain',
+			'this_organization',
+			'unpaved_pct'
 		);
 
 
@@ -357,13 +420,11 @@ class Ebrevet extends BaseController
 
 	protected function format_attributes($alist)
 	{
-		$ca = "";
+		$ca = "<TABLE class='w3-table-all'";
 		foreach ($alist as $k => $v) {
 			if (is_string($v))
-				$ca .= "<div>#$k=$v</div>";
+				$ca .= "<TR><TD>#$k</TD><TD>$v</TD></TR>";
 		}
-		return $ca;
+		return $ca . "</TABLE>";
 	}
-
-
 }

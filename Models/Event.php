@@ -28,7 +28,7 @@ class Event extends Model
     protected $table      = 'event';
     protected $primaryKey = 'id';
     protected $returnType     = 'array';
-    protected $allowedFields = [];
+    protected $allowedFields = ['cue_version'];
 
     public function getEventsForClub($club_acp_code){
         $this->select('event.*, state.fullname as start_state');
@@ -91,6 +91,16 @@ class Event extends Model
 		return $event;
 
 	}
+
+    public function set_cuesheet_version($event_code, $cue_version){
+
+        $event = $this->eventByCode($event_code);
+
+        $event_id = $event['event_id'];
+
+        $this->update($event_id, ['cue_version' => $cue_version])  or throw new \Exception('Could not set cuesheet version');
+
+    }
 
 
 	

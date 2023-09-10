@@ -34,6 +34,7 @@ class Ebrevet extends BaseController
 
 	protected $rwgpsLibrary;
 	protected $controletimesLibrary;
+	protected $cuesheetLibrary;
 	protected $unitsLibrary;
 
 	protected $url;
@@ -53,6 +54,7 @@ class Ebrevet extends BaseController
 
 		$this->unitsLibrary = new \App\Libraries\Units();
 		$this->rwgpsLibrary = new \App\Libraries\Rwgps();
+		$this->cuesheetLibrary = new \App\Libraries\Cuesheet();
 		$this->controletimesLibrary = new \App\Libraries\Controletimes();
 
 		$this->url = site_url('ebrevet');
@@ -167,7 +169,7 @@ class Ebrevet extends BaseController
 
 		$event_datetime_str = $event_datetime->format($this->controletimesLibrary->event_datetime_format);
 		$event_datetime_str_verbose = $event_datetime->format($this->controletimesLibrary->event_datetime_format_verbose);
-		$event_date_str = $event_datetime->format('l, j F');
+		$event_date_str = $event_datetime->format('j F Y');
 		$event_date_str_ymd = $event_datetime->format('Y-m-d');
 		$event_time_str = $event_datetime->format('g:i A T');
 
@@ -260,15 +262,30 @@ class Ebrevet extends BaseController
 		$cue_version_str = $cue_version ?: "None";
 		$cue_next_version = $cue_version + 1;
 
-		// URLs  (Maybe these should go someplace else?)
-		$checkin_post_url = site_url("/ebrevet/post_checkin/$club_acp_code");  // TODO, should go someplace else
+		foreach ($this->cuesheetLibrary->cue_types as $t)
+			$cue_url[$t] = $this->cuesheetLibrary->make_url($event_tagname, $cue_version, $t);
+
+		if (false == $has_cuesheet) {
+			$published_at = 0;
+			$cue_gentime_str = 'Never';
+		} else {
+			$published_at = $this->cuesheetLibrary->cueVersionPublishedAt($event_tagname, $cue_version);
+
+			if ($published_at == 0)
+				throw new \Exception("This can't happen. Event data indicates published cues, but cuesheet files were not found.");
+
+			date_default_timezone_set($event_timezone_name);
+			$cue_gentime_str = date("Y-m-j H:i:s T", $published_at);
+		}
+
+		// URLs  (Maybe these should go someplace else? )
+		$checkin_post_url = site_url("/ebrevet/post_checkin/$club_acp_code");  // TODO, should go someplace else. Roster model?
 
 		$route_event_id = "$route_id/$local_event_id";
 		$download_url = "$this->url/recache/$event_code";
 		$event_info_url = "$this->url/event_info/$event_code";
 		$event_publish_url = "$this->url/publish/$event_code";
 		$event_preview_url = "$this->url/preview/$event_code";
-
 
 		$download_note = 'Download Note';
 		$this_organization = $club_name = $club['club_name'];
@@ -278,13 +295,13 @@ class Ebrevet extends BaseController
 		$route_name = $route['name'];
 
 		$route_updated_at = $route['updated_at'];
-		$last_update_datetime = new \DateTime('@'.$route['updated_at']);
+		$last_update_datetime = new \DateTime('@' . $route['updated_at']);
 		$last_update_datetime->SetTimezone($event_tz);
-		$last_update =$last_update_datetime->format("Y-m-j H:i:s T");
+		$last_update = $last_update_datetime->format("Y-m-j H:i:s T");
 
-		$last_download_datetime = new \DateTime('@'.$route['downloaded_at']);
+		$last_download_datetime = new \DateTime('@' . $route['downloaded_at']);
 		$last_download_datetime->SetTimezone($event_tz);
-		$last_download =$last_download_datetime->format("Y-m-j H:i:s T");
+		$last_download = $last_download_datetime->format("Y-m-j H:i:s T");
 
 		$download_note = $route['download_note'];
 
@@ -327,6 +344,8 @@ class Ebrevet extends BaseController
 			'cue_next_version',
 			'cue_version_str',
 			'cue_version',
+			'cue_url',
+			'cue_gentime_str',
 			'cues',
 			'df_links_txt',
 			'difficulty',
@@ -337,6 +356,7 @@ class Ebrevet extends BaseController
 			'download_note',
 			'event_code',
 			'event_date_str',
+			'event_datetime',
 			'event_datetime_str',
 			'event_datetime_str_verbose',
 			'event_description',
@@ -363,6 +383,7 @@ class Ebrevet extends BaseController
 			'organizer_name',
 			'organizer_phone',
 			'pavement_type',
+			'published_at',
 			'route_controles',
 			'route_id',
 			'route_name',
@@ -415,7 +436,15 @@ class Ebrevet extends BaseController
 
 	protected function isAdmin()
 	{
-		return true; // $this->session->get_data('login_is_admin');
+		if (false == $this->session->get_data('logged_in')) return false;
+		$user_id = $this->session->get_data('user_id');
+		$authorized_regions = $this->session->get_data('authorized_regions');
+		return (false === array_search($user_id, $authorized_regions)) ? false : true;
+	}
+
+	protected function isLoggedIn()
+	{
+		return (false == $this->session->get_data('logged_in')) ? false : true;
 	}
 
 	protected function format_attributes($alist)
@@ -426,5 +455,23 @@ class Ebrevet extends BaseController
 				$ca .= "<TR><TD>#$k</TD><TD>$v</TD></TR>";
 		}
 		return $ca . "</TABLE>";
+	}
+
+	protected function emit_csv($array, $filename = 'data.csv', $write = false)
+	{
+
+		$output = null;
+
+		if ($write) {
+			$output = fopen($filename, 'w') or throw new \Exception("Can't open $filename");
+		} else {
+			$output = fopen("php://output", 'w') or throw new \Exception("Can't open php://output");
+			header("Content-Type:application/csv");
+			header("Content-Disposition:attachment;filename=$filename");
+		}
+		foreach ($array as $row) {
+			fputcsv($output, $row);
+		}
+		fclose($output) or die("Can't close output.");
 	}
 }

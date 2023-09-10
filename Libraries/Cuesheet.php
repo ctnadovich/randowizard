@@ -24,11 +24,11 @@ namespace App\Libraries;
 
 // Brevet Card Rendering Class /////////////////////////////////////////////////////////////////////
 
-require_once(APPPATH . 'Libraries/fpdf/fpdf.php');
+require_once(APPPATH . 'Libraries/Myfpdf.php');
 
-use FPDF;
+use App\Libraries\Myfpdf;
 
-class Cuesheet extends FPDF
+class Cuesheet extends Myfpdf
 {
 
 	// distances	
@@ -43,8 +43,8 @@ class Cuesheet extends FPDF
 	const FILL_WARN = [255, 255, 225];
 
 	// paths
-	const cuesheet_path = "/home/tomr/public_html/assets/parando/cuesheets";
-	const cuesheet_baseurl = "https://parando.org/assets/parando/cuesheets";
+	const cuesheet_path = "/var/www/html/randonneuring.org/ci/public/assets/local/cuesheets";
+	const cuesheet_baseurl = "https://randonneuring.org/assets/local/cuesheets";
 
 	// Constructor parameters
 	private $orientation = 'P'; // P - portrait; L - landscape
@@ -56,7 +56,7 @@ class Cuesheet extends FPDF
 	// controle will be START
 	// the first intermediate will be number 1
 	// and the final FINISH
-	public $logo_url = "https://parando.org/images/parando3D.png";
+	// public $logo_url = "https://parando.org/images/parando3D.png";
 	public $logo_width = 0.75; // fraction of frame width
 	public $logo_height = 0.31; // fraction of frame height
 	public $logo_center_y = 0.27; // fraction of overall card height
@@ -72,7 +72,8 @@ class Cuesheet extends FPDF
 	public $baseline_skip = 0.15;  // Space between text lines
 	public $row_padding = 0.05; // padding above and below cue text
 	public $column_padding = 0.05; // Horizontal padding in dist cols
-	public $thin_width = 0.01; // Thin lines
+
+	/* 	public $thin_width = 0.01; // Thin lines
 	public $thick_width = 0.02; // Thick lines
 	public $font_normal = 'Helvetica';	// default font family
 	public $font_fixed = 'Courier';	// fixed width font
@@ -82,7 +83,7 @@ class Cuesheet extends FPDF
 	public $font_size = 1; // multiplier
 	public $fine_print = 0.75; // em size of fine text
 	public $big_print = 1.5; // em size of big text
-
+ */
 	// Cuesheet content
 	public $dist_cols = 3;  // Number of initial columns that give distances before the turn column
 	public $column_headers = ["Tot", "Seg", "Leg", "Cue", "Description"];
@@ -156,8 +157,69 @@ class Cuesheet extends FPDF
 		$this->SetCreator($this->event['this_organization'] . ' brevet card rendering software');
 		$this->SetAuthor($this->event['this_organization']);
 		$this->font_normal();
-
 	}
+
+	public $cue_types = ['C', 'P', 'L'];
+
+	public function cueVersionPublishedAt($event_tagname, $cue_version)
+	{
+		$published_at = 0;
+		foreach ($this->cue_types as $t) {
+			$filename = $this->make_filename($event_tagname, $cue_version, $t);
+			if (file_exists($filename)) {
+				$at = filectime($filename);
+				$published_at = max($published_at, $at);
+			} else {
+				return false;
+			}
+		}
+		return $published_at;
+	}
+
+	public function make_filename($event_tagname, $cue_version, $type)
+	{
+		$cue_basename = "$event_tagname-CueSheetV$cue_version";
+		switch ($type) {
+			case 'C':
+				return self::cuesheet_path . "/" . $cue_basename . ".csv";
+				break;
+			case 'P':
+				return self::cuesheet_path . "/" . $cue_basename . "-P.pdf";
+				break;
+			case 'L':
+				return self::cuesheet_path . "/" . $cue_basename . "-L.pdf";
+				break;
+			default:
+				throw new \Exception("Unknown Cuesheet Type: $type");
+				break;
+		}
+	}
+
+	public function make_url($event_tagname, $cue_version, $type)
+	{
+		$cue_basename = "$event_tagname-CueSheetV$cue_version";
+		switch ($type) {
+			case 'C':
+				return self::cuesheet_baseurl . "/" . $cue_basename . ".csv";
+				break;
+			case 'P':
+				return self::cuesheet_baseurl . "/" . $cue_basename . "-P.pdf";
+				break;
+			case 'L':
+				return self::cuesheet_baseurl . "/" . $cue_basename . "-L.pdf";
+				break;
+			default:
+				throw new \Exception("Unknown Cuesheet Type: $type");
+				break;
+		}
+	}
+
+
+
+
+
+
+
 
 
 	private function interpolate_strings($s, $map)
@@ -180,7 +242,7 @@ class Cuesheet extends FPDF
 	}
 
 
-	public function font_normal()
+	/* public function font_normal()
 	{
 		$this->font_current = $this->font_normal;
 		$this->SetFont($this->font_normal, $this->font_style, $this->em_points * $this->font_size);
@@ -251,7 +313,7 @@ class Cuesheet extends FPDF
 		$this->SetDrawColor($color);
 		$this->Rect($x1, $y1, $w, $h);
 	}
-
+ */
 	// PDF Cuesheet Rendering
 
 	public $cue_abbreviations = [
@@ -369,8 +431,8 @@ class Cuesheet extends FPDF
 
 	public function set_controle_date_format($re)
 	{
-		$this->datetime_format = (empty($re['event_date']) || empty($re['event_time'])) ? 
-		$this->datetime_format_generic : $this->datetime_format_specific;
+		$this->datetime_format = (empty($re['event_date']) || empty($re['event_time'])) ?
+			$this->datetime_format_generic : $this->datetime_format_specific;
 	}
 
 	public function draw_cuesheet_pages($edata)

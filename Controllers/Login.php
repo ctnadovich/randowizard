@@ -30,6 +30,7 @@ class Login extends BaseController
 
     protected $helpers = ['form', 'rando'];
     protected $userModel;
+    protected $regionModel;
 
     public function initController(
         RequestInterface $request,
@@ -39,6 +40,7 @@ class Login extends BaseController
         parent::initController($request, $response, $logger);
 
         $this->userModel = model('User');
+        $this->regionModel = model('Region');
     }
 
     public function logout()
@@ -90,6 +92,7 @@ class Login extends BaseController
                         $this->session->set('first_name', $user['first']);
                         $this->session->set('last_name', $user['last']);
                         $this->session->set('first_last', $user['first'] . ' ' . $user['last']);
+                        $this->session->set('authorized_regions', $this->regionModel->getAuthorizedRegions($user['id']));
 
                         return redirect()->route('home');
                     } else {

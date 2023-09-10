@@ -1,8 +1,12 @@
+
+
+
+
+
 <div class="w3-bar w3-black">
-  <button class="w3-bar-item w3-button" onclick="openTab('General-Info')">General-Info</button>
-  <button class="w3-bar-item w3-button" onclick="openTab('GPS-Info')">GPS-Info</button>
-  <button class="w3-bar-item w3-button" onclick="openTab('Control-Info')">Control-Info</button>
-  <button class="w3-bar-item w3-button" onclick="openTab('Cuesheet-Info')">Cuesheet-Info</button>
+  <button class="w3-bar-item w3-button" onclick="openTab('General-Info')">Overview</button>
+  <button class="w3-bar-item w3-button" onclick="openTab('GPS-Info')">Navigation</button>
+  <button class="w3-bar-item w3-button" onclick="openTab('Control-Info')">Controls</button>
 </div>
 
 <script>

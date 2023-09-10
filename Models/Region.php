@@ -55,4 +55,9 @@ class Region extends Model
             return $result;
         }
     }
+
+    public function getAuthorizedRegions($user_id){
+        $this->where('rba_user_id',$user_id);
+        return $this->findColumn('id');
+    }
 }

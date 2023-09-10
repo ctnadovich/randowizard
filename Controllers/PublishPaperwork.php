@@ -65,8 +65,10 @@ class PublishPaperwork extends Ebrevet
 			if (false == $this->rwgpsLibrary->is_good_route_id($route_id)) throw new \Exception("Invalid parameters.");
 			$result = $this->rwgpsLibrary->download_route_data($route_id);
 			if ($result !== true) throw new \exception($result);
-			$this->die_info("Success!", "Route $route_id successfully fetched from RWGPS at ". $edata['now_str']);
 
+			// TODO shouldn't this page go back to the wizard? 
+
+			$this->die_info("Success!", "Route $route_id successfully fetched from RWGPS at " . $edata['now_str']);
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}
@@ -81,84 +83,93 @@ class PublishPaperwork extends Ebrevet
 
 	// TODO Publish CARDS and QR CODE Sheets and ROUTE FILES  -- all docs should be static
 
-	public function publish_cuesheet($event_code)
+	public function publish($event_code)
 	{
 
-		$event = $this->eventModel->eventByCode($event_code);
-		$edata = $this->get_event_data($event);
+		try {
+			$event = $this->eventModel->eventByCode($event_code);
+			$edata = $this->get_event_data($event);
+			$this->viewData = array_merge($this->viewData, $edata);
+
+			$edata['cue_version'] = $cue_version = 1 + $edata['cue_version'];
+			$edata['cue_version_str'] = "$cue_version";
+
+			$cue_data_P = $this->publish_pdf_cuesheet($edata, 'P');
+
+			$cue_data_L = $this->publish_pdf_cuesheet($edata, 'L');
+
+			$cue_data_C = $this->publish_csv_cuesheet($edata);
 
 
-		$route_event['cue_version'] = $cue_version = 1 + $edata['cue_version'];
-		$route_event['cue_version_str'] = "$cue_version";
-
-		$cue_data_P = $this->generate_pdf_cuesheet($edata, 'P');
-
-		$cue_data_L = $this->generate_pdf_cuesheet($edata, 'L');
-
-		$cue_data_C = $this->generate_csv_cuesheet($edata);
-
-
-		$this->model_parando->set_event_cuesheet_version($event_id, $cue_version);
+			$this->eventModel->set_cuesheet_version($event_code, $cue_version);
+			
+		} catch (\Exception $e) {
+			$this->die_exception($e);
+		}
 
 		// Publishing success page
 
-		$event_name_dist = $route_event['event_name_dist'];
-		$cue_url_L = $cue_data_L['cue_url'];
-		$cue_url_P = $cue_data_P['cue_url'];
-		$cue_url_C = $cue_data_C['cue_url'];
-		$wizard_url = site_url(strtolower(get_class($this)) . "/wizard/$event_id");
-		$info_url = site_url(strtolower(get_class($this)) . "/info/$event_id");
-		$event_url = site_url("info/event/$event_id");
+		$cue_url['L'] = $cue_data_L['cue_url'];
+		$cue_url['P'] = $cue_data_P['cue_url'];
+		$cue_url['C'] = $cue_data_C['cue_url'];
 
-		$left_column = <<<EOT
-<H3>Cue Sheet Published</H3>
-<p>Cue Sheets (version $cue_version) successfully published to event database 
-for $event_name_dist.  Don't refresh or reverse or you might accidentally publish again. Just press one of the buttons below.</p>
-<ul>
-<li><A HREF="$cue_url_L">PDF File Landscape</A>
-<li><A HREF="$cue_url_P">PDF File Portrait</A>
-<li><A HREF="$cue_url_C">Unformatted CSV File</A>
-</ul>
-<div class="button-container text-center">
-<A HREF=$wizard_url>Return to Wizard for this Event</A>
-<A HREF=$info_url>View Published Route</A>
-<A HREF=$event_url>Go to Published Event Page</A>
-</div>
-EOT;
+		$this->viewData['cue_url'] = $cue_url;
 
-		$data = ['title' => "Cue Sheet Published", 'left_column' => $left_column, 'right_column' => ''];
-		$this->simple_view('info_one_column', ['buttonlink'], $data);
+		// $wizard_url = site_url(strtolower(get_class($this)) . "/wizard/$event_code");
+		// $info_url = site_url(strtolower(get_class($this)) . "/info/$event_code");
+		// $event_url = site_url("info/event/$event_code");
+
+		return $this->load_view('publish_success');
 	}
 
-	private function generate_csv_cuesheet($edata)
+	private function publish_csv_cuesheet($edata)
 	{
-		$event_tagname = $this->model_parando->make_event_tagname($route_event);
-		$cue_version = $route_event['cue_version'];
+
+		extract($edata);
+		$controles = $edata['route_controles'];
+
+		$cuesheetLibrary = new \App\Libraries\Cuesheet();
+		$cuesheetLibrary->set_controle_date_format($edata);
+
+		$event_tagname = $edata['event_tagname'];
+		$csv_filename = "$event_tagname-CueSheet.csv";
+
+
+		$header_text = $cuesheetLibrary->header_text_array($edata);
+		$cue_text = $cuesheetLibrary->cue_text_array($cues, $controles);
+		// $this->emit_csv(array_merge($header_text, $cue_text), $csv_filename);
+
+
+		$event_tagname = $edata['event_tagname'];
+		$cue_version = $edata['cue_version'];
 		$cue_basename = "$event_tagname-CueSheetV$cue_version";
-		$cue_filename = Cuesheet::cuesheet_path . "/" . $cue_basename . ".csv";
-		$cue_url = Cuesheet::cuesheet_baseurl . "/" . $cue_basename . ".csv";
-		$this->cuesheet->set_controle_date_format($route_event);
-		$header_text = $this->cuesheet->header_text_array($route_event);
-		$cue_text = $this->cuesheet->cue_text_array($cues, $controles);
+		$cue_filename = $cuesheetLibrary::cuesheet_path . "/" . $cue_basename . ".csv";
+		$cue_url = $cuesheetLibrary::cuesheet_baseurl . "/" . $cue_basename . ".csv";
+		$cuesheetLibrary->set_controle_date_format($edata);
+		$header_text = $cuesheetLibrary->header_text_array($edata);
+		$cue_text = $cuesheetLibrary->cue_text_array($cues, $controles);
 		$this->emit_csv(array_merge($header_text, $cue_text), $cue_filename, true);
 		return compact('cue_url', 'cue_filename', 'cue_version');
 	}
 
-	private function generate_pdf_cuesheet($edata, $orientation)
+	private function publish_pdf_cuesheet($edata, $orientation = 'P', $size = 'letter')
 	{
-		$event_tagname = $this->model_parando->make_event_tagname($route_event);
-		$cue_version = $route_event['cue_version'];
+		$event_tagname = $edata['event_tagname'];
+
+		$cuesheetLibrary = new \App\Libraries\Cuesheet(['edata' => $edata, 'orientation' => $orientation, 'size' => $size]);
+
+		$cuesheetLibrary->AddPage();
+		$cuesheetLibrary->set_controle_date_format($edata);
+		$cuesheetLibrary->draw_cuesheet_pages($edata);
+
+		$cue_version = $edata['cue_version'];
 		$cue_basename = "$event_tagname-CueSheetV$cue_version";
-		$params = ['event' => $route_event, 'orientation' => $orientation, 'size' => $size];
-		$cuesheet = new Cuesheet($params);
-		$cuesheet->set_controle_date_format($route_event);
-		$cuesheet->AddPage();
-		$cuesheet->draw_cuesheet_pages($route_event, $cues, $controles);
-		$cue_filename = Cuesheet::cuesheet_path . "/" . $cue_basename . "-$orientation.pdf";
-		$cue_url = Cuesheet::cuesheet_baseurl . "/" . $cue_basename . "-$orientation.pdf";
-		$cuesheet->Output("F", $cue_filename);
+
+		$cue_filename = $cuesheetLibrary::cuesheet_path . "/" . $cue_basename . "-$orientation.pdf";
+		$cue_url = $cuesheetLibrary::cuesheet_baseurl . "/" . $cue_basename . "-$orientation.pdf";
+		$cuesheetLibrary->Output("F", $cue_filename);
 		$fstat = @stat($cue_filename);
-		if ($fstat === false || empty($fstat['size'])) $die->error(__METHOD__, "Failed to create cuesheet file '$cue_filename'");
+		if ($fstat === false || empty($fstat['size'])) throw new \Exception("Failed to create cuesheet file '$cue_filename'");
 		return compact('cue_url', 'cue_filename', 'cue_version');
 	}
 }

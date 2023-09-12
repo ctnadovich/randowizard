@@ -25,7 +25,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
-class EventInfo extends EventProcessor
+class EventWizard extends EventProcessor
 {
 
     public $unitsLibrary;
@@ -48,38 +48,35 @@ class EventInfo extends EventProcessor
     // EVENT INFO
     //
 
-    public function event_info($event_code = null)
+    public function event_wizard($event_code = null)
     {
 
         try {
+            extract($this->eventModel->parseEventCode($event_code));
 
- 
+            if ($this->isAdmin($club_acp_code) == false)
+                $this->die_message('Access Denied', "Must be logged in as region event administrator to access this function.", ['backtrace' => false]);
             $event = $this->eventModel->eventByCode($event_code);
-
-            if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE.');
+            if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE');
             $route_url = $event['route_url'];
 
-            $edata = $this->get_event_data($event);
-
-
-        } catch (\Exception $e) {
-            $error_text = $e->getMessage();
-    
-            $msg = <<<EOT
+            try {
+                $edata = $this->get_event_data($event);
+            } catch (\Exception $e) {
+                $error_text = $e->getMessage();
+                $msg = <<<EOT
     <h3>Event Info Unavailable</h3>
     <p>I'm very sorry but I'm afraid 
-    errors were found in the event data. Therefore the event info 
-    that should have appeared here cannot be displayed. 
+    fatal errors were found in the event data. Processing cannot continue.
     To allow event info to be displayed properly, the event administrator must 
     correct the data in the route map (<A HREF='$route_url'>$route_url</a>), and re-fetch the data
     into the event manager. </p>
     <div class='w3-panel w3-border'>$error_text</div>
     EOT;
-    
-            $this->die_message('Error in Event Data', $msg, ['backtrace' => false]);
-        }
-    
-        try {
+
+                $this->die_message('Error in Event Data', $msg, ['backtrace' => false]);
+            }
+
 
             $event_name_dist = $edata['event_name'] . ' ' . $edata['distance'] . 'K';
             $this->viewData['event_name_dist'] = $this->viewData['title'] = $this->viewData['subject'] = "$event_name_dist";
@@ -89,33 +86,80 @@ class EventInfo extends EventProcessor
 
             $view_list = [];
             $view_list[] = 'event_head';
-            $view_list[] = 'tab_bar';
 
-            $view_list[] = ['event_info_tab', [
-                'tab_id' => 'General-Info',
-                'default_tab' => true,
-                'panel_title' => 'Event Overview',
-                'panel_data' => view('event_basic_info_table', $this->viewData)
+            $view_list[] = ['event_info_panel', ['panel_title' => 'Route Data Validation', 'panel_data' => $this->generate_warnings()]];
+
+            $view_list[] = ['event_info_panel', ['panel_title' => 'Route Description Tags', 'panel_data' => $this->generate_route_tag_data()]];
+
+            $view_list[] = ['event_info_panel', [
+                'panel_title' => 'Preview/Publish Paperwork', 'panel_data' => view('fetch_preview_publish', $this->viewData)
             ]];
-
-            $view_list[] = ['event_info_tab', [
-                'tab_id' => 'GPS-Info',
-                'panel_title' => 'Navigation Data',
-                'panel_data' => view('event_gps_nav_table', $this->viewData)
-            ]];
-
-            $view_list[] = ['event_info_tab', [
-                'tab_id' => 'Control-Info',
-                'panel_title' => 'Controls',
-                'panel_data' => $this->make_controles_table((false) ? 'wizard' : 'info')
-            ], ['saveData' => false]];
-
 
             return $this->load_view($view_list);
-
         } catch (\Exception $e) {
             $this->die_exception($e);
         }
+    }
+
+
+    private function generate_route_tag_data()
+    {
+
+        extract($this->viewData); // All route_event variables are now local
+
+        // Route Description Tags
+        $route_tag_data = "<div class=w3-container>";
+        if (!empty($route_tags['unrecognized'])) {
+            $route_tag_data .= "<p><span class=red>WARNING: Unrecognized tags found in RWGPS route Description.</span>";
+            $route_tag_data .= "These tags have been ignored. Please delete them!</p>";
+            $route_tag_data .= "<UL><LI>";
+            $route_tag_data .= implode('</LI><LI>', $route_tags['unrecognized']);
+            $route_tag_data .= "</LI></UL>";
+
+            unset($route_tags['unrecognized']);
+        }
+        if (empty($route_tags)) {
+            $route_tag_data .= "<p>No VALID tags found in route Description.</p>";
+        } else {
+            $route_tag_data .= "<P>VALID tags found in route Description:</P>";
+            $route_tag_data .= $this->format_attributes($route_tags);
+        }
+        $route_tag_data .= "</div>";
+
+
+        return $route_tag_data;
+    }
+
+
+
+    private function generate_warnings()
+    {
+
+        $warning_body = '';
+        extract($this->viewData); // All route_event variables are now local
+
+        if (sizeof($controle_warnings) > 0)
+            $warning_body .= ("</h3>ERRORS IN CONTROLS</h3> <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
+        if (sizeof($cue_warnings) > 0)
+            $warning_body .= ("</h3>ERRORS IN CUES</h3> <ul><li>" . implode('</li><li>', $cue_warnings) . "</li></ul>");
+
+        if (!empty($warning_body)) {
+            $warning_body .= <<<EOT
+<div class='w3-container w3-red w3-center' style='width: 32%;'>Errors in route data</div>
+<p>Fix these Errors by previewing to check, and then publish again.</p>
+EOT;
+        } else {
+            $warning_body .= <<<EOT
+<p>No errors or warnings.</p>
+EOT;
+        }
+
+        if ($route_updated_at > $published_at)
+            $warning_body .= "<h3>Stale Published Route</h3><p>Fetched route data is newer than published cuesheets. Don't forget
+        to publish again so the latest route data becomes live.</p>";
+
+
+        return $warning_body;
     }
 
 

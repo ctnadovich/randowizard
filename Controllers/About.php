@@ -36,7 +36,7 @@ class About extends BaseController
         parent::initController($request, $response, $logger);
     }
 
-    public function index()
+    public function about()
     {
         return $this->load_view(['about']);
     }

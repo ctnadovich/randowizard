@@ -25,7 +25,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
-class Ebrevet extends BaseController
+class EventProcessor extends BaseController
 {
 	protected $eventModel;
 	protected $regionModel;
@@ -36,9 +36,6 @@ class Ebrevet extends BaseController
 	protected $controletimesLibrary;
 	protected $cuesheetLibrary;
 	protected $unitsLibrary;
-
-	protected $url;
-
 
 	public function initController(
 		RequestInterface $request,
@@ -56,8 +53,6 @@ class Ebrevet extends BaseController
 		$this->rwgpsLibrary = new \App\Libraries\Rwgps();
 		$this->cuesheetLibrary = new \App\Libraries\Cuesheet();
 		$this->controletimesLibrary = new \App\Libraries\Controletimes();
-
-		$this->url = site_url('ebrevet');
 	}
 
 	public $minimum_app_version = '1.2.4';
@@ -99,6 +94,8 @@ class Ebrevet extends BaseController
 	protected function get_event_data($event)
 	{
 
+
+
 		if (!is_array($event)) {
 			throw new \Exception(__METHOD__ . ": BAD PARAMETER. NOT ARRAY.");
 		}
@@ -116,6 +113,7 @@ class Ebrevet extends BaseController
 		}
 
 		// Try to get route data
+		$route_url = $event['route_url'];
 		$route_id = $this->rwgpsLibrary->extract_route_id($event['route_url']);
 
 		if ($route_id == null) {
@@ -131,11 +129,7 @@ class Ebrevet extends BaseController
 		list($route_controles, $controle_warnings) = $this->rwgpsLibrary->extract_controles($route);
 
 		if (sizeof($route_controles) == 0) {
-			throw new \Exception("NO CONTROLS");
-		}
-
-		if (sizeof($controle_warnings) > 0) {
-			throw new \Exception("ERRORS IN CONTROLS: <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
+			throw new \Exception("NO CONTROLS. Please mark all the controls with the cue-type 'CONTROL'.");
 		}
 
 		list($cues, $cue_warnings) = $this->rwgpsLibrary->extract_cues($route);
@@ -144,9 +138,19 @@ class Ebrevet extends BaseController
 			throw new \Exception("NO CUES");
 		}
 
-		if (sizeof($cue_warnings) > 0) {
-			throw new \Exception("ERRORS IN CUES: <ul><li>" . implode('</li><li>', $cue_warnings) . "</li></ul>");
+/* 		if (sizeof($controle_warnings) > 0 || sizeof($cue_warnings) > 0) {
+			$error_text  = '';
+			if (sizeof($controle_warnings) > 0)
+				$error_text .= ("</h4>ERRORS IN CONTROLS</h4> <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
+			if (sizeof($cue_warnings) > 0)
+				$error_text .= ("</h4>ERRORS IN CUES</h4> <ul><li>" . implode('</li><li>', $cue_warnings) . "</li></ul>");
+			throw new \Exception("<h3>Errors in Route Data</h3>$error_text<p>Please correct these errors in the 
+													map data (<A HREF='$route_url'>$route_url</a>), then re-fetch the data to the event manager.</p>");
 		}
+ */
+
+
+		$other_warnings = [];
 
 		/////////////////////////////////////////////////////////
 		// Now that we have the route and controls, we can start 
@@ -164,7 +168,7 @@ class Ebrevet extends BaseController
 		$start_datetime_str = $event['start_datetime'];
 		$event_datetime = @date_create($start_datetime_str, $event_tz);
 		if (false == $event_datetime) {
-			throw new \Exception("INVALID DATE OR TIME");
+			throw new \Exception("INVALID START DATE OR TIME");
 		}
 
 		$event_datetime_str = $event_datetime->format($this->controletimesLibrary->event_datetime_format);
@@ -223,9 +227,9 @@ class Ebrevet extends BaseController
 				'dist_km' => $cd_km,
 				'long' => $cdata['x'],
 				'lat' => $cdata['y'],
-				'name' => $a['name'],
-				'style' => $a['style'],
-				'address' => $a['address'],
+				'name' => $a['name'] ?? 'CONTROL NAME MISSING',
+				'style' => $a['style'] ?? 'undefined',
+				'address' => $a['address'] ?? 'CONTROL ADDRESS MISSING',
 				'open' => $openDatetime->format('c'),
 				'close' => $closeDatetime->format('c')
 				// 'question'=>$question,
@@ -281,11 +285,12 @@ class Ebrevet extends BaseController
 		// URLs  (Maybe these should go someplace else? )
 		$checkin_post_url = site_url("/ebrevet/post_checkin/$club_acp_code");  // TODO, should go someplace else. Roster model?
 
-		$route_event_id = "$route_id/$local_event_id";
-		$download_url = "$this->url/recache/$event_code";
-		$event_info_url = "$this->url/event_info/$event_code";
-		$event_publish_url = "$this->url/publish/$event_code";
-		$event_preview_url = "$this->url/preview/$event_code";
+		// $route_event_id = "$route_id/$local_event_id";
+
+		$download_url = site_url("recache/$event_code");
+		$event_info_url = site_url("event_info/$event_code");
+		$event_publish_url = site_url("publish/$event_code");
+		$event_preview_url = site_url("preview/$event_code");
 
 		$download_note = 'Download Note';
 		$this_organization = $club_name = $club['club_name'];
@@ -341,10 +346,12 @@ class Ebrevet extends BaseController
 			'club_acp_code',
 			'club_name',
 			'controls',
+			'controle_warnings',
 			'cue_next_version',
 			'cue_version_str',
 			'cue_version',
 			'cue_url',
+			'cue_warnings',
 			'cue_gentime_str',
 			'cues',
 			'df_links_txt',
@@ -434,18 +441,16 @@ class Ebrevet extends BaseController
 		);
 	}
 
-	protected function isAdmin()
+	protected function isAdmin($club_acp_code = null)
 	{
-		if (false == $this->session->get_data('logged_in')) return false;
-		$user_id = $this->session->get_data('user_id');
-		$authorized_regions = $this->session->get_data('authorized_regions');
-		return (false === array_search($user_id, $authorized_regions)) ? false : true;
+		if (null === $club_acp_code) return false;
+		if (false == $this->isLoggedIn()) return false;
+		$authorized_regions = $this->session->get('authorized_regions');
+		return (false === array_search($club_acp_code, $authorized_regions)) ? false : true;
 	}
 
-	protected function isLoggedIn()
-	{
-		return (false == $this->session->get_data('logged_in')) ? false : true;
-	}
+	
+
 
 	protected function format_attributes($alist)
 	{

@@ -71,17 +71,26 @@ class Event extends Model
         return $q->getResultArray();
     }
 
+    public function parseEventCode($event_code){
+
+        if ($event_code === null) throw new \Exception("MISSING PARAMETER");
+
+        if (0 == preg_match('/^(\d+)-(\d+)$/', $event_code, $m)) {
+            throw new \Exception('INVALID EVENT ID');
+        }
+
+        list($all, $club_acp_code, $local_event_id) = $m;
+
+        return compact('club_acp_code', 'local_event_id');
+
+
+    }
+
 
     public function eventByCode($event_code){
 
+        extract($this->parseEventCode($event_code));
 
-			if ($event_code === null) throw new \Exception("MISSING PARAMETER");
-
-			if (0 == preg_match('/^(\d+)-(\d+)$/', $event_code, $m)) {
-				throw new \Exception('INVALID EVENT ID');
-			}
-
-			list($all, $club_acp_code, $local_event_id) = $m;
 
 			$event = $this->getEvent($club_acp_code, $local_event_id);
 			if (empty($event)) {

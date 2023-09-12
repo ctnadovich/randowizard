@@ -1,7 +1,8 @@
 <!-- Register Prompt -->
 <div class="w3-container">
 
-    <div class="w3-panel w3-center w3-border" style="margin: auto; width:50%;">
+    <div class="w3-panel w3-center w3-border w3-margin" >
+        <h3>RBAs and Organizers</h3>
         <p><em>Register now to get started.</em></p>
         <p><button onclick="document.getElementById('register-card').style.display='block'" class="w3-button w3-black">Register
                 &raquo;</button></p>
@@ -51,14 +52,14 @@
                     <?= input_field('email', 'Email Address', $errors) ?>
                     <?= input_field('password', 'Set Access Password', $errors, 'password') ?>
 
-                    <div class='w3-container w3-border-purple'>
+                    <div class='w3-container w3-center'>
                         <?php foreach ($vehicle_icon as $i => $v) : ?>
                             <div class='w3-button w3-white w3-margin'>
                                 <input type='checkbox' name='v[]' value='v<?= $i ?>'><span style='margin-left: 8px;'><i class='<?= $v ?> w3-purple w3-padding'></span></i>
                         </div>
                         <?php endforeach; ?>
-                    </div>
-                    <div>Select all bicycles</div>
+                             <div>Select all bicycles</div>
+           </div>
 
                     <hr>
 

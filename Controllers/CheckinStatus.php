@@ -25,7 +25,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
-class CheckinStatus extends Ebrevet
+class CheckinStatus extends EventProcessor
 {
 
 

@@ -28,7 +28,7 @@
 
     <h2>Tools</h2>
 
-    <h3>Event Manager</h3>
+    <h3>Manage Events for your Region</h3>
 
     <p>The main tool available at randonneuring.org is an event manager for a region. This is intended to
         be used by the RBA or Event Organizer of a region. Once you sign up for
@@ -50,11 +50,21 @@
             these events.</li>
     </ul>
 
-   
 
-    <h3>eBrevet Electronic Brevet Card</h3>
 
-    <p>The eBrevet Android/iOS app serves as an automated brevet card that can provide
+
+    <div class="w3-card w3-center w3-margin w3-padding" style="width:15%; float: right;">
+        <A  HREF="https://github.com/ctnadovich/ebrevet/blob/main/README.md">
+            <img src="https://randonneuring.org/assets/local/images/eBrevet-256.png" style="width: 100%; max-width: 256px;">
+            <div class="w3-container w3-center" style='font-size: .7em;'>
+                eBrevet
+            </div>
+        </a>
+    </div>
+
+    <h3>Use the eBrevet Electronic Brevet Card</h3>
+
+    <p>The <i>eBrevet</i> Android/iOS app serves as an automated brevet card that can provide
         Electronic Proof of Passage on a randonneuring brevet or permanent, while maintaining
         some of the "feel" of the traditional paper brevet card process. The app only needs to
         be activated at controls and does not require Internet data service at controls.
@@ -62,17 +72,24 @@
         rider to a central server. When the event is completed successfully, the app generates
         a unique Proof of Passage Certificate that is sharable on social media.</p>
 
-    <p>You can find the app on both the <A HREF=https://www.apple.com/app-store />Apple Store</a> and the <A
-            HREF=https://play.google.com />Google Play Store</a>.
+    <p>You can find the app on both the <A HREF=https://www.apple.com/app-store />Apple Store</a> and the <A HREF=https://play.google.com />Google Play Store</a>.
         Search for "eBrevet" by "CTNadovich".
         For more information read the <A HREF=https://github.com/ctnadovich/ebrevet/blob/main/README.md>eBrevet documentation</a>.
     </P>
 
+    <div class="w3-card w3-center w3-margin w3-padding" style="width:15%; float: right;">
+        <A HREF="https://parando.org/cue_wizard.html">
+            <img src="https://randonneuring.org/assets/local/images/CueWizard-256.png" style="width:100%; max-width: 256px;">
+            <div class="w3-container w3-center" style='font-size: .7em;'>
+                CueWizard
+            </div>
+        </a>
+    </div>
 
-    <h3>Cue Wizard Route Processor</h3> 
-    
+    <h3>Create Quality Cue Sheets</h3>
+
     <p>In order to use your randonneuring route with the event manager and eBrevet app here at randonneuring.org,
-        you need to make your route compatible with CueWizard. </p>
+        you need to make your route compatible with our Cuesheet processor called <i>CueWizard</i>. </p>
     <p>
         Cue Wizard supports route data entry into the eBrevet app and the production of route paperwork (brevet
         cards and cue sheets). Currently only the mapping tool <A HREF=https://ridewithgps.com>Ride With GPS</a>
@@ -96,8 +113,7 @@
 
     <p>The software for the Randonneuiring.org website is written in <A HREF=https://www.php.net />PHP
         </A> and requires
-        the <A HREF=https://www.codeigniter.com />CodeIgniter 4</a> framework as well as the <A
-            HREF=http://www.fpdf.org />FPDF</A> library
+        the <A HREF=https://www.codeigniter.com />CodeIgniter 4</a> framework as well as the <A HREF=http://www.fpdf.org />FPDF</A> library
         <A HREF=https://grocerycrud.com>GroceryCRUD Library</a>, and hosting support
         for a <A HREF=https://www.mysql.com />MySQL</A> database. The source code for this website
         <A HREF=https://github.com/ctnadovich/randowizard>is available for free download</a>

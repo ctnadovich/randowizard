@@ -49,11 +49,6 @@ class Login extends BaseController
         return redirect()->route('home');
     }
 
-    public function index()
-    {
-        return $this->login();
-    }
-
     public function login()
     {
 
@@ -63,9 +58,9 @@ class Login extends BaseController
 
         if ($this->request->is('post')) {
 
-            if ($this->request->getVar('submit') == 'cancel') {
+            if ($this->request->getVar('cancel') == 'cancel') {
                 return redirect()->to('/home');
-            } else {
+            }else{
 
                 $validation = \Config\Services::validation();
                 $rules = [

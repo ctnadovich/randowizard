@@ -25,7 +25,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
-class PublishPaperwork extends Ebrevet
+class PublishPaperwork extends EventProcessor
 {
 
 	public $unitsLibrary;

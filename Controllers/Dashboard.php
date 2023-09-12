@@ -56,7 +56,9 @@ class Dashboard extends BaseController
         $crud->setRead();
         $crud->setSubject('Event', 'Events');
         $crud->callbackColumn('status', array($this,'_status_icons'));
-        $crud->columns(['region_id','name','distance','start_datetime','status']);
+        $crud->callbackColumn('admin', array($this,'_paperwork'));
+
+        $crud->columns(['region_id','name','distance','start_datetime','status','admin']);
         // $crud->unsetEditFields(['region_id']);
         $crud->displayAs('start_datetime', 'Start Date/Time');
         $crud->displayAs('start_state_id', 'State');
@@ -71,6 +73,14 @@ class Dashboard extends BaseController
 
         return $this->load_view(['dashboard']); 
     }
+
+    public function _paperwork($value,$row){
+		$event_id=$row->id;
+		$region_id=$row->region_id;
+        $event_code="$region_id-$event_id";
+        $wizard_url=site_url("event_wizard/$event_code");
+		return "<A class='w3-button w3-light-gray w3-round' HREF='$wizard_url'>Wizard</A>";
+	}
 
     private $status_icon=[
 		'hidden'=>"<i class='fas fa-mask'  style='color: blue;'></i>",

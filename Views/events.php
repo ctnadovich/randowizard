@@ -1,4 +1,4 @@
-    <h2>Events</h2>
+    <h2>Upcoming Events</h2>
     <div class='w3-container'>
         <table class='w3-table-all'>
             <?php

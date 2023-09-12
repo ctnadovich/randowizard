@@ -45,7 +45,7 @@ class Home extends BaseController
         $this->viewData['event_table'] = $this->eventModel->getEventTable();
     }
 
-    public function index()
+    public function home()
     {
 
 
@@ -56,7 +56,7 @@ class Home extends BaseController
             $captcha = $this->bike_captcha();
             $this->session->set('is_bike', $captcha['is_bike']);
             $this->viewData = array_merge($this->viewData, $captcha);
-            return $this->load_view(['hero', 'home', 'events', 'apps', 'register']);
+            return $this->load_view(['hero', 'home', 'events', 'register']);
         }
     }
 
@@ -101,9 +101,9 @@ class Home extends BaseController
 
             $errorMessages = [
                 'email' => [
-                    'is_unique' => 'A user with this email already exists. Use a different email.'
+                    'is_unique' => 'A user with this email already exists. Please use a different email.'
                 ],
-                'v' => [0 =>    'You did not click all the bicycles, or you clicked things that were not bicycles.']
+                'v' => [0 =>    'You did not click all the bicycles, or you clicked some vehicles that were not bicycles.']
 
             ];
 
@@ -124,13 +124,7 @@ class Home extends BaseController
             }
         }
 
-        $captcha = $this->bike_captcha();
-        $this->session->set('is_bike', $captcha['is_bike']);
-        $this->viewData = array_merge($this->viewData, $captcha);
-        return $this->load_view(['hero', 'home', 'events', 'apps', 'register']);
-
-
-        // throw new \Exception("This function only handles POST requests.");
+        return $this->home();
     }
 
     protected function register_new_user($requestData)

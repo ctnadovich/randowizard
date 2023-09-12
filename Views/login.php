@@ -23,8 +23,8 @@
                     <?=input_field('password','Enter Access Password',$errors,'password', !empty($login_error))?>
 
                     <div class="w3-bar">
-                        <button name="submit" value="cancel" class="w3-btn w3-black w3-hover-green">Cancel</button>
-                        <button name="submit" value="login" class="w3-btn w3-black w3-hover-green">Log In</button>
+                        <button type='submit' name="login" value="login" class="w3-btn w3-black w3-hover-green">Log In</button>
+                        <button type='submit' name="cancel" value="cancel" class="w3-btn w3-black w3-hover-green">Cancel</button>
                     </div>
 
                 </div>

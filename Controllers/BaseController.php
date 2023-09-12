@@ -72,83 +72,91 @@ abstract class BaseController extends Controller
 
         if (is_array($view_list)) {
             foreach ($view_list as $v) {
-                if (is_array($v)){
+                if (is_array($v)) {
                     $v[] = ['saveData' => false];
                     $views .= view(...$v);
-                }else{
-                    $views .= view($v,$this->viewData);
+                } else {
+                    $views .= view($v, $this->viewData);
                 }
             }
         } else {
-            $views .= view($view_list,$this->viewData);
+            $views .= view($view_list, $this->viewData);
         }
 
         $views .= view('foot');
         return $views;
     }
 
-    protected function die_info($severity, $text){
-        $this->die_message($severity, $text, ['backtrace'=>false]);
+    protected function die_info($severity, $text)
+    {
+        $this->die_message($severity, $text, ['backtrace' => false]);
     }
 
-    protected function die_message($severity, $text, $options=[])
+    protected function die_message($severity, $text, $options = [])
     {
 
-        $text = is_string($text) ? $text : print_r($text,true);
+        $text = is_string($text) ? $text : print_r($text, true);
 
         $backtrace = ($options['backtrace'] ?? true) ? $this->formatted_backtrace() : '';
         $file_line = ($options['file_line'] ?? '');
 
         $viewData = compact('severity', 'text', 'backtrace', 'file_line');
 
-        echo $this->load_view([['message',$viewData]]);
+        echo $this->load_view([['message', $viewData]]);
 
         exit();
     }
 
-    protected function die_exception($e){
+    protected function die_exception($e)
+    {
         $file_line = $e->getFile() . '(' . $e->getLine() . ')';
-        $file_line = str_replace(APPPATH,'',$file_line);
+        $file_line = str_replace(APPPATH, '', $file_line);
         $status = $e->GetMessage();
         $this->die_message("Exception", $status, ['file_line' => $file_line]);
     }
 
+    function formatted_backtrace()
+    {
+        $result = '';
+
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace) {
+            if ($trace['function'] == __FUNCTION__)
+                continue;
+
+            $parameters = isset($trace['args']) && is_array($trace['args']) ? print_r($trace['args'], true) : "";
+
+            if (array_key_exists('class', $trace))
+                $result .= sprintf(
+                    "%s:%s %s::%s(%s)<br>",
+                    $trace['file'],
+                    $trace['line'],
+                    $trace['class'],
+                    $trace['function'],
+                    $parameters
+                );
+            else
+                $result .= sprintf(
+                    "%s:%s %s(%s)<br>",
+                    $trace['file'],
+                    $trace['line'],
+                    $trace['function'],
+                    $parameters
+                );
+        }
+
+        return $result;
+    }
+
+    protected function isLoggedIn()
+    {
+        return (false == $this->session->get('logged_in')) ? false : true;
+    }
+
     protected function login_check()
     {
-        if (false == $this->session->get('logged_in')) {
-            $this->die_message('Access denied',  'Not logged in.');
+        if (false == $this->isLoggedIn()) {
+            $login_url = site_url("login");
+            $this->die_message('Access denied',  "Please <A HREF=$login_url>log in</A> before using this function.", ['backtrace' => false]);
         }
     }
-
-
-function formatted_backtrace()
-{
-   $result = '';
-
-   foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace)
-   {
-      if ($trace['function'] ==__FUNCTION__)
-          continue;
-
-      $parameters = isset($trace['args']) && is_array($trace['args']) ? print_r($trace['args'],true) : "";
-
-      if (array_key_exists('class', $trace))
-         $result .= sprintf("%s:%s %s::%s(%s)<br>",   
-                              $trace['file'],   
-                              $trace['line'],    
-                              $trace['class'],  
-                              $trace['function'],  
-                              $parameters);
-      else
-         $result .= sprintf("%s:%s %s(%s)<br>", 
-                              $trace['file'], 
-                              $trace['line'], 
-                              $trace['function'], 
-                              $parameters);
-    }
-
-    return $result;
-}
-
-
 }

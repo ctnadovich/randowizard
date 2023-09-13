@@ -24,7 +24,7 @@
         <?php if ($session['logged_in']==1): ?>
         <span style="font-style: italic;"
             class="w3-bar-item w3-hide-small w3-medium "><?= $session['first_last'] ?></span>
-        <a href="/profile/edit/<?=$session['user_id']?>" title="Profile" class="w3-bar-item w3-button"><i class="fa fa-user"></i></a>
+        <a href="/profile" title="Profile" class="w3-bar-item w3-button"><i class="fa fa-user"></i></a>
         <a href="/region" title="Region" class="w3-bar-item w3-button"><i class="fas fa-map"></i></a>
         <a href="/events" title="Events" class="w3-bar-item w3-button"><i class="fas fa-biking"></i></a>
         <a href="/logout" title="Log Out" class="w3-bar-item w3-hide-small">Log Out</a>

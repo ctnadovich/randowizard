@@ -88,6 +88,7 @@ class Login extends BaseController
                         $this->session->set('last_name', $user['last']);
                         $this->session->set('first_last', $user['first'] . ' ' . $user['last']);
                         $this->session->set('authorized_regions', $this->regionModel->getAuthorizedRegions($user['id']));
+                        $this->session->set('is_superuser', str_contains($user['privilege'],'superuser'));
 
                         return redirect()->route('home');
                     } else {

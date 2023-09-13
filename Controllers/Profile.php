@@ -43,10 +43,13 @@ class Profile extends BaseController
     public function profile()
     {
         $this->login_check();
+        $member_id = $this->session->get('user_id');
+        $is_superuser = $this->session->get('is_superuser');
 
-        $subject = 'Profile';
+        $subject = 'User';
         $crud = new GroceryCrud();
-        $state = $crud->getState();
+
+        /*         $state = $crud->getState();
         $state_info = $crud->getStateInfo();
         switch ($state) {
             case 'edit':
@@ -63,9 +66,25 @@ class Profile extends BaseController
                 trigger_error("This function can only be called in states edit/update_validation/success. State=$state", E_USER_ERROR);
                 break;
         }
+ */
+
+
         $crud->setSubject($subject);
         $crud->setTable('user');
-        $crud->unsetAdd();
+
+        // restrictions for unprivileged users
+        if (false == $is_superuser) {
+            $crud->unsetAdd();
+            $crud->unsetDelete();
+            $crud->unsetEditFields(['privilege']);
+            $crud->unsetColumns(['privilege']);
+            $crud->where('id', $member_id);
+        }
+
+
+// TODO Button to "become" another user
+// TODO Consider allowing all users for a given region to edit each other's profiles
+
         $crud->fieldType('password_hash', 'password');
         $crud->displayAs('password_hash', 'Password');
         $crud->callbackEditField('password_hash', [$this, 'clear_password_field']);
@@ -79,8 +98,8 @@ class Profile extends BaseController
         // is somewhat dicey. Note the if ($primary_key != $member_id) test above that attempts to maintain
         // the isolation. 
 
-        $output->output = str_replace("value='Update changes'", "value='Save'", $output->output);
-        $output->output = str_replace("value='Update and go back to list'", "value='Save and Return'", $output->output);
+        // $output->output = str_replace("value='Update changes'", "value='Save'", $output->output);
+        // $output->output = str_replace("value='Update and go back to list'", "value='Save and Return'", $output->output);
 
         $this->viewData = array_merge((array)$output, $this->viewData);
         return $this->load_view(['profile']);

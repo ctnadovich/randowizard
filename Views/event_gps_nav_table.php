@@ -69,7 +69,7 @@
         <TD><?= $last_update ?></TD>
     </TR>
     <TR>
-        <TD>Last Download</TD>
+        <TD>Last Fetched</TD>
         <TD><?= $last_download ?></TD>
     </TR>
     <TR>

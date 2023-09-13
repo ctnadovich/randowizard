@@ -7,8 +7,8 @@
                 extract($event);
                 $sd = (new \DateTime($start_datetime, new \DateTimeZone($timezone_name)))->format("M j @ H:i T");
                 $event_code = "$region_id-$event_id";
-                $infolink = "<A HREF='" . site_url("ebrevet/event_info/$event_code") . "'>info</a>";
-                $resultslink = "<A HREF='" . site_url("ebrevet/checkin_status/$event_code") . "'>results</a>";
+                $infolink = "<A HREF='" . site_url("event_info/$event_code") . "'>info</a>";
+                $resultslink = "<A HREF='" . site_url("checkin_status/$event_code") . "'>results</a>";
                 $row = ["$region_state: $region_name", "$name $distance K", $sd,  $infolink,  $resultslink];
                 echo "<TR><TD>" . implode('</TD><TD>', $row) . "</TD></TR>";
             }

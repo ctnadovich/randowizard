@@ -50,13 +50,13 @@ class Home extends BaseController
 
 
         if ($this->session->get('logged_in')) {
-            return $this->load_view(['hero', 'home', 'events', 'apps']);
+            return $this->load_view(['hero',  'events']);
         } else {
 
             $captcha = $this->bike_captcha();
             $this->session->set('is_bike', $captcha['is_bike']);
             $this->viewData = array_merge($this->viewData, $captcha);
-            return $this->load_view(['hero', 'home', 'events', 'register']);
+            return $this->load_view(['hero', 'events', 'register']);
         }
     }
 

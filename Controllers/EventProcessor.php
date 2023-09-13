@@ -138,8 +138,9 @@ class EventProcessor extends BaseController
 			throw new \Exception("NO CUES");
 		}
 
-/* 		if (sizeof($controle_warnings) > 0 || sizeof($cue_warnings) > 0) {
-			$error_text  = '';
+		$route_has_warnings = (sizeof($controle_warnings) > 0 || sizeof($cue_warnings) > 0);
+
+/* 			$error_text  = '';
 			if (sizeof($controle_warnings) > 0)
 				$error_text .= ("</h4>ERRORS IN CONTROLS</h4> <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
 			if (sizeof($cue_warnings) > 0)
@@ -149,8 +150,6 @@ class EventProcessor extends BaseController
 		}
  */
 
-
-		$other_warnings = [];
 
 		/////////////////////////////////////////////////////////
 		// Now that we have the route and controls, we can start 
@@ -396,6 +395,8 @@ class EventProcessor extends BaseController
 			'route_name',
 			'route_tags',
 			'route_updated_at',
+			'route_url',
+			'route_has_warnings',
 			'rwgps_url',
 			'sanction',
 			'start_city',
@@ -448,9 +449,6 @@ class EventProcessor extends BaseController
 		$authorized_regions = $this->session->get('authorized_regions');
 		return (false === array_search($club_acp_code, $authorized_regions)) ? false : true;
 	}
-
-	
-
 
 	protected function format_attributes($alist)
 	{

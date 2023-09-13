@@ -25,7 +25,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
-class EventWizard extends EventProcessor
+class RouteManager extends EventProcessor
 {
 
     public $unitsLibrary;
@@ -48,7 +48,7 @@ class EventWizard extends EventProcessor
     // EVENT INFO
     //
 
-    public function event_wizard($event_code = null)
+    public function route_manager($event_code = null)
     {
 
         try {
@@ -60,39 +60,35 @@ class EventWizard extends EventProcessor
             if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE');
             $route_url = $event['route_url'];
 
-            try {
-                $edata = $this->get_event_data($event);
-            } catch (\Exception $e) {
-                $error_text = $e->getMessage();
-                $msg = <<<EOT
-    <h3>Event Info Unavailable</h3>
-    <p>I'm very sorry but I'm afraid 
-    fatal errors were found in the event data. Processing cannot continue.
-    To allow event info to be displayed properly, the event administrator must 
-    correct the data in the route map (<A HREF='$route_url'>$route_url</a>), and re-fetch the data
-    into the event manager. </p>
-    <div class='w3-panel w3-border'>$error_text</div>
-    EOT;
 
-                $this->die_message('Error in Event Data', $msg, ['backtrace' => false]);
+            try {
+                $edata = $this->get_event_data($event);            
+                $edata['edata_error'] = null;
+            } catch (\Exception $e) {
+                $error_text =  $e->getMessage();
+                $edata['edata_error'] = $error_text;
             }
 
 
-            $event_name_dist = $edata['event_name'] . ' ' . $edata['distance'] . 'K';
+            $event_name_dist = $event['name'] . ' ' . $event['distance'] . 'K';
             $this->viewData['event_name_dist'] = $this->viewData['title'] = $this->viewData['subject'] = "$event_name_dist";
-
-
             $this->viewData = array_merge($this->viewData, $edata);
 
+            $this->viewData['warnings_body'] = $this->generate_warnings($edata);
+
             $view_list = [];
-            $view_list[] = 'event_head';
-
-            $view_list[] = ['event_info_panel', ['panel_title' => 'Route Data Validation', 'panel_data' => $this->generate_warnings()]];
-
-            $view_list[] = ['event_info_panel', ['panel_title' => 'Route Description Tags', 'panel_data' => $this->generate_route_tag_data()]];
 
             $view_list[] = ['event_info_panel', [
-                'panel_title' => 'Preview/Publish Paperwork', 'panel_data' => view('fetch_preview_publish', $this->viewData)
+                'panel_title' => 'Route Overview',
+                'panel_data' => view('route_info_table', $this->viewData)
+            ]];
+
+            // $view_list[] = ['event_info_panel', ['panel_title' => 'Route Data Validation', 'panel_data' => $this->generate_warnings()]];
+
+            // $view_list[] = ['event_info_panel', ['panel_title' => 'Route Description Tags', 'panel_data' => $this->generate_route_tag_data()]];
+
+            $view_list[] = ['event_info_panel', [
+                'panel_title' => 'Route Manager', 'panel_data' => view('fetch_preview_publish', $this->viewData)
             ]];
 
             return $this->load_view($view_list);
@@ -132,21 +128,30 @@ class EventWizard extends EventProcessor
 
 
 
-    private function generate_warnings()
+    private function generate_warnings($edata)
     {
 
         $warning_body = '';
-        extract($this->viewData); // All route_event variables are now local
+        extract($edata); // All route_event variables are now local
 
-        if (sizeof($controle_warnings) > 0)
-            $warning_body .= ("</h3>ERRORS IN CONTROLS</h3> <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
-        if (sizeof($cue_warnings) > 0)
-            $warning_body .= ("</h3>ERRORS IN CUES</h3> <ul><li>" . implode('</li><li>', $cue_warnings) . "</li></ul>");
+        if ($edata['edata_error'] !== null) {
+            $edata_error = $edata['edata_error'];
+            $warning_body .= <<<EOT
+</h3>FATAL ERROR IN ROUTE DATA</h3> 
+<div class='w3-panel w3-border'>$edata_error</div>
+EOT;
+        } else {
+
+            if (sizeof($controle_warnings) > 0)
+                $warning_body .= ("</h3>ERRORS IN CONTROLS</h3> <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
+            if (sizeof($cue_warnings) > 0)
+                $warning_body .= ("</h3>ERRORS IN CUES</h3> <ul><li>" . implode('</li><li>', $cue_warnings) . "</li></ul>");
+        }
 
         if (!empty($warning_body)) {
             $warning_body .= <<<EOT
-<div class='w3-container w3-red w3-center' style='width: 32%;'>Errors in route data</div>
-<p>Fix these Errors by previewing to check, and then publish again.</p>
+<div class='w3-container w3-red w3-center' style='width: 32%;'>Errors in route data <A HREF='$route_url'>$route_url</a></div>
+<p>Fix these Errors, and then fetch again.</p>
 EOT;
         } else {
             $warning_body .= <<<EOT

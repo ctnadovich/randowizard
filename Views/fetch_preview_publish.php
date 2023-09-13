@@ -1,4 +1,4 @@
-<h3>Event Manager Process</h3>
+<h3>Route Manager Process</h3>
 <P>Whenever you made changes in the route on RWGPS that
     affect the published cues, brevet cards, etc... you must complete the following steps.</p>
 <ol>
@@ -19,6 +19,18 @@
 <div class="w3-bar-block w3-center" style="width: 50%; margin-left: 10%;">
     <A HREF=<?= $download_url ?> CLASS='w3-bar-item w3-button w3-teal w3-margin'>Fetch latest route from RWGPS</A>
 </div>
+
+<h4>CHECK</h4>
+
+<?=$warnings_body?>
+
+<?php if($route_has_warnings) : ?>
+
+<h4>INVALID ROUTE</h4>
+
+<p>This route cannot be published for use by eBrevet, nor can paperwork be generated, because there are errors in the route data.</p>
+
+<?php else : ?>
 
 <h4>PREVIEW</h4>
 <P>Press the buttons below for <b>preview versions</b> of the cuesheet and brevet cards generated
@@ -58,3 +70,5 @@
 
     <A HREF=<?= $event_publish_url ?> class="w3-bar-item w3-button w3-margin w3-teal">Publish New (Ver <?= $cue_next_version ?>) Cuesheets to Event</A>
 </div>
+
+<?php endif; ?>

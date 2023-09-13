@@ -6,7 +6,7 @@
             <?php if ($session['logged_in']==1): ?>
             <a href="/events" class="w3-bar-item w3-button">My Events</a>
             <a href="/region" class="w3-bar-item w3-button">My Region</a>
-            <a href="/profile/edit/<?=$session['user_id']?>" class="w3-bar-item w3-button">My Profile</a>
+            <a href="/profile" class="w3-bar-item w3-button">My Profile</a>
             <a href="/logout" class="w3-bar-item w3-button">Log Out</a>
             <?php else: ?>
             <a href="/login" class="w3-bar-item w3-button">Log In</a>

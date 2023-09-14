@@ -22,11 +22,11 @@ namespace App\Controllers;
 
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
 class CheckinStatus extends EventProcessor
 {
+	public $rusaModel;
 
 
 	public function initController(
@@ -35,6 +35,8 @@ class CheckinStatus extends EventProcessor
 		LoggerInterface $logger
 	) {
 		parent::initController($request, $response, $logger);
+
+		$this->rusaModel = model('Rusa');
 	}
 
 
@@ -50,7 +52,7 @@ class CheckinStatus extends EventProcessor
 			$checkin_table = '';
 
 			$event = $this->eventModel->eventByCode($event_code);
-			extract($this->get_event_data($event));
+			$edata = $this->get_event_data($event);
 
 			/* 
 
@@ -82,9 +84,12 @@ class CheckinStatus extends EventProcessor
  */
 			// Establish 'event','route','controles','warnings','cues','route_event'
 
-			$event_name_dist = $edata['name'] . ' ' . $edata['distance'] . 'K';
+			$event_name_dist = $edata['event_name_dist'];
 			$controles = $edata['controls'];
 			$ncontroles = count($controles);
+
+			$local_event_id = $edata['local_event_id'];
+			$epp_secret = $edata['epp_secret'];
 
 			$title = "$event_name_dist";
 			$subject = $title;
@@ -101,8 +106,8 @@ class CheckinStatus extends EventProcessor
 				$is_start = isset($c['start']);
 				$is_finish = isset($c['finish']);
 				$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");
-				$open = (new \DateTime($c['open']))->setTimezone(new DateTimeZone($club['event_timezone_name']))->format('D-H:i');
-				$close = (new \DateTime($c['close']))->setTimezone(new DateTimeZone($club['event_timezone_name']))->format('D-H:i');
+				$open = (new \DateTime($c['open']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']))->format('D-H:i');
+				$close = (new \DateTime($c['close']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']))->format('D-H:i');
 
 				// $close = $c['close']; // ->format('D-H:i');
 				$name = $c['name'];
@@ -123,20 +128,23 @@ class CheckinStatus extends EventProcessor
 
 			foreach ($riders_seen as $rider_id) {
 
-
-				// $this->die_message(__METHOD__, print_r($club,true));
-
-				$first_name = "?";
-				$last_name = "?";
-				$rider = "$first_name $last_name ($rider_id)";
-
 				// Assume $rider_id = $rusa_id; // assumption
+
+
+				$m = $this->rusaModel->get_member($rider_id);
+				if (empty($m)) {
+					$first_last = "NON RUSA";
+				} else {
+					$first_last = $m['first_name']  . ' ' . $m['last_name'];
+				}
+				$rider = "$first_last ($rider_id)";
+			
 
 				$checklist = [];
 				for ($i = 0; $i < $ncontroles; $i++) {
 					$open = $controles[$i]['open'];
 					$close = $controles[$i]['close'];
-					$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $club['event_timezone_name']);
+					$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $edata['event_timezone_name']);
 					if (empty($c)) {
 						$checklist[] = '-';
 					} else {
@@ -173,8 +181,9 @@ class CheckinStatus extends EventProcessor
 				$finish_text = "";
 				$r = $this->rosterModel->get_record($local_event_id, $rider_id);
 
-				if (empty($r)) $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
-
+				if (empty($r)){ // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
+					$r['result']='NOT IN ROSTER';
+				}
 				if ($r['result'] == "finish") {
 					$elapsed_array = explode(':', $r['elapsed_time'], 3);
 					if (count($elapsed_array) == 3) {
@@ -203,11 +212,9 @@ class CheckinStatus extends EventProcessor
 			);
 
 			$this->viewData = array_merge($this->viewData, $view_data);
-			return $this->load_view(['head', 'checkin_status', 'foot']);
+			return $this->load_view(['checkin_status']);
 		} catch (\Exception $e) {
-			$status = $e->GetMessage();
-
-			$this->die_message('ERROR', $status);
+			$this->die_exception($e);
 		}
 	}
 

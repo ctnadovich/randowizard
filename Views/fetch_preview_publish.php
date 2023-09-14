@@ -68,7 +68,7 @@
 </ul>
 <div class="w3-bar-block w3-center" style="width: 50%; margin-left: 10%;">
 
-    <A HREF=<?= $event_publish_url ?> class="w3-bar-item w3-button w3-margin w3-teal">Publish New (Ver <?= $cue_next_version ?>) Cuesheets to Event</A>
+    <A HREF=<?= $event_publish_url ?> class="w3-bar-item w3-button w3-margin w3-teal">Publish New (Ver <?= $cue_next_version ?>) Paperwork to Event</A>
 </div>
 
 <?php endif; ?>

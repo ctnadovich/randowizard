@@ -26,35 +26,35 @@
     <p>Randonneuring.org supports free IT tools that make randonneuring events
         more enjoyable. More fun for participants. Easier on volunteer organizers and RBAs. </p>
 
-    <h2>Tools</h2>
-
     <h3>Manage Events for your Region</h3>
 
-    <p>The main tool available at randonneuring.org is an event manager for a region. This is intended to
+    <p>Randonneuring.org provides several randonneuring event management tools. These are intended to
         be used by the RBA or Event Organizer of a region. Once you sign up for
         an account and log in, you will be able to access menu items on the top toolbar that will take you
-        to these event management tools. They include the following:</p>
+        to these management tools. They include the following:</p>
 
     <ul class='fa-ul'>
-        <li><i class="fa-li fa fa-user"></i><b>Profile Manager</b> allows you to edit your personal settings as the
+        <li><i class="fa-li fa fa-user"></i><b>Profile Manager</b> Edit your personal settings as the
             organizer/RBA of the region. This
             includes
             your name, email address, and password.</li>
-        <li><i class="fa-li fas fa-map"></i><b>Region Manager</b> allows you to edit settings that describe your region.
+        <li><i class="fa-li fas fa-map"></i><b>Region Manager</b> Edit settings that describe your region.
             This includes
             your region's name, timezone, website, and other related information.</li>
-        <li><i class="fa-li fas fa-biking"></i><b>Event Manager</b> allows you to add events to your region. Events you
-            add will be downloadable
+        <li><i class="fa-li fas fa-biking"></i><b>Event Manager</b> Add events to your region and edit their details. Events you
+            add will be listed on the randonneuring.org web site, and will be downloadable
             by the eBrevet cell phone app. You will also be able to produce paperwork (brevet cards, cue sheets, etc...)
             for
-            these events.</li>
+            these events using the Route Manager.</li>
+        <li><i class="fa-li fas fa-hat-wizard"></i><b>Route Manager</b> Produce quality paperwork for your route to
+            distribute at your event, including cue sheets, brevet cards, and more.</li>
     </ul>
 
 
 
 
     <div class="w3-card w3-center w3-margin w3-padding" style="width:15%; float: right;">
-        <A  HREF="https://github.com/ctnadovich/ebrevet/blob/main/README.md">
+        <A HREF="https://github.com/ctnadovich/ebrevet/blob/main/README.md">
             <img src="https://randonneuring.org/assets/local/images/eBrevet-256.png" style="width: 100%; max-width: 256px;">
             <div class="w3-container w3-center" style='font-size: .7em;'>
                 eBrevet

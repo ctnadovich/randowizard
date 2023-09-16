@@ -20,13 +20,13 @@
 -->
 
 
-<div class=w3-container>
+<div class='w3-card w3-margin w3-padding'>
     <h1>About Randonneuring.org</h1>
 
     <p>Randonneuring.org supports free IT tools that make randonneuring events
         more enjoyable. More fun for participants. Easier on volunteer organizers and RBAs. </p>
 
-    <h3>Manage Events for your Region</h3>
+    <h2>Manage Events for your Region</h2>
 
     <p>Randonneuring.org provides several randonneuring event management tools. These are intended to
         be used by the RBA or Event Organizer of a region. Once you sign up for
@@ -43,14 +43,17 @@
             your region's name, timezone, website, and other related information.</li>
         <li><i class="fa-li fas fa-biking"></i><b>Event Manager</b> Add events to your region and edit their details. Events you
             add will be listed on the randonneuring.org web site, and will be downloadable
-            by the eBrevet cell phone app. You will also be able to produce paperwork (brevet cards, cue sheets, etc...)
+            by the <A HREF=https://github.com/ctnadovich/ebrevet/blob/main/README.md>eBrevet</a> cell phone app. You will also be able to produce paperwork (brevet cards, cue sheets, etc...)
             for
-            these events using the Route Manager.</li>
-        <li><i class="fa-li fas fa-hat-wizard"></i><b>Route Manager</b> Produce quality paperwork for your route to
+            these events using the Route Processor.</li>
+        <li><i class="fa-li fas fa-hat-wizard"></i><b>Route Processor</b> The CueWizard Route processor 
+            takes a RWGPS route and makes it usable by the eBrevet app. CueWizard will 
+            also produce quality paperwork for your route to
             distribute at your event, including cue sheets, brevet cards, and more.</li>
     </ul>
 
-
+<p>Get up to speed quickly with these tools. 
+    Read the <A HREF=<?=site_url('about/quick_start')?>>Quick Start Guide</a>.</p>
 
 
     <div class="w3-card w3-center w3-margin w3-padding" style="width:15%; float: right;">
@@ -62,7 +65,7 @@
         </a>
     </div>
 
-    <h3>Use the eBrevet Electronic Brevet Card</h3>
+    <h2>Use the eBrevet Electronic Brevet Card</h2>
 
     <p>The <i>eBrevet</i> Android/iOS app serves as an automated brevet card that can provide
         Electronic Proof of Passage on a randonneuring brevet or permanent, while maintaining
@@ -78,7 +81,7 @@
     </P>
 
     <div class="w3-card w3-center w3-margin w3-padding" style="width:15%; float: right;">
-        <A HREF="https://parando.org/cue_wizard.html">
+        <A HREF="https://randonneuring.org/about/cue_wizard">
             <img src="https://randonneuring.org/assets/local/images/CueWizard-256.png" style="width:100%; max-width: 256px;">
             <div class="w3-container w3-center" style='font-size: .7em;'>
                 CueWizard
@@ -86,10 +89,10 @@
         </a>
     </div>
 
-    <h3>Create Quality Cue Sheets</h3>
+    <h2>Cue Wizard Route Processor</h2>
 
-    <p>In order to use your randonneuring route with the event manager and eBrevet app here at randonneuring.org,
-        you need to make your route compatible with our Cuesheet processor called <i>CueWizard</i>. </p>
+    <p>In order to use your randonneuring route with the event manager and <A HREF=https://github.com/ctnadovich/ebrevet/blob/main/README.md>eBrevet</a> app here at randonneuring.org,
+        you need to make your route compatible with our Route Processor called <i>CueWizard</i>. </p>
     <p>
         Cue Wizard supports route data entry into the eBrevet app and the production of route paperwork (brevet
         cards and cue sheets). Currently only the mapping tool <A HREF=https://ridewithgps.com>Ride With GPS</a>
@@ -102,7 +105,7 @@
         additional markup #tag=value settings that can be placed in the cue Description field. Markup tags include
         support for control questions, address/phone of the control contact, and other options.</p>
 
-    <p>For more information, read the <A HREF=https://parando.org/cue_wizard.html>documentation of CueWizard</a>. </p>
+    <p>For more information, read the <A HREF=https://randonneuring.org/about/cue_wizard>documentation of CueWizard</a>. </p>
 
     <h2>Privacy</h2>
 

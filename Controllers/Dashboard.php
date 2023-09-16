@@ -79,7 +79,7 @@ class Dashboard extends BaseController
 		$region_id=$row->region_id;
         $event_code="$region_id-$event_id";
         $wizard_url=site_url("route_manager/$event_code");
-		return "<A class='w3-button w3-light-gray w3-round' HREF='$wizard_url'>Route Manager</A>";
+		return "<A class='w3-button w3-light-gray w3-round' HREF='$wizard_url'><i class='fas fa-hat-wizard'></i>&nbsp;Cue Wizard</A>";
 	}
 
     private $status_icon=[

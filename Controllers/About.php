@@ -40,4 +40,16 @@ class About extends BaseController
     {
         return $this->load_view(['about']);
     }
+
+    public function cue_wizard()
+    {
+        return $this->load_view(['cue_wizard']);
+    }
+
+    public function quick_start()
+    {
+        return $this->load_view(['quick_start']);
+    }
+
+
 }

@@ -28,7 +28,6 @@ class Home extends BaseController
 {
 
     protected $helpers = ['form', 'rando'];
-    protected $regionModel;
     protected $eventModel;
 
 
@@ -38,7 +37,6 @@ class Home extends BaseController
         LoggerInterface $logger
     ) {
         parent::initController($request, $response, $logger);
-        $this->regionModel = model('Region');
         $this->eventModel = model('Event');
         $this->viewData['errors'] = [];
         $this->viewData['region'] = $this->regionModel->getRegions();

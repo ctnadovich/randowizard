@@ -124,10 +124,12 @@ class CheckinStatus extends EventProcessor
 			$checkin_table .= "<TR class='w3-light-blue'>" . $head_row['close'] . "</TR>";
 
 
-			$riders_seen = $this->checkinModel->riders_seen($local_event_id);
+			// $registeredRiders = $this->checkinModel->registeredRiders$registeredRiders($local_event_id);
+			$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
 
-			foreach ($riders_seen as $rider_id) {
+			foreach ($registeredRiders as $rider) {
 
+				$rider_id = $rider['rider_id'];
 				// Assume $rider_id = $rusa_id; // assumption
 
 

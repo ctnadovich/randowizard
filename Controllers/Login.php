@@ -29,8 +29,6 @@ class Login extends BaseController
 {
 
     protected $helpers = ['form', 'rando'];
-    protected $userModel;
-    protected $regionModel;
 
     public function initController(
         RequestInterface $request,
@@ -39,8 +37,6 @@ class Login extends BaseController
     ) {
         parent::initController($request, $response, $logger);
 
-        $this->userModel = model('User');
-        $this->regionModel = model('Region');
     }
 
     public function logout()
@@ -82,14 +78,7 @@ class Login extends BaseController
 
                     $user = $this->userModel->where('email', $email)->first();
                     if (!empty($user) && password_verify($password, $user['password_hash'])) {
-                        $this->session->set('logged_in', TRUE);
-                        $this->session->set('user_id', $user['id']);
-                        $this->session->set('first_name', $user['first']);
-                        $this->session->set('last_name', $user['last']);
-                        $this->session->set('first_last', $user['first'] . ' ' . $user['last']);
-                        $this->session->set('authorized_regions', $this->regionModel->getAuthorizedRegions($user['id']));
-                        $this->session->set('is_superuser', str_contains($user['privilege'],'superuser'));
-
+                        $this->becomeUser($user);
                         return redirect()->route('home');
                     } else {
                         // If login fails, reload the login view with an error message

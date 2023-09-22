@@ -30,6 +30,20 @@ class Roster extends Model
     protected $returnType     = 'array';
     protected $allowedFields = ['event_id','rider_id','result','elapsed_time','comment'];
 
+    public function n_riders($local_event_id){
+        $this->where([
+            'event_id' => $local_event_id
+        ]);
+        return count($this->findAll());// $this->countAllResults();
+    }
+
+    public function registered_riders($local_event_id){
+        $this->where([
+            'event_id' => $local_event_id
+        ]);
+        return $this->findAll();
+    }
+
     public function get_record($local_event_id, $rider_id){
         $this->where([
             'rider_id' => $rider_id,

@@ -43,7 +43,9 @@ abstract class BaseController extends Controller
      */
     protected $session;
     protected $viewData = [];
+
     protected $userModel;
+    protected $regionModel;
 
     /**
      * Constructor.
@@ -61,6 +63,7 @@ abstract class BaseController extends Controller
         $this->viewData['errors'] = [];
 
         $this->userModel = model('User');
+        $this->regionModel = model('Region');
     }
 
     protected function load_view($view_list)
@@ -128,18 +131,18 @@ abstract class BaseController extends Controller
             if (array_key_exists('class', $trace))
                 $result .= sprintf(
                     "%s:%s %s::%s(%s)<br>",
-                    $trace['file'],
-                    $trace['line'],
-                    $trace['class'],
-                    $trace['function'],
+                    $trace['file'] ?? 'File?',
+                    $trace['line'] ?? 'Line?',
+                    $trace['class'] ?? 'Class?',
+                    $trace['function'] ?? 'Function?',
                     $parameters
                 );
             else
                 $result .= sprintf(
                     "%s:%s %s(%s)<br>",
-                    $trace['file'],
-                    $trace['line'],
-                    $trace['function'],
+                    $trace['file'] ?? 'File?',
+                    $trace['line'] ?? 'Line?',
+                    $trace['function'] ?? 'Function?',
                     $parameters
                 );
         }
@@ -152,11 +155,45 @@ abstract class BaseController extends Controller
         return (false == $this->session->get('logged_in')) ? false : true;
     }
 
-    protected function login_check()
+    protected function isSuperuser()
+    {
+        return $this->session->get('is_superuser') ? true : false;
+    }
+
+    protected function getMemberID()
+    {
+        return $this->session->get('user_id');
+    }
+
+     protected function login_check()
     {
         if (false == $this->isLoggedIn()) {
             $login_url = site_url("login");
             $this->die_message('Access denied',  "Please <A HREF=$login_url>log in</A> before using this function.", ['backtrace' => false]);
+        }
+    }
+
+    protected function isRBAforClub($acp_club_code){
+        $region_list = $this->session->get('authorized_regions');
+        return (false===array_search($acp_club_code,$region_list))?false:true;
+    }
+    
+    protected function becomeUser($user)
+    {
+        if (is_numeric($user)) {
+            $user = $this->userModel->where(['id' => $user])->first();
+        }
+        if (!empty($user)) {
+            $this->session->set('logged_in', TRUE);
+            $this->session->set('user_id', $user['id']);
+            $this->session->set('first_name', $user['first']);
+            $this->session->set('last_name', $user['last']);
+            $this->session->set('first_last', $user['first'] . ' ' . $user['last']);
+            $this->session->set('authorized_regions', $this->regionModel->getAuthorizedRegions($user['id']));
+            $this->session->set('is_superuser', str_contains($user['privilege'], 'superuser'));
+            return $user;
+        } else {
+            return false;
         }
     }
 }

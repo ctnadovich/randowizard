@@ -26,7 +26,7 @@ use Psr\Log\LoggerInterface;
 
 use App\Libraries\GroceryCrud;
 
-class Profile extends BaseController
+class MemberCrud extends BaseController
 {
 
     protected $not_a_password = "not_a_password";
@@ -43,8 +43,6 @@ class Profile extends BaseController
     public function profile()
     {
         $this->login_check();
-        $member_id = $this->session->get('user_id');
-        $is_superuser = $this->session->get('is_superuser');
 
         $subject = 'User';
         $crud = new GroceryCrud();
@@ -73,12 +71,12 @@ class Profile extends BaseController
         $crud->setTable('user');
 
         // restrictions for unprivileged users
-        if (false == $is_superuser) {
+        if (false == $this->isSuperuser()) {
             $crud->unsetAdd();
             $crud->unsetDelete();
             $crud->unsetEditFields(['privilege']);
             $crud->unsetColumns(['privilege']);
-            $crud->where('id', $member_id);
+            $crud->where('id', $this->getMemberID());
         }
 
 

@@ -45,7 +45,6 @@ class EventProcessor extends BaseController
 		parent::initController($request, $response, $logger);
 
 		$this->eventModel = model('Event');
-		$this->regionModel = model('Region');
 		$this->checkinModel = model('Checkin');
 		$this->rosterModel = model('Roster');
 
@@ -102,7 +101,7 @@ class EventProcessor extends BaseController
 		// Create globally unique event ID
 		$local_event_id = $event['event_id'];
 		$club_acp_code = $event['region_id'];
-		$event_code = "$club_acp_code-$local_event_id";
+		$event_code = $this->eventModel->getEventCode($event);
 
 		if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE');
 		if (empty($event['start_datetime'])) throw new \Exception('NO START TIME FOR EVENT');
@@ -256,8 +255,8 @@ class EventProcessor extends BaseController
 		$organizer_phone = $event['emergency_phone'];
 		$event_description = $event['description'];
 
-		$event_tagname_components = [$sanction, $distance . "K", $club_acp_code, $event_date_str_ymd];
-		$event_tagname = strtoupper(implode('-', $event_tagname_components));
+		// $event_tagname_components = [$sanction, $distance . "K", $club_acp_code, $event_date_str_ymd];
+		$event_tagname = $event_code; // strtoupper(implode('-', $event_tagname_components));
 
 		$has_cuesheet = (isset($event['cue_version']) && $event['cue_version'] > 0);
 
@@ -282,12 +281,16 @@ class EventProcessor extends BaseController
 		}
 
 		// URLs  (Maybe these should go someplace else? )
+		// URLs  (Maybe these should go someplace else? )
+		// URLs  (Maybe these should go someplace else? )
+		// URLs  (Maybe these should go someplace else? )
+		// URLs  (Maybe these should go someplace else? )
+
 		$checkin_post_url = site_url("/ebrevet/post_checkin/$club_acp_code");  // TODO, should go someplace else. Roster model?
 
 		// $route_event_id = "$route_id/$local_event_id";
 
 		$download_url = site_url("recache/$event_code");
-		$event_info_url = site_url("event_info/$event_code");
 		$event_publish_url = site_url("publish/$event_code");
 		$event_preview_url = site_url("preview/$event_code");
 

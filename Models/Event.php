@@ -30,16 +30,25 @@ class Event extends Model
     protected $returnType     = 'array';
     protected $allowedFields = ['cue_version'];
 
-    public function getEventsForClub($club_acp_code){
+    public function getEventsForClub($club_acp_code)
+    {
         $this->select('event.*, state.fullname as start_state');
-        $this->join('state','state.id=event.start_state_id');
-        $this->where('event.region_id',$club_acp_code);
+        $this->join('state', 'state.id=event.start_state_id');
+        $this->where('event.region_id', $club_acp_code);
         return $this->findAll();
     }
 
-    public function getEvent($club_acp_code, $local_event_id){
+    public function nameDist($event)
+    {
+        return $event['name'] . ' ' . $event['distance'] . "K";
+    }
 
-        $sql =   
+
+
+    public function getEvent($club_acp_code, $local_event_id)
+    {
+
+        $sql =
             "SELECT event.id as event_id, event.*, region.*, 
             s1.code as start_state, s2.code as region_state,
             tz.name as timezone_name
@@ -51,13 +60,14 @@ class Event extends Model
             s2.id=region.state_id  and
             tz.id=region.event_timezone_id
             order by region_state, region_name, start_datetime";
-        $q=$this->query($sql);
+        $q = $this->query($sql);
         return $q->getRowArray();
     }
 
-    public function getEventTable(){
+    public function getEventTable()
+    {
 
-        $sql =   
+        $sql =
             "SELECT event.id as event_id, event.*, region.*, 
             s1.code as start_state, s2.code as region_state,
             tz.name as timezone_name
@@ -66,13 +76,21 @@ class Event extends Model
             s1.id=event.start_state_id and 
             s2.id=region.state_id  and
             tz.id=region.event_timezone_id
-            order by region_state, region_name, start_datetime";
-        $q=$this->query($sql);
+            order by start_datetime";
+        $q = $this->query($sql);
         return $q->getResultArray();
     }
 
-    public function parseEventCode($event_code){
+    public function getEventCode($event)
+    {
+        $local_event_id = $event['event_id'];
+		$club_acp_code = $event['region_id'];
+        $event_code = "$club_acp_code-$local_event_id";
+        return $event_code;
+    }
 
+    public function parseEventCode($event_code)
+    {
         if ($event_code === null) throw new \Exception("MISSING PARAMETER");
 
         if (0 == preg_match('/^(\d+)-(\d+)$/', $event_code, $m)) {
@@ -82,36 +100,30 @@ class Event extends Model
         list($all, $club_acp_code, $local_event_id) = $m;
 
         return compact('club_acp_code', 'local_event_id');
-
-
     }
 
 
-    public function eventByCode($event_code){
+    public function eventByCode($event_code)
+    {
 
         extract($this->parseEventCode($event_code));
 
 
-			$event = $this->getEvent($club_acp_code, $local_event_id);
-			if (empty($event)) {
-				throw new \Exception("NO SUCH EVENT");
-			}
+        $event = $this->getEvent($club_acp_code, $local_event_id);
+        if (empty($event)) {
+            throw new \Exception("NO SUCH EVENT");
+        }
 
-		return $event;
+        return $event;
+    }
 
-	}
-
-    public function set_cuesheet_version($event_code, $cue_version){
+    public function set_cuesheet_version($event_code, $cue_version)
+    {
 
         $event = $this->eventByCode($event_code);
 
         $event_id = $event['event_id'];
 
         $this->update($event_id, ['cue_version' => $cue_version])  or throw new \Exception('Could not set cuesheet version');
-
     }
-
-
-	
-
 }

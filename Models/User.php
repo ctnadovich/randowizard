@@ -29,4 +29,5 @@ class User extends Model
     protected $primaryKey = 'id';
     protected $returnType     = 'array';
     protected $allowedFields = ['first','last','email','password_hash'];
+
 }

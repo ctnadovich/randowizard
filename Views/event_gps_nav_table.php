@@ -1,12 +1,12 @@
-<h4> Cuesheet </h4>
+<h4> Official Route Data </h4>
 <?php if ($has_cuesheet === true) : ?>
 
     <div class='w3-container'>
-        <p>A Cue Sheet is available for this event.</p>
+        <p>Official published route data in the form of a Cue Sheet, is available for this event.</p>
         <TABLE class='w3-table-all'>
             <TR>
-                <TD>Cuesheet Generated</TD>
-                <TD><?= $cue_gentime_str ?></TD>
+                <TD>Route Published</TD>
+                <TD><?= $published_at_str ?></TD>
             </TR>
             <TR>
                 <TD>Cuesheet Version</TD>
@@ -57,22 +57,18 @@
 
 <TABLE class='w3-table-all'>
     <TR>
-        <TD>RWGPS Route Name</TD>
+        <TD>Route Name</TD>
         <TD><?= $route_name ?></TD>
     </TR>
     <TR>
-        <TD>RWGPS Link URL</TD>
+        <TD>Route Editor Link URL</TD>
         <TD><A HREF=<?= $rwgps_url ?>><?= $rwgps_url ?></a></TD>
     </TR>
     <TR>
         <TD>Last Modified</TD>
         <TD><?= $last_update ?></TD>
     </TR>
-    <TR>
-        <TD>Last Fetched</TD>
-        <TD><?= $last_download ?></TD>
-    </TR>
-    <TR>
+     <TR>
         <TD>Raw Route Files</TD>
         <TD><?= $df_links_txt ?></TD>
     </TR>

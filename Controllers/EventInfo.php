@@ -80,12 +80,10 @@ class EventInfo extends EventProcessor
         }
     
         try {
-
-            $event_name_dist = $edata['event_name'] . ' ' . $edata['distance'] . 'K';
-            $this->viewData['event_name_dist'] = $this->viewData['title'] = $this->viewData['subject'] = "$event_name_dist";
-
-
             $this->viewData = array_merge($this->viewData, $edata);
+
+            // $event_name_dist = $edata['event_name'] . ' ' . $edata['distance'] . 'K';
+            $this->viewData['title'] = $this->viewData['subject'] = $this->viewData['event_name_dist'];
 
             $view_list = [];
             $view_list[] = 'event_head';

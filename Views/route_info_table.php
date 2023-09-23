@@ -15,4 +15,8 @@
         <TD>Last Fetched</TD>
         <TD><?= $last_download ?></TD>
     </TR>
+    <TR>
+        <TD>Last Published</TD>
+        <TD><?= $published_at_str ?></TD>
+    </TR>
 </TABLE>

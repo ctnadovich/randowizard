@@ -93,7 +93,7 @@ class EventProcessor extends BaseController
 	protected function get_event_data($event)
 	{
 
-
+		$other_warnings = [];
 
 		if (!is_array($event)) {
 			throw new \Exception(__METHOD__ . ": BAD PARAMETER. NOT ARRAY.");
@@ -137,17 +137,6 @@ class EventProcessor extends BaseController
 			throw new \Exception("NO CUES");
 		}
 
-		$route_has_warnings = (sizeof($controle_warnings) > 0 || sizeof($cue_warnings) > 0);
-
-/* 			$error_text  = '';
-			if (sizeof($controle_warnings) > 0)
-				$error_text .= ("</h4>ERRORS IN CONTROLS</h4> <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
-			if (sizeof($cue_warnings) > 0)
-				$error_text .= ("</h4>ERRORS IN CUES</h4> <ul><li>" . implode('</li><li>', $cue_warnings) . "</li></ul>");
-			throw new \Exception("<h3>Errors in Route Data</h3>$error_text<p>Please correct these errors in the 
-													map data (<A HREF='$route_url'>$route_url</a>), then re-fetch the data to the event manager.</p>");
-		}
- */
 
 
 		/////////////////////////////////////////////////////////
@@ -250,10 +239,17 @@ class EventProcessor extends BaseController
 		$start_city = $event['start_city'];
 		$start_state = $event['start_state'];
 		$cue_version = $event['cue_version'];
-		$event_info_url = $event['info_url'];
-		$organizer_name = $event['emergency_contact'];
-		$organizer_phone = $event['emergency_phone'];
+		$club_event_info_url = $event['info_url'];
 		$event_description = $event['description'];
+
+		if (empty($event['emergency_contact']) || empty($event['emergency_phone'])) {
+			$other_warnings[] = 'Missing emergency contact or emergency phone number.';
+			$organizer_name = "UNKNOWN";
+			$organizer_phone = "UNKNOWN";
+		} else {
+			$organizer_name = $event['emergency_contact'];
+			$organizer_phone = $event['emergency_phone'];
+		}
 
 		// $event_tagname_components = [$sanction, $distance . "K", $club_acp_code, $event_date_str_ymd];
 		$event_tagname = $event_code; // strtoupper(implode('-', $event_tagname_components));
@@ -276,8 +272,9 @@ class EventProcessor extends BaseController
 			if ($published_at == 0)
 				throw new \Exception("This can't happen. Event data indicates published cues, but cuesheet files were not found.");
 
-			date_default_timezone_set($event_timezone_name);
-			$cue_gentime_str = date("Y-m-j H:i:s T", $published_at);
+			$published_at_datetime = new \Datetime("@$published_at");
+			$published_at_datetime->setTimezone($event_tz);
+			$cue_gentime_str = $published_at_str = $published_at_datetime->format("Y-m-j H:i:s T");
 		}
 
 		// URLs  (Maybe these should go someplace else? )
@@ -293,6 +290,9 @@ class EventProcessor extends BaseController
 		$download_url = site_url("recache/$event_code");
 		$event_publish_url = site_url("publish/$event_code");
 		$event_preview_url = site_url("preview/$event_code");
+
+		$route_manager_url = site_url("route_manager/$event_code");
+		$event_info_url = site_url("event_info/$event_code");
 
 		$download_note = 'Download Note';
 		$this_organization = $club_name = $club['club_name'];
@@ -311,6 +311,8 @@ class EventProcessor extends BaseController
 		$last_download = $last_download_datetime->format("Y-m-j H:i:s T");
 
 		$download_note = $route['download_note'];
+		$publish_is_stale = ($has_cuesheet && ($published_at_datetime < $last_update_datetime));
+
 
 		if (!empty($route['description']))
 			$route_tags = $this->rwgpsLibrary->parse_description($route['description'], $this->rwgpsLibrary->valid_event_description_keys);
@@ -341,6 +343,9 @@ class EventProcessor extends BaseController
 		$distance_mi = round($distance_km / $units::km_per_mi, 1);
 		$climbing_ft = round($route['elevation_gain'] * $units::ft_per_m);
 
+		$route_has_warnings = (sizeof($controle_warnings) > 0 ||
+			sizeof($cue_warnings) > 0 ||
+			sizeof($other_warnings) > 0);
 
 		$edata = compact(
 			'checkin_post_url',
@@ -354,7 +359,6 @@ class EventProcessor extends BaseController
 			'cue_version',
 			'cue_url',
 			'cue_warnings',
-			'cue_gentime_str',
 			'cues',
 			'df_links_txt',
 			'difficulty',
@@ -370,6 +374,7 @@ class EventProcessor extends BaseController
 			'event_datetime_str_verbose',
 			'event_description',
 			'event_info_url',
+			'club_event_info_url',
 			'event_location',
 			'event_name_dist',
 			'event_name',
@@ -380,7 +385,6 @@ class EventProcessor extends BaseController
 			'event_type_uc',
 			'event_type',
 			'event_tz',
-			'event_info_url',
 			'gravel_distance',
 			'has_cuesheet',
 			'has_rwgps_route',
@@ -391,13 +395,19 @@ class EventProcessor extends BaseController
 			'now_str',
 			'organizer_name',
 			'organizer_phone',
+			'other_warnings',
 			'pavement_type',
+			'publish_is_stale',
 			'published_at',
+			'published_at_datetime',
+			'published_at_str',
+			// 'cue_gentime_str',
 			'route_controles',
 			'route_id',
 			'route_name',
 			'route_tags',
 			'route_updated_at',
+			'route_manager_url',
 			'route_url',
 			'route_has_warnings',
 			'rwgps_url',

@@ -77,6 +77,10 @@ class MemberCrud extends BaseController
             $crud->unsetEditFields(['privilege']);
             $crud->unsetColumns(['privilege']);
             $crud->where('id', $this->getMemberID());
+        } else {
+            $crud->setActionButton('SU','fas fa-user', function ($row) {
+                return site_url("su/$row");
+            }, true);
         }
 
 
@@ -118,5 +122,18 @@ class MemberCrud extends BaseController
         }
 
         return $stateParameters;
+    }
+
+    public function su($member_id){
+        $user = $this->userModel->find($member_id);
+        if (!empty($user) && $this->isSuperuser()) {
+
+            // $this->die_message(__METHOD__, "Becoming ID $member_id " . print_r($user,true));
+            $this->becomeUser($user);
+            return redirect()->route('home');
+        } else {
+            throw new \Exception("Can't become user ID=$member_id");
+        }
+
     }
 }

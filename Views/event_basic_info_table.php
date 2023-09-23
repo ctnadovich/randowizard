@@ -12,8 +12,8 @@
         <TD><?= $event_location ?></TD>
     </TR>
     <TR>
-        <TD>Event Website</TD>
-        <TD><A HREF='<?= $event_info_url ?>'><?= $event_info_url ?></A></TD>
+        <TD>Club Event Website</TD>
+        <TD><A HREF='<?= $club_event_info_url ?>'><?= $club_event_info_url ?></A></TD>
     </TR>
     <TR>
         <TD>Event Type</TD>

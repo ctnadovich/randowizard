@@ -54,7 +54,7 @@ class Home extends BaseController
             $captcha = $this->bike_captcha();
             $this->session->set('is_bike', $captcha['is_bike']);
             $this->viewData = array_merge($this->viewData, $captcha);
-            return $this->load_view(['hero', 'events', 'register']);
+            return $this->load_view(['hero', 'register', 'events']);
         }
     }
 

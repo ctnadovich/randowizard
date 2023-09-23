@@ -41,7 +41,7 @@ class EventsCrud extends BaseController
         $this->rosterModel =  model('Roster');
     }
 
-    public function events($timerange='all')
+    public function events($timerange = 'all')
     {
 
         $this->login_check();
@@ -52,27 +52,27 @@ class EventsCrud extends BaseController
         $crud->setRelation('start_state_id', 'state', '{fullname}');
         $crud->setRelation('start_country_id', 'country', '{fullname}');
 
-		$dt = new \DateTime();
-		$now = $dt->format('Y-m-d');
-		switch($timerange){
-			case 'future':
-				$crud->where('start_datetime >=',$now);
-				// $crud->orderBy('date','asc');
-				$title="Future Events";
+        $dt = new \DateTime();
+        $now = $dt->format('Y-m-d');
+        switch ($timerange) {
+            case 'future':
+                $crud->where('start_datetime >=', $now);
+                // $crud->orderBy('date','asc');
+                $title = "Future Events";
                 $crud->setSubject('Future Event', 'Future Events');
-				break;
-			case 'past':
-				$crud->where('start_datetime <',$now);
-		    // $crud->order_by('date','desc');
-				$title="Past Events";
+                break;
+            case 'past':
+                $crud->where('start_datetime <', $now);
+                // $crud->order_by('date','desc');
+                $title = "Past Events";
                 $crud->setSubject('Past Event', 'Past Events');
-				break;
+                break;
             default:
-			case 'all':
-				$title="All Events";
+            case 'all':
+                $title = "All Events";
                 $crud->setSubject('Event', 'Events');
-				break;
-		}
+                break;
+        }
 
         if (false == $this->isSuperuser()) {
             $crud->where('rba_user_id', $this->getMemberID());
@@ -82,7 +82,7 @@ class EventsCrud extends BaseController
         $crud->setRead();
         $crud->callbackColumn('status', array($this, '_status_icons'));
         $crud->callbackColumn('admin', array($this, '_paperwork'));
-        $crud->callbackColumn('roster', array($this,'_roster_url'));
+        $crud->callbackColumn('roster', array($this, '_roster_url'));
 
 
         // $crud->setActionButton('', "fas fa-hat-wizard", function ($x)
@@ -109,7 +109,8 @@ class EventsCrud extends BaseController
         return $this->load_view(['dashboard']);
     }
 
-    public function _roster_url($value,$row){
+    public function _roster_url($value, $row)
+    {
 
         $event_id = $row->id;
         $region_id = $row->region_id;
@@ -117,10 +118,10 @@ class EventsCrud extends BaseController
         $roster_url = site_url("roster/$event_code");
 
 
-		$span_center = '<span style="width:100%;text-align:center;display:block;">';
-		$n_riders=$this->rosterModel->n_riders($event_id); // =$value; //$this->truncate($value,30);
-		return "$span_center<A HREF='{$roster_url}' TITLE='Roster'><i class='fas fa-users'  style='color: blue;'></i></A> ($n_riders)</span>";
-	}
+        $span_center = '<span style="width:100%;text-align:center;display:block;">';
+        $n_riders = $this->rosterModel->n_riders($event_id); // =$value; //$this->truncate($value,30);
+        return "$span_center<A HREF='{$roster_url}' TITLE='Roster'><i class='fas fa-users'  style='color: blue;'></i></A> ($n_riders)</span>";
+    }
 
 
     public function _paperwork($value, $row)
@@ -128,8 +129,37 @@ class EventsCrud extends BaseController
         $event_id = $row->id;
         $region_id = $row->region_id;
         $event_code = "$region_id-$event_id";
-        $wizard_url = site_url("route_manager/$event_code");
-        return "<A class='w3-button w3-light-gray w3-round' HREF='$wizard_url'><i class='fas fa-hat-wizard'></i>&nbsp;Cue Wizard</A>";
+        // $wizard_url = site_url("route_manager/$event_code");
+
+
+        $dropdown = <<<EOT
+<div class="w3-dropdown-hover">
+<button class="w3-button w3-black">Paperwork</button>
+<div class="w3-dropdown-content w3-bar-block w3-border">
+EOT;
+
+        $drop_items = [
+            ['route_manager', 'Route Manager<i class="fas fa-hat-wizard"></i>&nbsp;Cue Wizard'],
+            ['signin_sheet', 'Sign-In Sheet (for all rider)'],
+            ['card_outsides', 'Brevet Card Outsides (cards for all riders)'],
+            ['card_outside', 'Brevet Card Outside (one card)'],
+            ['card_inside', 'Brevet Card Inside'],
+            ['roster_upload', 'Upload a Roster (CoM CSV Format)'],
+            ['result_download', 'Download Results (RUSA CSV Format)'],
+        ];
+
+        foreach ($drop_items as $i) {
+            list($url, $desc) = $i;
+            $url = site_url($url);
+            $dropdown .=  "<A class='w3-bar-item w3-button' HREF='$url/$event_code'>$desc</A>";
+        }
+        $dropdown .= "</div></div>";
+
+
+        return $dropdown;
+        
+        // "<A class='w3-button w3-light-gray w3-round' HREF='$wizard_url'>
+        // Cue Wizard</A>";
     }
 
     private $status_icon = [
@@ -153,6 +183,4 @@ class EventsCrud extends BaseController
 
         return $d;
     }
-
-
 }

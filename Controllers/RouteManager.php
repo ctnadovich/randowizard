@@ -54,7 +54,7 @@ class RouteManager extends EventProcessor
         try {
             extract($this->eventModel->parseEventCode($event_code));
 
-            if ($this->isAdmin($club_acp_code) == false)
+            if ($this->isAdmin($club_acp_code) == false && $this->isSuperuser()==false)
                 $this->die_message('Access Denied', "Must be logged in as region event administrator to access this function.", ['backtrace' => false]);
             $event = $this->eventModel->eventByCode($event_code);
             if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE');
@@ -63,10 +63,10 @@ class RouteManager extends EventProcessor
 
             try {
                 $edata = $this->get_event_data($event);            
-                $edata['edata_error'] = null;
+                $edata['fatal_route_error'] = null;
             } catch (\Exception $e) {
                 $error_text =  $e->getMessage();
-                $edata['edata_error'] = $error_text;
+                $edata['fatal_route_error'] = $error_text;
             }
 
 
@@ -134,24 +134,35 @@ class RouteManager extends EventProcessor
         $warning_body = '';
         extract($edata); // All route_event variables are now local
 
-        if ($edata['edata_error'] !== null) {
-            $edata_error = $edata['edata_error'];
+        if ($edata['fatal_route_error'] !== null) {
+            $fatal_route_error = $edata['fatal_route_error'];
+            $route_has_warnings = true;
             $warning_body .= <<<EOT
-</h3>FATAL ERROR IN ROUTE DATA</h3> 
-<div class='w3-panel w3-border'>$edata_error</div>
+</h4>FATAL ERROR IN ROUTE/EVENT DATA</h4> 
+<div class='w3-panel w3-border'>$fatal_route_error</div>
 EOT;
         } else {
 
             if (sizeof($controle_warnings) > 0)
                 $warning_body .= ("</h3>ERRORS IN CONTROLS</h3> <ul><li>" . implode('</li><li>', $controle_warnings) . "</li></ul>");
-            if (sizeof($cue_warnings) > 0)
+                if (sizeof($cue_warnings) > 0)
                 $warning_body .= ("</h3>ERRORS IN CUES</h3> <ul><li>" . implode('</li><li>', $cue_warnings) . "</li></ul>");
+                if (sizeof($other_warnings) > 0)
+                $warning_body .= ("</h3>EVENT ERRORS</h3> <ul><li>" . implode('</li><li>', $other_warnings) . "</li></ul>");
         }
 
-        if (!empty($warning_body)) {
+        if ($route_has_warnings) {
             $warning_body .= <<<EOT
-<div class='w3-container w3-red w3-center' style='width: 32%;'>Errors in route data <A HREF='$route_url'>$route_url</a></div>
-<p>Fix these Errors, and then fetch again.</p>
+<div class='w3-container w3-red w3-center' style='width: 32%;'>Errors 
+in the event, or errors in the route data <A HREF='$route_url'>$route_url</a></div>
+<p>Fix these Errors and fetch again.</p>
+EOT;
+        } else if ($publish_is_stale){
+            $warning_body .=<<<EOT
+<div class='w3-container w3-yellow w3-center' style='width: 32%;'>Stale Published Route</div>
+<p>Fetched route data was changed after the route was published. Don't forget
+to publish again so the latest route data becomes live. </p> 
+<ul><li>Route last changed $last_update</li><li>Route last published $published_at_str</li></ul>
 EOT;
         } else {
             $warning_body .= <<<EOT
@@ -159,9 +170,7 @@ EOT;
 EOT;
         }
 
-        if ($route_updated_at > $published_at)
-            $warning_body .= "<h3>Stale Published Route</h3><p>Fetched route data is newer than published cuesheets. Don't forget
-        to publish again so the latest route data becomes live.</p>";
+        
 
 
         return $warning_body;

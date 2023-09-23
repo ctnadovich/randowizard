@@ -62,13 +62,28 @@ class PublishPaperwork extends EventProcessor
 			$edata = $this->get_event_data($event);
 
 			$route_id = $edata['route_id'];
+
+			$this->viewData['event_name_dist']=$edata['event_name_dist'];
+			$this->viewData['route_url']=$edata['route_url'];
+			$this->viewData['route_manager_url']=$edata['route_manager_url'];
+			$this->viewData['event_info_url']=$edata['event_info_url'];
+
 			if (false == $this->rwgpsLibrary->is_good_route_id($route_id)) throw new \Exception("Invalid parameters.");
 			$result = $this->rwgpsLibrary->download_route_data($route_id);
 			if ($result !== true) throw new \exception($result);
 
-			// TODO shouldn't this page go back to the wizard? 
+			$route=$this->rwgpsLibrary->get_route($route_id);
 
-			$this->die_info("Success!", "Route $route_id successfully fetched from RWGPS at " . $edata['now_str']);
+			$last_update_datetime = new \DateTime('@' . $route['updated_at']);
+			$last_update_datetime->SetTimezone($edata['event_tz']);
+			$this->viewData['last_update'] = $last_update_datetime->format("Y-m-j H:i:s T");
+	
+			$last_download_datetime = new \DateTime('@' . $route['downloaded_at']);
+			$last_download_datetime->SetTimezone($edata['event_tz']);
+			$this->viewData['last_download'] = $last_download_datetime->format("Y-m-j H:i:s T");
+	
+			return $this->load_view('fetch_success');
+
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}
@@ -79,9 +94,8 @@ class PublishPaperwork extends EventProcessor
 	// PUBLISH PUBLISH PUBLISH PUBLISH PUBLISH PUBLISH 
 	// PUBLISH PUBLISH PUBLISH PUBLISH PUBLISH PUBLISH 
 
-	// BUG????? Does this publish cards? 
-
-	// TODO Publish CARDS and QR CODE Sheets and ROUTE FILES  -- all docs should be static
+	// BUG????? Does this publish cards? No!
+	// Can't publish static cards because cards are customized to roster.
 
 	public function publish($event_code)
 	{
@@ -92,14 +106,11 @@ class PublishPaperwork extends EventProcessor
 			$this->viewData = array_merge($this->viewData, $edata);
 
 			$edata['cue_version'] = $cue_version = 1 + $edata['cue_version'];
-			$edata['cue_version_str'] = "$cue_version";
+			$edata['cue_version_str'] = $cue_version_str = "$cue_version";
 
 			$cue_data_P = $this->publish_pdf_cuesheet($edata, 'P');
-
 			$cue_data_L = $this->publish_pdf_cuesheet($edata, 'L');
-
 			$cue_data_C = $this->publish_csv_cuesheet($edata);
-
 
 			$this->eventModel->set_cuesheet_version($event_code, $cue_version);
 			
@@ -109,15 +120,14 @@ class PublishPaperwork extends EventProcessor
 
 		// Publishing success page
 
-		$cue_url['L'] = $cue_data_L['cue_url'];
 		$cue_url['P'] = $cue_data_P['cue_url'];
+		$cue_url['L'] = $cue_data_L['cue_url'];
 		$cue_url['C'] = $cue_data_C['cue_url'];
 
 		$this->viewData['cue_url'] = $cue_url;
+		$this->viewData['cue_version'] = $cue_version;
+		$this->viewData['cue_version_str'] = $cue_version_str;
 
-		// $wizard_url = site_url(strtolower(get_class($this)) . "/wizard/$event_code");
-		// $info_url = site_url(strtolower(get_class($this)) . "/info/$event_code");
-		// $event_url = site_url("info/event/$event_code");
 
 		return $this->load_view('publish_success');
 	}

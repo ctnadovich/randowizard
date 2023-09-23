@@ -1,4 +1,4 @@
-<h3>Route Manager Process</h3>
+<h2>Route Manager Process</h2>
 <P>Whenever you made changes in the route on RWGPS that
     affect the published cues, brevet cards, etc... you must complete the following steps.</p>
 <ol>
@@ -10,29 +10,32 @@
 
 <hr width>
 
-<h4>FETCH</h4>
+<h3>FETCH</h3>
 
 <ul>
     <li><?= $download_note ?></li>
-    <li>Last Fetch from RWGPS.COM: <?= $last_download ?></li>
+    <li>Last Fetch of route date: <?= $last_download ?></li>
+    <li>Fetched data last changed: <?= $last_update ?></li>
 </ul>
 <div class="w3-bar-block w3-center" style="width: 50%; margin-left: 10%;">
     <A HREF=<?= $download_url ?> CLASS='w3-bar-item w3-button w3-teal w3-margin'>Fetch latest route from RWGPS</A>
 </div>
 
-<h4>CHECK</h4>
+<h3>CHECK</h3>
 
 <?=$warnings_body?>
 
 <?php if($route_has_warnings) : ?>
 
-<h4>INVALID ROUTE</h4>
+<h4>INVALID DATA</h4>
 
-<p>This route cannot be published for use by eBrevet, nor can paperwork be generated, because there are errors in the route data.</p>
+<p>This route cannot be published for use by eBrevet, 
+    nor can paperwork be generated, because there are errors in 
+    the route or event data.</p>
 
 <?php else : ?>
 
-<h4>PREVIEW</h4>
+<h3>PREVIEW</h3>
 <P>Press the buttons below for <b>preview versions</b> of the cuesheet and brevet cards generated
     now based on the last route data fetched. <i>If you change the route at RWGPS make sure you re-fetch the
         route data or these previews won't reflect the latest data.</i> Also, this paperwork won't appear live until you press
@@ -58,13 +61,13 @@
 </div>
 <!-- </FORM> -->
 
-<h4>PUBLISH</h4>
+<h3>PUBLISH</h3>
 <p>Once you are happy with the preview paperwork, press the button below
     to publish this new version of the paperwork to the event info page. <B>Don't
         forget to publish after you make changes!</b></P>
 <ul>
     <li>Cue Version: <?= $cue_version_str ?></li>
-    <li>Last Published on: <?= $cue_gentime_str ?></li>
+    <li>Last Published on: <?= $published_at_str ?></li>
 </ul>
 <div class="w3-bar-block w3-center" style="width: 50%; margin-left: 10%;">
 

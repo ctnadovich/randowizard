@@ -50,9 +50,7 @@ class RosterCrud extends BaseController
 
         extract ($this->eventModel->parseEventCode($event_code));
 
-        if(false == $this->isRBAforClub($club_acp_code) && false == $this->isSuperuser()){
-            $this->die_message('Access Denied', "NOT RBA FOR EVENT $event_code", ['backtrace'=>false]);
-        }
+        $this->die_not_admin($club_acp_code);
 
         $event = $this->eventModel->getEvent($club_acp_code, $local_event_id);
         if (empty($event)) {

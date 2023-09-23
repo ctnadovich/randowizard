@@ -110,6 +110,11 @@ abstract class BaseController extends Controller
         exit();
     }
 
+    protected function die_message_notrace($severity, $text){
+        $this->die_message($severity,$text,['backtrace'=>false]);
+    }
+
+
     protected function die_exception($e)
     {
         $file_line = $e->getFile() . '(' . $e->getLine() . ')';
@@ -169,7 +174,8 @@ abstract class BaseController extends Controller
     {
         if (false == $this->isLoggedIn()) {
             $login_url = site_url("login");
-            $this->die_message('Access denied',  "Please <A HREF=$login_url>log in</A> before using this function.", ['backtrace' => false]);
+            $this->die_message_notrace('Access denied',  
+            "Please <A HREF=$login_url>log in</A> before using this function.");
         }
     }
 
@@ -177,6 +183,27 @@ abstract class BaseController extends Controller
         $region_list = $this->session->get('authorized_regions');
         return (false===array_search($acp_club_code,$region_list))?false:true;
     }
+
+
+	protected function isAdmin($club_acp_code = null)
+	{
+		if (false == $this->isLoggedIn()) return false;
+		if ($this->isSuperuser()) return true;
+		if (empty($club_acp_code)) return false;
+		return $this->isRBAforClub($club_acp_code);
+	}
+
+	protected function die_not_admin($club_acp_code = null)
+	{
+
+		if (false == $this->isAdmin($club_acp_code)) {
+			$this->die_message_notrace(
+				'Access Denied',
+				"Must be RBA/Organizer for Club (ACP ID $club_acp_code) to use this function."
+			);
+		}
+	}
+
     
     protected function becomeUser($user)
     {

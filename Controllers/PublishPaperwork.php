@@ -61,6 +61,8 @@ class PublishPaperwork extends EventProcessor
 			$event = $this->eventModel->eventByCode($event_code);
 			$edata = $this->get_event_data($event);
 
+			$this->die_not_admin($edata['club_acp_code']);
+
 			$route_id = $edata['route_id'];
 
 			$this->viewData['event_name_dist']=$edata['event_name_dist'];
@@ -102,7 +104,11 @@ class PublishPaperwork extends EventProcessor
 
 		try {
 			$event = $this->eventModel->eventByCode($event_code);
+			$this->die_not_admin($event['region_id']);
+			
 			$edata = $this->get_event_data($event);
+
+
 			$this->viewData = array_merge($this->viewData, $edata);
 
 			$edata['cue_version'] = $cue_version = 1 + $edata['cue_version'];

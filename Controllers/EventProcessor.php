@@ -103,8 +103,8 @@ class EventProcessor extends BaseController
 		$club_acp_code = $event['region_id'];
 		$event_code = $this->eventModel->getEventCode($event);
 
-		if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE');
-		if (empty($event['start_datetime'])) throw new \Exception('NO START TIME FOR EVENT');
+		if (empty($event['route_url']))
+			throw new \Exception('NO ROUTE FOR EVENT. You must specify a URL for the event route map.');
 
 		$club = $this->regionModel->getClub($club_acp_code);
 		if (empty($club)) {
@@ -113,10 +113,10 @@ class EventProcessor extends BaseController
 
 		// Try to get route data
 		$route_url = $event['route_url'];
-		$route_id = $this->rwgpsLibrary->extract_route_id($event['route_url']);
+		$route_id = $this->rwgpsLibrary->extract_route_id($route_url);
 
 		if ($route_id == null) {
-			throw new \Exception('NO RWGPS MAP FOR ROUTE');
+			throw new \Exception("INVALID ROUTE URL: $route_url");
 		} else {
 			$route = $this->rwgpsLibrary->get_route($route_id);
 			$has_rwgps_route = true;
@@ -146,6 +146,12 @@ class EventProcessor extends BaseController
 		// EVENT DATA
 
 		// TIME
+
+		if (empty($event['start_datetime'])) {
+			$other_warnings[] = "The start date/time for the event must be specified";
+			$event['start_datetime'] = "2000-01-01 00:00:00";
+		}
+
 		$event_timezone_name = $club['event_timezone_name'];  // For now, events can't have individual TZ
 		$event_tz = new \DateTimeZone($event_timezone_name);
 
@@ -242,6 +248,8 @@ class EventProcessor extends BaseController
 		$club_event_info_url = $event['info_url'];
 		$event_description = $event['description'];
 
+		$roster = $this->rosterModel->registered_riders($local_event_id);
+
 		if (empty($event['emergency_contact']) || empty($event['emergency_phone'])) {
 			$other_warnings[] = 'Missing emergency contact or emergency phone number.';
 			$organizer_name = "UNKNOWN";
@@ -265,12 +273,13 @@ class EventProcessor extends BaseController
 
 		if (false == $has_cuesheet) {
 			$published_at = 0;
-			$cue_gentime_str = 'Never';
+			$published_at_datetime = null;
+			$cue_gentime_str = $published_at_str = 'Never';
 		} else {
 			$published_at = $this->cuesheetLibrary->cueVersionPublishedAt($event_tagname, $cue_version);
 
 			if ($published_at == 0)
-				throw new \Exception("This can't happen. Event data indicates published cues, but cuesheet files were not found.");
+				throw new \Exception("Event data indicates published cues, but cuesheet files were not found. Try setting the cue version to zero and publishing again.");
 
 			$published_at_datetime = new \Datetime("@$published_at");
 			$published_at_datetime->setTimezone($event_tz);
@@ -343,6 +352,9 @@ class EventProcessor extends BaseController
 		$distance_mi = round($distance_km / $units::km_per_mi, 1);
 		$climbing_ft = round($route['elevation_gain'] * $units::ft_per_m);
 
+
+		// RETURN DATA
+
 		$route_has_warnings = (sizeof($controle_warnings) > 0 ||
 			sizeof($cue_warnings) > 0 ||
 			sizeof($other_warnings) > 0);
@@ -401,7 +413,7 @@ class EventProcessor extends BaseController
 			'published_at',
 			'published_at_datetime',
 			'published_at_str',
-			// 'cue_gentime_str',
+			'roster',
 			'route_controles',
 			'route_id',
 			'route_name',
@@ -453,14 +465,6 @@ class EventProcessor extends BaseController
 			'start_time_window',
 			'controls'
 		);
-	}
-
-	protected function isAdmin($club_acp_code = null)
-	{
-		if (null === $club_acp_code) return false;
-		if (false == $this->isLoggedIn()) return false;
-		$authorized_regions = $this->session->get('authorized_regions');
-		return (false === array_search($club_acp_code, $authorized_regions)) ? false : true;
 	}
 
 	protected function format_attributes($alist)

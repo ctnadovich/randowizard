@@ -203,7 +203,7 @@ EOT;
 		exit();
 	}
 
-	
+
 	// BREVET CARD VIEWS
 	// BREVET CARD VIEWS
 	// BREVET CARD VIEWS
@@ -227,12 +227,15 @@ EOT;
 
 	private function preview_card_outside_roster($edata)
 	{
-		$this->preview_card($edata, ['side' => 'outside', 'roster'=>'true']);
+		$this->preview_card($edata, ['side' => 'outside', 'roster' => 'true']);
 	}
 
 	private function preview_card($edata, $opts = [])
 	{
 
+
+		$this->die_not_admin($edata['club_acp_code']);
+		
 		$controles = $edata['route_controles'];
 		$orientation = count($controles) > 15 ? "L" : "P";
 
@@ -256,27 +259,27 @@ EOT;
 			$icon_url = (isset($opts['validate_first']) && isset($edata['icon_url'])) ? $edata['icon_url'] : null;
 			$brevetcardLibrary->draw_card_inside($controles, $icon_url);
 			$brevetcardLibrary->Output("I", "$event_tagname-CardInside.pdf");
-		}elseif (($opts['side'] ?? '') == 'outside') {
+		} elseif (($opts['side'] ?? '') == 'outside') {
 			$edata['page3_image'] = $opts['page3_image'] ?? null;
 
-			if(  isset($opts['roster'])  ){
-				if(empty($edata['roster'])) throw new \Exception("No roster or no riders.");
-				$roster = $edata['roster']; 
+			if (isset($opts['roster'])) {
+				if (!isset($edata['roster'])) throw new \Exception("No roster in data.");
+				$roster = $edata['roster'];
 				$n_riders = count($roster);
+				if (0 == $n_riders) $this->die_message("No Riders", "No brevet cards generated.", ['backtrace' => false]);
 				$n_cards = $brevetcardLibrary->n_cards;
-	
+
 				for ($i = 0; $i < $n_riders; $i += $n_cards) {
 					$r = array_slice($roster, $i, $n_cards);
 					$brevetcardLibrary->AddPage();
 					$brevetcardLibrary->draw_card_outside($edata, $r);
 				}
 				$brevetcardLibrary->Output("I", "$event_tagname-CardOutsideRoster.pdf");
-			}else{
+			} else {
 				$brevetcardLibrary->draw_card_outside($edata);
 				$brevetcardLibrary->Output("I", "$event_tagname-CardOutsideBlank.pdf");
 			}
-			
-		}else{
+		} else {
 			throw new \Exception("Unknown card side.");
 		}
 
@@ -306,7 +309,6 @@ EOT;
 		$ep_script = $mapLibrary->generate_ep_script($route, $controles, $graph_divid);
 
 
-		return $this->load_view([['map', compact ('title', 'map_script', 'ep_script')]]);
-		
+		return $this->load_view([['map', compact('title', 'map_script', 'ep_script')]]);
 	}
 }

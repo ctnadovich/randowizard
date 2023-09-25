@@ -25,7 +25,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
-class Preview extends EventProcessor
+class Generate extends EventProcessor
 {
 
 	public $unitsLibrary;
@@ -47,23 +47,31 @@ class Preview extends EventProcessor
 	// TODO ACCESS CONTROLS
 	// Access control requires $event_code be known, or at least acp_club_code
 
-	public function preview($event_code, $preview = null)
+	public function generate($event_code, $generate = null)
 	{
 
 		try {
 
-			if (empty($preview) && $this->request->is('post')) {
-				$preview = $this->request->getVar('preview');
+			if (empty($generate) && $this->request->is('post')) {
+				$generate = $this->request->getVar('generate');
 			}
 
-			if (empty($preview)) throw new \Exception("Preview name missing or empty.");
-			if (!method_exists($this, 'preview_' . $preview)) throw new \Exception("No such preview: '$preview'");
+			if (empty($generate)) throw new \Exception("Nothing to generate -- type missing or empty.");
+			if (!method_exists($this, 'generate_' . $generate)) throw new \Exception("No such generation type: '$generate'");
 
 			$event = $this->eventModel->eventByCode($event_code);
 			$edata = $this->get_event_data($event);
+			$route_manager_url = site_url("route_manager/$event_code");
+			if($edata['route_has_warnings']) $this->die_message_notrace('ERRORS FOUND',"The '$generate' cannot be
+			generated because errors have 
+			been found in the route or event data. Please <A HREF='$route_manager_url'>go to the 
+			Route Manager</A> to see what these errors
+			are so that they can be fixed. We apologize for this inconvenience.");
+
+
 			$this->viewData = array_merge($this->viewData, $edata);
 
-			return $this->{'preview_' . $preview}($edata);
+			return $this->{'generate_' . $generate}($edata);
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}
@@ -89,7 +97,7 @@ EOT;
 
 	// Raw JSON View
 
-	private function preview_json($edata)
+	private function generate_json($edata)
 	{
 		$route = $this->rwgpsLibrary->get_route($edata['route_id']);
 		header("Content-Type: application/json; charset=UTF-8");
@@ -99,7 +107,7 @@ EOT;
 
 	// Cue processing SEARCH/REPLACE VIEW
 
-	private function preview_search_replace($edata)
+	private function generate_search_replace($edata)
 	{
 
 		extract($edata);
@@ -151,15 +159,15 @@ EOT;
 	// CUE SHEET VIEWS
 	// PDF Rendered cue_sheet Views
 
-	private function preview_pdf_cue($edata)
+	private function generate_pdf_cue($edata)
 	{
 		$this->_view_pdf_cue($edata, 'P');
 	}
-	private function preview_pdf_cue_portrait($edata)
+	private function generate_pdf_cue_portrait($edata)
 	{
 		$this->_view_pdf_cue($edata, 'P');
 	}
-	private function preview_pdf_cue_landscape($edata)
+	private function generate_pdf_cue_landscape($edata)
 	{
 		$this->_view_pdf_cue($edata, 'L');
 	}
@@ -167,8 +175,6 @@ EOT;
 	private function _view_pdf_cue($edata, $orientation = 'P', $size = 'letter')
 	{
 
-
-		// $edata['cue_version'] = "PREVIEW (Last Published: " . (($edata['cue_version'] ?? 0) ?: 'None') . ")";
 		$event_tagname = $edata['event_tagname'];
 
 		$cuesheetLibrary = new \App\Libraries\Cuesheet(['edata' => $edata, 'orientation' => $orientation, 'size' => $size]);
@@ -184,7 +190,7 @@ EOT;
 	}
 
 
-	private function preview_csv_cue($edata)
+	private function generate_csv_cue($edata)
 	{
 
 		extract($edata);
@@ -210,27 +216,27 @@ EOT;
 
 	// PDF Rendered Brevet Card Views
 
-	private function preview_card_inside($edata)
+	private function generate_card_inside($edata)
 	{
-		$this->preview_card($edata, ['side' => 'inside', 'validate_first' => true]);  // stamp first control with logo
+		$this->generate_card($edata, ['side' => 'inside', 'validate_first' => true]);  // stamp first control with logo
 	}
 
-	private function preview_card_inside_novalidatefirst($edata)
+	private function generate_card_inside_novalidatefirst($edata)
 	{
-		$this->preview_card($edata, ['side' => 'inside']);
+		$this->generate_card($edata, ['side' => 'inside']);
 	}
 
-	private function preview_card_outside_blank($edata)
+	private function generate_card_outside_blank($edata)
 	{
-		$this->preview_card($edata, ['side' => 'outside']);
+		$this->generate_card($edata, ['side' => 'outside']);
 	}
 
-	private function preview_card_outside_roster($edata)
+	private function generate_card_outside_roster($edata)
 	{
-		$this->preview_card($edata, ['side' => 'outside', 'roster' => 'true']);
+		$this->generate_card($edata, ['side' => 'outside', 'roster' => 'true']);
 	}
 
-	private function preview_card($edata, $opts = [])
+	private function generate_card($edata, $opts = [])
 	{
 
 		$this->die_not_admin($edata['club_acp_code']);
@@ -292,7 +298,7 @@ EOT;
 
 	// SIGN IN ROSTER SHEETS
 
-	private function preview_signin_sheet($edata, $opts = [])
+	private function generate_signin_sheet($edata, $opts = [])
 	{
 
 		$this->die_not_admin($edata['club_acp_code']);
@@ -362,7 +368,7 @@ EOT;
 
 	// CSV DOWNLOAD
 
-	private function preview_rusacsv($edata)
+	private function generate_rusacsv($edata)
 	{
 		$event_code = $edata['event_code'];
 		$local_event_id = $edata['local_event_id'];
@@ -414,7 +420,7 @@ EOT;
 
 	// MAP AND EP ONLY
 
-	private function preview_map($edata)
+	private function generate_map($edata)
 	{
 
 		$mapLibrary = new \App\Libraries\Map();

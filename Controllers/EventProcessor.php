@@ -298,7 +298,7 @@ class EventProcessor extends BaseController
 
 		$download_url = site_url("recache/$event_code");
 		$event_publish_url = site_url("publish/$event_code");
-		$event_preview_url = site_url("preview/$event_code");
+		$event_preview_url = site_url("generate/$event_code");
 
 		$route_manager_url = site_url("route_manager/$event_code");
 		$event_info_url = site_url("event_info/$event_code");

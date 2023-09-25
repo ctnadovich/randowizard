@@ -140,12 +140,12 @@ EOT;
 
         $drop_items = [
             ["route_manager/$event_code", "Route Manager<i class='fas fa-hat-wizard'></i>&nbsp;Cue Wizard"],
-            ["signin_sheet/$event_code", "Sign-In Sheet (for all rider)"],
+            ["preview/$event_code/signin_sheet", "Sign-In Sheet (for all rider)"],
             ["preview/$event_code/card_outside_roster", "Brevet Card Outsides (cards for all riders)"],
-            ["preview/$event_code/card_outside", "Brevet Card Outside (one card)"],
+            ["preview/$event_code/card_outside_blank", "Brevet Card Outside (blank rider name)"],
             ["preview/$event_code/card_inside", "Brevet Card Inside"],
             ["roster_upload/$event_code", "Upload a Roster (CoM CSV Format)"],
-            ["result_download/$event_code", "Download Results (RUSA CSV Format)"],
+            ["preview/$event_code/rusacsv", "Download Results (RUSA CSV Format)"],
         ];
 
         foreach ($drop_items as $i) {

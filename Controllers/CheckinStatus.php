@@ -27,6 +27,7 @@ use Psr\Log\LoggerInterface;
 class CheckinStatus extends EventProcessor
 {
 	public $rusaModel;
+	public $cryptoLibrary;
 
 
 	public function initController(
@@ -37,6 +38,8 @@ class CheckinStatus extends EventProcessor
 		parent::initController($request, $response, $logger);
 
 		$this->rusaModel = model('Rusa');
+		$this->cryptoLibrary = new \App\Libraries\Crypto();
+
 	}
 
 
@@ -164,7 +167,7 @@ class CheckinStatus extends EventProcessor
 
 						$control_index = $i;
 						$d = compact('control_index', 'event_code', 'rider_id');
-						$checkin_code = $this->make_checkin_code($d, $epp_secret);
+						$checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
 
 						if ($this->isAdmin()) {
 							$el .= "&nbsp; <i title='$checkin_code' class='fa fa-check-circle' style='color: #355681;'></i>";
@@ -192,7 +195,7 @@ class CheckinStatus extends EventProcessor
 						list($hh, $mm, $ss) = $elapsed_array;
 						$elapsed_hhmm =  "$hh$mm";
 						$d = compact('elapsed_hhmm', 'global_event_id', 'rider_id');
-						$finish_code = $this->make_finish_code($d, $epp_secret);
+						$finish_code = $this->cryptoLibrary->make_finish_code($d, $epp_secret);
 
 						$finish_text = $hh .  "h&nbsp;" . $mm . "m";
 
@@ -236,23 +239,5 @@ class CheckinStatus extends EventProcessor
 		return $out;
 	}
 
-	private function make_checkin_code($d, $epp_secret)
-	{
-		extract($d);
-		$plaintext = "$control_index-$event_code-$rider_id-$epp_secret";
-		$ciphertext = hash('sha256', $plaintext);
-		$plain_code = strtoupper(substr($ciphertext, 0, 4));
-		$xycode = str_replace(['0', '1'], ['X', 'Y'], $plain_code);
-		return $xycode;
-	}
 
-	private function make_finish_code($d, $epp_secret)
-	{
-		extract($d);
-		$plaintext = "Finished:$elapsed_hhmm-$global_event_id-$rider_id-$epp_secret";
-		$ciphertext = hash('sha256', $plaintext);
-		$plain_code = strtoupper(substr($ciphertext, 0, 4));
-		$xycode = str_replace(['0', '1'], ['X', 'Y'], $plain_code);
-		return $xycode;
-	}
 }

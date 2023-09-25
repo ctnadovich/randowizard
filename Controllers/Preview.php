@@ -168,7 +168,7 @@ EOT;
 	{
 
 
-		$edata['cue_version'] = "PREVIEW (Last Published: " . (($edata['cue_version'] ?? 0) ?: 'None') . ")";
+		// $edata['cue_version'] = "PREVIEW (Last Published: " . (($edata['cue_version'] ?? 0) ?: 'None') . ")";
 		$event_tagname = $edata['event_tagname'];
 
 		$cuesheetLibrary = new \App\Libraries\Cuesheet(['edata' => $edata, 'orientation' => $orientation, 'size' => $size]);
@@ -233,13 +233,12 @@ EOT;
 	private function preview_card($edata, $opts = [])
 	{
 
-
 		$this->die_not_admin($edata['club_acp_code']);
-		
+
 		$controles = $edata['route_controles'];
 		$orientation = count($controles) > 15 ? "L" : "P";
 
-		$edata['cue_version'] = "PREVIEW (Last Published: " . (($edata['cue_version'] ?? 0) ?: 'None') . ")";
+		// $edata['cue_version'] = "(Last Published: " . (($edata['cue_version'] ?? 0) ?: 'None') . ")";
 
 		$brevetcardLibrary = new \App\Libraries\Brevetcard(['edata' => $edata, 'orientation' => $orientation]);
 
@@ -249,7 +248,7 @@ EOT;
 			$brevetcardLibrary->n_folds++;
 		}
 
-		$brevetcardLibrary->AddPage();
+		// $brevetcardLibrary->AddPage();
 		$brevetcardLibrary->set_controle_date_format($edata);
 
 		$event_tagname = $edata['event_tagname'];
@@ -257,6 +256,7 @@ EOT;
 		if (($opts['side'] ?? '') == 'inside') {
 			// set false if you don't want the first controle validated when cards are prined
 			$icon_url = (isset($opts['validate_first']) && isset($edata['icon_url'])) ? $edata['icon_url'] : null;
+			$brevetcardLibrary->AddPage();
 			$brevetcardLibrary->draw_card_inside($controles, $icon_url);
 			$brevetcardLibrary->Output("I", "$event_tagname-CardInside.pdf");
 		} elseif (($opts['side'] ?? '') == 'outside') {
@@ -269,6 +269,9 @@ EOT;
 				if (0 == $n_riders) $this->die_message("No Riders", "No brevet cards generated.", ['backtrace' => false]);
 				$n_cards = $brevetcardLibrary->n_cards;
 
+
+				// $this->die_message($n_cards, print_r($roster,true));
+
 				for ($i = 0; $i < $n_riders; $i += $n_cards) {
 					$r = array_slice($roster, $i, $n_cards);
 					$brevetcardLibrary->AddPage();
@@ -276,6 +279,7 @@ EOT;
 				}
 				$brevetcardLibrary->Output("I", "$event_tagname-CardOutsideRoster.pdf");
 			} else {
+				$brevetcardLibrary->AddPage();
 				$brevetcardLibrary->draw_card_outside($edata);
 				$brevetcardLibrary->Output("I", "$event_tagname-CardOutsideBlank.pdf");
 			}
@@ -285,6 +289,128 @@ EOT;
 
 		exit();
 	}
+
+	// SIGN IN ROSTER SHEETS
+
+	private function preview_signin_sheet($edata, $opts = [])
+	{
+
+		$this->die_not_admin($edata['club_acp_code']);
+		$tagname = $edata['event_tagname'];
+		extract($this->make_roster_table_array($edata));
+		$params = [
+			'edata' => $edata,
+			'roster_table' => $roster_table_array,
+			'header_row' => $header_row
+		];
+		$signinLibrary =  new \App\Libraries\Signin($params);
+		$signinLibrary->AddPage();
+		$signinLibrary->render_sheet();
+		$signinLibrary->Output("I", $tagname . "-SignIn.pdf");
+		exit();
+	}
+
+
+
+	private function make_roster_table_array($event)
+	{
+
+		$i = 1;
+		$roster_table_array = [];
+
+		$club = $this->regionModel->getClub($event['club_acp_code']);
+		if (empty($club)) {
+			throw new \Exception("UNKNOWN CLUB");
+		}
+		$epp_secret = $club['epp_secret'];
+
+		foreach ($event['roster'] as $row) {
+
+			$full_name =  $row['last_name'] . ', ' . $row['first_name'];
+
+			$rusa_id = $row['rusa_id'];
+
+			$cryptoLibrary =  new \App\Libraries\Crypto();
+			$start_code = $cryptoLibrary->make_start_code($event, $rusa_id, $epp_secret);
+			$dns = (!empty($row['result'])) ? $row['result'] : "";
+			if ($dns == "FINISH") $dns = "FINISH: " . $row['elapsed_time'];
+
+			$header_row = [
+				['font' => 'bold', 'text' => '#', 'align' => 'C', 'width' => 4],
+				['font' => 'bold', 'text' => 'Start Code', 'align' => 'C', 'style' => 'fit', 'width' => 5],
+				['font' => 'bold', 'text' => 'RUSA', 'align' => 'C', 'width' => 6],
+				['font' => 'bold', 'text' => 'Name', 'align' => 'C', 'width' => 30],
+				['font' => 'bold', 'text' => 'Sign', 'align' => 'C', 'width' => 30],
+				['font' => 'bold', 'text' => 'Time In', 'align' => 'C', 'width' => 25],
+			];
+
+			$roster_table_array[] = [
+				['text' => "$i"],
+				['text' => "$start_code", 'font' => 'fineprint'],
+				['text' => "$rusa_id"],
+				['text' => "$full_name", 'align' => 'L', 'style' => 'fit'],
+				['text' => ""],
+				['text' => "$dns"]
+			];
+
+
+			$i++;
+		}
+
+		return compact('header_row', 'roster_table_array');
+	}
+
+	// CSV DOWNLOAD
+
+	private function preview_rusacsv($edata)
+	{
+		$event_code = $edata['event_code'];
+		$local_event_id = $edata['local_event_id'];
+		$filename = "results-$event_code.csv";
+		$rusa_results = $this->rosterModel->get_rusa_results($local_event_id);
+
+		// $this->die_message(__METHOD__, print_r(array_keys(reset($rusa_results)), true));
+
+		if(empty($rusa_results)) $this->die_message_notrace('No Results', 'Nothing to download.');
+
+		return $this->csv_noquote($rusa_results, $filename);
+		// $this->load_view('upload_success');
+	}
+
+	private function csv_noquote($result_array, $filename = 'data.csv')
+	{
+		$delimiter = ",";
+		$newline = "\r\n";
+		$enclosure = "";
+		$data = $this->csv_from_result($result_array, $delimiter, $newline, $enclosure);
+		return $this->response->download($filename, $data)->setContentType('text/csv');	
+	}
+
+
+	function csv_from_result($result_array, $delimiter = ',', $newline = "\n", $enclosure = '"') {
+		
+		$out = '';
+		$column_headers = array_keys(reset($result_array));
+	
+		// Write the column headers
+		foreach ($column_headers as $field) {
+			$out .= $enclosure.str_replace($enclosure, $enclosure.$enclosure, $field).$enclosure.$delimiter;
+		}
+		$out = rtrim($out);
+		$out .= $newline;
+	
+		// Write the data rows
+		foreach ($result_array as $row) {
+			foreach ($row as $item) {
+				$out .= $enclosure.str_replace($enclosure, $enclosure.$enclosure, $item).$enclosure.$delimiter;
+			}
+			$out = rtrim($out);
+			$out .= $newline;
+		}
+	
+		return $out;
+	}
+	
 
 	// MAP AND EP ONLY
 

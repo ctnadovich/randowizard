@@ -886,7 +886,7 @@ class Cuesheet extends Myfpdf
 		);
 
 		if ($event_type != 'permanent')
-			$lines[] =	["Cuesheet Version:", " $cue_version"];
+			$lines[] =	["Cuesheet Version:", " $cue_version_str"];
 
 		return $lines;
 	}

@@ -41,6 +41,9 @@ class Roster extends Model
         $this->where([
             'event_id' => $local_event_id
         ]);
+        $this->join('rusa','rusa.rusa_id = roster.rider_id');
+        $this->orderBy('last_name');
+        $this->orderBy('first_name');
         return $this->findAll();
     }
 
@@ -76,6 +79,19 @@ class Roster extends Model
         $this->upsert($data);
 
     }
+
+    public function get_rusa_results($local_event_id){
+		$sql="SELECT IF(rusa.rusa_id>0,rusa.rusa_id,'') as '#RUSA#',first_name as 'FirstName',last_name as 'LastName',
+        HOUR(elapsed_time) as 'Hours', MINUTE(elapsed_time) as 'Minutes', 
+        IF(result='FINISH',0,1) as 'DNF', 
+        IF(country<>'US',1,0) as 'Foreign' FROM roster,rusa where 
+        roster.rider_id=rusa.rusa_id AND
+        roster.event_id='$local_event_id' AND 
+        (result IS NULL OR (result<>'DNS' AND result<>'VOL'))
+        ORDER BY last_name,first_name";
+		$q=$this->query($sql);
+		return $q->getResultArray();
+	}
 
 
 

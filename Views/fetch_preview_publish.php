@@ -1,4 +1,4 @@
-<?php if ($route_has_warnings) : ?>
+<?php if ($route_has_warnings || $publish_is_stale) : ?>
     <div class='w3-button w3-red'><i class='fa-solid fa-bug'></i> Errors Found!</div>
 <?php endif; ?>
 

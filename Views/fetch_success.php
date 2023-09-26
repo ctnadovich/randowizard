@@ -10,5 +10,4 @@
 
 <div class="w3-bar">
     <A class="w3-bar-item w3-button w3-margin w3-teal" HREF='<?=$route_manager_url?>'>Return to Wizard for this Event</A>
-    <A class="w3-bar-item w3-button w3-margin w3-teal" HREF='<?=$event_info_url?>'>Go to Published Event Page</A>
 </div>

@@ -357,7 +357,7 @@ class EventProcessor extends BaseController
 
 		$route_has_warnings = (sizeof($controle_warnings) > 0 ||
 			sizeof($cue_warnings) > 0 ||
-			sizeof($other_warnings) > 0);
+			sizeof($other_warnings) > 0 );
 
 		$edata = compact(
 			'checkin_post_url',
@@ -494,4 +494,24 @@ class EventProcessor extends BaseController
 		}
 		fclose($output) or die("Can't close output.");
 	}
+
+	protected function die_data_exception($e){
+		$error_text = $e->getMessage();
+		
+		$msg = <<<EOT
+<h3>Invalid Event Data</h3>
+<p>I'm very sorry but I'm afraid 
+errors were found in the route or event data. Therefore the event info 
+that should have appeared here cannot be displayed. 
+To allow event info to be displayed properly, the event administrator must 
+correct the data in the event description or 
+route map and re-fetch the data
+into the event manager. Till then, this event should be set to 'hidden'.</p>
+<div class='w3-panel w3-border'>$error_text</div>
+EOT;
+
+		$this->die_message('Error in Data', $msg, ['backtrace' => false]);
+
+	}
+
 }

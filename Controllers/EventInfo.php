@@ -63,20 +63,7 @@ class EventInfo extends EventProcessor
 
 
         } catch (\Exception $e) {
-            $error_text = $e->getMessage();
-    
-            $msg = <<<EOT
-    <h3>Event Info Unavailable</h3>
-    <p>I'm very sorry but I'm afraid 
-    errors were found in the event data. Therefore the event info 
-    that should have appeared here cannot be displayed. 
-    To allow event info to be displayed properly, the event administrator must 
-    correct the data in the route map (<A HREF='$route_url'>$route_url</a>), and re-fetch the data
-    into the event manager. </p>
-    <div class='w3-panel w3-border'>$error_text</div>
-    EOT;
-    
-            $this->die_message('Error in Event Data', $msg, ['backtrace' => false]);
+            $this->die_data_exception($e);
         }
     
         try {
@@ -109,7 +96,7 @@ class EventInfo extends EventProcessor
             ], ['saveData' => false]];
 
 
-            return $this->load_view($view_list);
+            return $this->load_view($view_list, false);
 
         } catch (\Exception $e) {
             $this->die_exception($e);

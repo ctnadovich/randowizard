@@ -54,39 +54,24 @@ class CheckinStatus extends EventProcessor
 
 			$checkin_table = '';
 
-			$event = $this->eventModel->eventByCode($event_code);
-			$edata = $this->get_event_data($event);
+			// $event = $this->eventModel->eventByCode($event_code);
+			// $edata = $this->get_event_data($event);
 
-			/* 
+			try {
 
-			if ($event_code === null) throw new \Exception("MISSING PARAMETER");
-
-			if (0 == preg_match('/^(\d+)-(\d+)$/', $event_code, $m)) {
-				throw new \Exception('INVALID EVENT ID');
+ 
+				$event = $this->eventModel->eventByCode($event_code);
+	
+				if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE.');
+				$route_url = $event['route_url'];
+	
+				$edata = $this->get_event_data($event);
+	
+	
+			} catch (\Exception $e) {
+				$this->die_data_exception($e);
 			}
-
-			list($all, $club_acp_code, $local_event_id) = $m;
-
-			$club = $this->regionModel->getClub($club_acp_code);
-			if (empty($club)) {
-				throw new \Exception("UNKNOWN CLUB");
-			}
-			$epp_secret = $club['epp_secret'];
-
-			$event = $this->eventModel->getEvent($club_acp_code, $local_event_id);
-			if (empty($event)) {
-				throw new \Exception("NO SUCH EVENT");
-			}
-
-			$edata = $this->process_event($event);
-		} catch (\Exception $e) {
-			$status = $e->GetMessage();
-
-			$this->die_message('ERROR', $status);
-		}
- */
-			// Establish 'event','route','controles','warnings','cues','route_event'
-
+		
 			$event_name_dist = $edata['event_name_dist'];
 			$controles = $edata['controls'];
 			$ncontroles = count($controles);
@@ -96,7 +81,6 @@ class CheckinStatus extends EventProcessor
 
 			$title = "$event_name_dist";
 			$subject = $title;
-
 
 			$reclass = $this->unitsLibrary;
 
@@ -127,7 +111,6 @@ class CheckinStatus extends EventProcessor
 			$checkin_table .= "<TR class='w3-light-blue'>" . $head_row['close'] . "</TR>";
 
 
-			// $registeredRiders = $this->checkinModel->registeredRiders$registeredRiders($local_event_id);
 			$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
 
 			foreach ($registeredRiders as $rider) {
@@ -217,7 +200,7 @@ class CheckinStatus extends EventProcessor
 			);
 
 			$this->viewData = array_merge($this->viewData, $view_data);
-			return $this->load_view(['checkin_status']);
+			return $this->load_view(['checkin_status'],false);
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}

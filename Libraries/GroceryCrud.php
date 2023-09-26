@@ -2429,12 +2429,28 @@ class grocery_CRUD_Layout extends grocery_CRUD_Model_Driver
 
         if(!$using_ajax)
         {
+            // $options_array = $this->get_relation_array($field_info->extras);
+            // foreach($options_array as $option_value => $option)
+            // {
+            //     $selected = !empty($value) && $value == $option_value ? "selected='selected'" : '';
+            //     $input .= "<option value='$option_value' $selected >$option</option>";
+            // }
+
+
+            // Added by chava/CTN
+            $state = $field_info->extras[6]; // add|edit| ..etc
+            $default_value = $field_info->extras[5];
+            if ($state === 'add')
+                $value = $default_value;
+                
             $options_array = $this->get_relation_array($field_info->extras);
             foreach($options_array as $option_value => $option)
             {
                 $selected = !empty($value) && $value == $option_value ? "selected='selected'" : '';
-                $input .= "<option value='$option_value' $selected >$option</option>";
+                $input .= "<option value='$option_value' $selected >$option</option>";    
             }
+
+
         }
         elseif(!empty($value) || (is_numeric($value) && $value == '0') ) //If it's ajax then we only need the selected items and not all the items
         {
@@ -5107,9 +5123,14 @@ class GroceryCrud extends grocery_CRUD_States
      * @param string $orderBy
      * @return Grocery_CRUD
      */
-    public function setRelation($fieldName , $relatedTable, $relatedTitleField, $whereClause = null, $orderBy = null)
+
+// CTN Modified to add $defaultValue
+
+    public function setRelation($fieldName , $relatedTable, 
+    $relatedTitleField, $whereClause = null, $orderBy = null, $defaultValue = null)
     {
-        $this->relation[$fieldName] = array($fieldName, $relatedTable,$relatedTitleField, $whereClause, $orderBy);
+        $this->relation[$fieldName] = array($fieldName, $relatedTable,$relatedTitleField, 
+        $whereClause, $orderBy, $defaultValue,$this->getState());
         return $this;
     }
 

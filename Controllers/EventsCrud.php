@@ -32,6 +32,9 @@ class EventsCrud extends BaseController
     protected $helpers = ['form'];
     protected $rosterModel;
 
+    protected $user_id ;
+    protected $authorized_regions;
+
     public function initController(
         RequestInterface $request,
         ResponseInterface $response,
@@ -39,6 +42,11 @@ class EventsCrud extends BaseController
     ) {
         parent::initController($request, $response, $logger);
         $this->rosterModel =  model('Roster');
+
+         $this->user_id = $this->session->get('user_id');
+         $this->authorized_regions = $this->session->get('authorized_regions');
+    
+
     }
 
     public function events($timerange = 'all')
@@ -48,9 +56,18 @@ class EventsCrud extends BaseController
 
         $crud = new GroceryCrud();
         $crud->setTable('event');
-        $crud->setRelation('region_id', 'region', '{club_name}', ['rba_user_id' => $this->session->get('user_id')]);
+
+        if(count($this->authorized_regions) == 1  && false == $this->isSuperuser()){
+            $my_region = reset($this->authorized_regions);
+            $crud->setRelation('region_id', 'region', '{club_name}', ['rba_user_id' => $this->user_id],null,$my_region);
+        }else{
+            $crud->setRelation('region_id', 'region', '{club_name}', 
+               ($this->isSuperuser())?null:['rba_user_id' => $this->user_id]);
+
+        }
         $crud->setRelation('start_state_id', 'state', '{fullname}');
-        $crud->setRelation('start_country_id', 'country', '{fullname}');
+        $crud->setRelation('start_country_id', 'country', '{fullname}',null,null,236);  // US Default
+
 
         $dt = new \DateTime();
         $now = $dt->format('Y-m-d');
@@ -79,10 +96,29 @@ class EventsCrud extends BaseController
         }
 
         $crud->setAdd();
+        $crud->unsetAddFields(['status','cue_version']);
+
+        $crud->setRule('region', 'Region', 'required');
+        $crud->setRule('country', 'Country', 'required');
+        $crud->setRule('sanction', 'Sanction', 'required');
+        $crud->setRule('name', 'Event Name', 'required');
+        $crud->setRule('type', 'Event Type', 'required');
+        $crud->setRule('description', 'Description of Event', 'required');
+        $crud->setRule('info_url', 'Route URL', 'permit_empty|valid_url_strict');
+        $crud->setRule('route_url', 'Route URL', 'required|valid_url_strict');
+        $crud->setRule('distance', 'Official Distance', 'required|is_natural_no_zero');
+        $crud->setRule('gravel_distance', 'Gravel Distance', 'permit_empty|is_natural');
+        $crud->setRule('start_datetime', 'Start Date and Time', 'required');
+        $crud->setRule('start_city', 'Start City', 'required|alpha_space');
+        $crud->setRule('start_state_id', 'Start State', 'required');
+        $crud->setRule('emergency_contact', 'Emergency Contact', 'required');
+        $crud->setRule('emergency_phone', 'Emergency Phone', 'required');
+
         $crud->setRead();
         $crud->callbackColumn('status', array($this, '_status_icons'));
-        $crud->callbackColumn('admin', array($this, '_paperwork'));
+        $crud->callbackColumn('generate', array($this, '_paperwork'));
         $crud->callbackColumn('roster', array($this, '_roster_url'));
+        $crud->callbackColumn('route', array($this, '_route'));
 
 
         // $crud->setActionButton('', "fas fa-hat-wizard", function ($x)
@@ -93,7 +129,7 @@ class EventsCrud extends BaseController
         //     return ("route_manager/$x");}, false);
 
 
-        $crud->columns(['region_id', 'name', 'distance', 'start_datetime', 'status', 'roster', 'admin']);
+        $crud->columns(['region_id', 'name', 'distance', 'start_datetime', 'status', 'roster', 'route', 'generate']);
         // $crud->unsetEditFields(['region_id']);
         $crud->displayAs('start_datetime', 'Start Date/Time');
         $crud->displayAs('start_state_id', 'State');
@@ -124,22 +160,36 @@ class EventsCrud extends BaseController
     }
 
 
-    public function _paperwork($value, $row)
+    public function _route($value, $row)
     {
         $event_id = $row->id;
         $region_id = $row->region_id;
         $event_code = "$region_id-$event_id";
-        // $wizard_url = site_url("route_manager/$event_code");
+        $wizard_url = site_url("route_manager/$event_code");
 
+        return <<<EOT
+        <div class='w3-container w3-center' style="background-color:rgb(206,206,206);">
+<A HREF='$wizard_url' class='w3-button w3-blue'>Manage&nbsp;<i class='fa-solid fa-hat-wizard'></i></A>
+</div>
+EOT;
+
+    }
+
+        public function _paperwork($value, $row)
+        {
+            $event_id = $row->id;
+            $region_id = $row->region_id;
+            $event_code = "$region_id-$event_id";
+            // $wizard_url = site_url("route_manager/$event_code");
+    
 
         $dropdown = <<<EOT
 <div class="w3-dropdown-hover">
-<button class="w3-button w3-black">Paperwork</button>
+<button class="w3-button w3-blue">Download&nbsp;<i class="fa-solid fa-download"></i></button>
 <div class="w3-dropdown-content w3-bar-block w3-border">
 EOT;
 
         $drop_items = [
-            ["route_manager/$event_code", "Route Manager<i class='fas fa-hat-wizard'></i>&nbsp;Cue Wizard"],
             ["generate/$event_code/signin_sheet", "Sign-In Sheet (for all rider)"],
             ["generate/$event_code/card_outside_roster", "Brevet Card Outsides (cards for all riders)"],
             ["generate/$event_code/card_outside_blank", "Brevet Card Outside (blank rider name)"],

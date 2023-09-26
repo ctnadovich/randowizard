@@ -65,6 +65,7 @@ class RouteManager extends EventProcessor
             $edata['event_name_dist'] = $event_name_dist = $this->eventModel->nameDist($event);
             $edata['route_url'] = $route_url = $event['route_url'];
             $edata['download_url'] = $download_url = site_url("recache/$event_code");
+            $edata['publish_is_stale'] = null;
 
             try {
                 $edata = $this->get_event_data($event);
@@ -139,7 +140,7 @@ class RouteManager extends EventProcessor
         extract($edata); // All route_event variables are now local
 
 
-        if ($route_has_warnings) {
+        if ($route_has_warnings || $publish_is_stale) {
             $warning_body .= <<<EOT
 <P class='w3-text-red'>Errors 
 were found in the event or the route data.
@@ -163,11 +164,11 @@ EOT;
             $warning_body .= ("<h4>EVENT ERRORS</h4> <ul><li>" . implode('</li><li>', $other_warnings) . "</li></ul>");
 
 
-        if (!empty($publish_is_stale)) {
+        if ($publish_is_stale) {
             $warning_body .= <<<EOT
 <h4>STALE PUBLISHED ROUTE</h4>
-<p>Fetched route data was changed after the route was published. Don't forget
-to publish again so the latest route data becomes live. </p> 
+<p>Fetched route data was changed after the route was published. Please
+publish again so the latest route data becomes live. </p> 
 <ul><li>Route last changed $last_update</li><li>Route last published $published_at_str</li></ul>
 EOT;
         }

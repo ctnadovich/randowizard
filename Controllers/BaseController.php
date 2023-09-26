@@ -66,12 +66,11 @@ abstract class BaseController extends Controller
         $this->regionModel = model('Region');
     }
 
-    protected function load_view($view_list)
+    protected function load_view($view_list,$navbar=true)
     {
 
-        $views =
-            view('head', $this->viewData) .
-            view('navbar', $this->viewData);
+        $views =  view('head', $this->viewData);
+        if($navbar)  $views .= view('navbar', $this->viewData);
 
         if (is_array($view_list)) {
             foreach ($view_list as $v) {

@@ -40,21 +40,21 @@ class Home extends BaseController
         $this->eventModel = model('Event');
         $this->viewData['errors'] = [];
         $this->viewData['region'] = $this->regionModel->getRegions();
-        $this->viewData['event_table'] = $this->eventModel->getEventTable();
     }
 
     public function home()
     {
 
+        $this->viewData['eventful_regions'] = $this->regionModel->hasEvents();
 
         if ($this->session->get('logged_in')) {
-            return $this->load_view(['hero',  'events']);
+            return $this->load_view(['hero','eventful_regions']);
         } else {
 
             $captcha = $this->bike_captcha();
             $this->session->set('is_bike', $captcha['is_bike']);
             $this->viewData = array_merge($this->viewData, $captcha);
-            return $this->load_view(['hero', 'register', 'events']);
+            return $this->load_view(['hero', 'register','eventful_regions']);
         }
     }
 

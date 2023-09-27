@@ -72,6 +72,13 @@ class EventInfo extends EventProcessor
             // $event_name_dist = $edata['event_name'] . ' ' . $edata['distance'] . 'K';
             $this->viewData['title'] = $this->viewData['subject'] = $this->viewData['event_name_dist'];
 
+            if ($this->eventModel->statusQ($event, 'canceled')) $status_text = "THIS EVENT IS CANCELED";
+			elseif ($this->eventModel->statusQ($event, 'suspended')) $status_text = "THIS EVENT IS SUSPENDED";
+			elseif ($this->eventModel->statusQ($event, 'hidden')) $status_text = "THIS EVENT IS HIDDEN";
+            elseif ($this->eventModel->isUnderwayQ($event)) $status_text = "THIS EVENT IS UNDERWAY!";
+			else $status_text = '';
+            $this->viewData['status_text']=$status_text;
+
             $view_list = [];
             $view_list[] = 'event_head';
             $view_list[] = 'tab_bar';

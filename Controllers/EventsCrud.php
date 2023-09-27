@@ -115,10 +115,14 @@ class EventsCrud extends BaseController
         $crud->setRule('emergency_phone', 'Emergency Phone', 'required');
 
         $crud->setRead();
+        $crud->callbackColumn('event_code', array($this, '_event_code'));
         $crud->callbackColumn('status', array($this, '_status_icons'));
         $crud->callbackColumn('generate', array($this, '_paperwork'));
+        $crud->callbackColumn('event_info', array($this, '_event_info'));
         $crud->callbackColumn('roster', array($this, '_roster_url'));
         $crud->callbackColumn('route', array($this, '_route'));
+
+        $crud->setTexteditor(['description']);
 
 
         // $crud->setActionButton('', "fas fa-hat-wizard", function ($x)
@@ -129,7 +133,7 @@ class EventsCrud extends BaseController
         //     return ("route_manager/$x");}, false);
 
 
-        $crud->columns(['region_id', 'name', 'distance', 'start_datetime', 'status', 'roster', 'route', 'generate']);
+        $crud->columns(['event_code','region_id', 'name', 'distance', 'start_datetime', 'status', 'event_info', 'roster', 'route', 'generate']);
         // $crud->unsetEditFields(['region_id']);
         $crud->displayAs('start_datetime', 'Start Date/Time');
         $crud->displayAs('start_state_id', 'State');
@@ -137,12 +141,24 @@ class EventsCrud extends BaseController
         $crud->displayAs('distance', 'Official Dist (km)');
         $crud->displayAs('region_id', 'Region');
         $crud->displayAs('gravel_distance', 'Official Gravel (km)');
+        $crud->displayAs('event_info', 'Info');
 
         $output = $crud->render();
 
         $this->viewData = array_merge((array)$output, $this->viewData);
 
         return $this->load_view(['dashboard']);
+    }
+
+    public function _event_code($value, $row)
+    {
+
+        $event_id = $row->id;
+        $region_id = $row->region_id;
+        $event_code = "$region_id-$event_id";
+
+        return $event_code;
+
     }
 
     public function _roster_url($value, $row)
@@ -175,6 +191,20 @@ EOT;
 
     }
 
+    public function _event_info($value, $row)
+    {
+        $event_id = $row->id;
+        $region_id = $row->region_id;
+        $event_code = "$region_id-$event_id";
+        $wizard_url = site_url("event_info/$event_code");
+
+        return <<<EOT
+        <div class='w3-container w3-center' >
+<A HREF='$wizard_url' class='w3-button w3-blue'><i class='w3-large fa-solid fa-info-circle'></i></A>
+</div>
+EOT;
+
+    }
         public function _paperwork($value, $row)
         {
             $event_id = $row->id;
@@ -213,10 +243,10 @@ EOT;
     }
 
     private $status_icon = [
-        'hidden' => "<i class='fas fa-mask'  style='color: blue;'></i>",
-        'canceled' => "<i class='fas fa-thumbs-down'  style='color: blue;'></i>",
-        'locked' => "<i class='fas fa-lock'  style='color: blue;'></i>",
-        'suspended' => "<i class='fas fa-question-circle'  style='color: blue;'></i>"
+        'hidden' => "<i class='w3-text-red w3-large fas fa-mask'></i>",
+        'canceled' => "<i class='w3-text-red w3-large fas fa-thumbs-down'></i>",
+        'locked' => "<i class='w3-text-red w3-large fas fa-lock'></i>",
+        'suspended' => "<i class='w3-text-red w3-large fas fa-question-circle'></i>"
     ];
 
 

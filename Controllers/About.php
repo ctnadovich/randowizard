@@ -51,5 +51,10 @@ class About extends BaseController
         return $this->load_view(['quick_start']);
     }
 
+    public function ebrevet_faq()
+    {
+        return $this->load_view(['ebrevet_faq']);
+    }
+
 
 }

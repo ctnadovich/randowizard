@@ -53,7 +53,9 @@
     </ul>
 
 <p>Get up to speed quickly with these tools. 
-    Read the <A HREF=<?=site_url('about/quick_start')?>>Quick Start Guide</a>.</p>
+    Read the RBA/Organizer <A HREF=<?=site_url('about/quick_start')?>>Quick Start Guide</a>.</p>
+
+    <p>Want to know what to tell riders about EPP and eBrevet? Send them to the <A HREF=<?=site_url('about/ebrevet_faq')?>>eBrevet FAQ</A></p> 
 
 
     <div class="w3-card w3-center w3-margin w3-padding" style="width:15%; float: right;">

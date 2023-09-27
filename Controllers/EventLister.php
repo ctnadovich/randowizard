@@ -1,0 +1,185 @@
+<?php
+
+//    Randonneuring.org Website Software
+//    Copyright (C) 2023 Chris Nadovich
+//
+//    This program is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU Affero General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    This program is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU Affero General Public License for more details.
+//
+//    https://randonneuring.org/LICENSE.txt
+//
+//    You should have received a copy of the GNU Affero General Public License
+//    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+namespace App\Controllers;
+
+use CodeIgniter\HTTP\RequestInterface;
+use CodeIgniter\HTTP\ResponseInterface;
+use DateTimeZone;
+use Psr\Log\LoggerInterface;
+
+class EventLister extends EventProcessor
+{
+
+	public function initController(
+		RequestInterface $request,
+		ResponseInterface $response,
+		LoggerInterface $logger
+	) {
+		parent::initController($request, $response, $logger);
+	}
+
+
+	////////////////////////////////////////////////////////////
+	// 
+	// FUTURE EVENTS (for eBrevet JSON)
+	//
+
+	public function json_future_events($club_acp_code = null)
+	{
+
+		$event_errors = [];
+		$event_list = [];
+
+		// Must specify a valid club
+
+		if (empty($club_acp_code) || !is_numeric($club_acp_code)) {
+			$this->die_message('Error', 'Invalid parameter.');
+		}
+
+		// Process events for club
+
+		$all_events = $this->eventModel->getEventsForClub($club_acp_code);
+
+		foreach ($all_events as $event) {
+
+			$event_status = $event['status'];
+			if ($event_status == 'hidden' || $event_status == 'canceled') continue;
+
+			$event_code = $event['region_id'] . "-" . $event['id'];
+
+			// Skip if no route mape
+			if (empty($event['route_url'])) {
+				$event_errors[] = "No route map URL for Event ID=$event_code, skipped";
+				continue;
+			}
+
+			// Skip if no start time
+			if (empty($event['start_datetime'])) {
+				$event_errors[] = "No start Date and Time for Event ID=$event_code, skipped";
+				continue;
+			}
+
+			try {
+				$event_data = $this->get_event_data($event_code);
+			} catch (\Exception $e) {
+				$status = $e->GetMessage();
+				$event_errors[] = $status;
+				continue;
+			}
+
+			$event_list[] = $this->published_edata($event_data);
+		}
+
+		$minimum_app_version = $this->minimum_app_version;
+
+		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors'));
+	}
+
+
+
+	////////////////////////////////////////////////////////////
+	// 
+	// Regional Events
+	//
+
+	public function regional_events($club_acp_code = null)
+	{
+
+		if (empty($club_acp_code) || !is_numeric($club_acp_code)) {
+			$this->die_message_notrace('Error', 'Missing or invalid ACP Club Code parameter.');
+		}
+
+		$club = $this->regionModel->getClub($club_acp_code);
+		if ($club == null) {
+			$this->die_message_notrace('Error', 'Unknown ACP Club.');
+		}
+
+		$this->viewData = array_merge($this->viewData, $club);
+
+		$all_events = $this->eventModel->getEventsForClub($club_acp_code);
+
+		$this->viewData['future_events_table'] = $this->make_event_table($club, $all_events, 'future');
+		$this->viewData['past_events_table'] = $this->make_event_table($club, $all_events, 'past');
+		$this->viewData['underway_events_table'] = $this->make_event_table($club, $all_events, 'underway');
+
+		return $this->load_view('regional_events', false);
+	}
+
+
+	private function make_event_table($club, $all_events = [], $timerange = 'all')
+	{
+
+		$headings = [
+			'Date',
+			'Sanction',
+			'Event',
+			'Info',
+			'Results',
+			''
+		];
+
+		$rows = [];
+		foreach ($all_events as $event) {
+
+			if ($this->eventModel->statusQ($event, 'hidden')) continue;
+
+			extract($event);
+			$isUnderway=$this->eventModel->isUnderwayQ($event);
+			$startDatetime = (new \DateTime($start_datetime, $club['event_timezone']));
+			$now = new \DateTime();
+			if ($timerange == 'future' && $startDatetime < $now) continue;
+			if ($timerange == 'past' && ($startDatetime > $now || $isUnderway)) continue;
+			if ($timerange == 'underway' && !$isUnderway) continue;
+
+			if ($this->eventModel->statusQ($event, 'canceled')) {
+				$status = "CANCELED";
+				$status_style = 'w3-text-gray';
+			} elseif ($this->eventModel->statusQ($event, 'suspended')) {
+				$status = "SUSPENDED";
+				$status_style = 'w3-text-gray';
+			} elseif ($isUnderway) {
+				$status = "<span class='w3-deep-orange w3-text-white w3-padding w3-margin-top'>UNDERWAY!</span>";
+				$status_style = '';
+			} else {
+				$status = '';
+				$status_style = '';
+			}
+
+			$sdtxt = $startDatetime->format("M j @ H:i T");
+			$event_code = $this->eventModel->getEventCode($event);
+			$infolink = "<A class='w3-button' TITLE='Info' HREF='" . site_url("event_info/$event_code") . "'><i class='fa fa-circle-info'></i></a>";
+			$resultslink = "<A class='w3-button' TITLE='Riders/Results' HREF='" . site_url("roster_info/$event_code") . "'><i class='fa fa-users'></a>";
+			$row = [$sdtxt,  "$sanction", "$name $distance K", $infolink,  $resultslink, $status];
+
+			$rows[] = "<TR class='$status_style'><TD>" . implode('</TD><TD>', $row) . "</TD></TR>";
+		}
+
+		if (count($rows) == 0) {
+			return "<p>None.</p>";
+		} else {
+			$event_table  = "<table class='w3-table-all w3-centered'>";
+			$event_table .= "<TR><TH>" . implode('</TH><TH>', $headings) . "</TH></TR>";
+			$event_table .= implode('', $rows);
+			$event_table .= "</table>";
+			return $event_table;
+		}
+	}
+}

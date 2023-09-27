@@ -11,7 +11,6 @@
             <?php else : ?>
                 <a href="/login" class="w3-bar-item w3-button">Log In</a>
             <?php endif; ?>
-            <a href="/about/quick_start" class="w3-bar-item w3-button">Quick Start Guide</a>
             <a href="/about" class="w3-bar-item w3-button">Documentation</a>
             <a href="https://randonneuring.org/phpmyadmin/index.php" class="w3-bar-item w3-button">phpMyAdmin</a>
         </div>

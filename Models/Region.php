@@ -60,4 +60,16 @@ class Region extends Model
         $this->where('rba_user_id',$user_id);
         return $this->findColumn('id');
     }
+
+    public function hasEvents(){
+        $this->select('region.id as region_id, count(region.id) as event_count, state.code as state_code, region.region_name, region.club_name');
+        $this->join('event', 'region.id=event.region_id');
+        $this->join('tz', 'region.event_timezone_id=tz.id');
+        $this->join('state', 'region.state_id=state.id');
+        $this->join('country', 'region.country_id=country.id');
+        $this->where("FIND_IN_SET('hidden',status)=0");
+        $this->orderBy('state_code ASC, region_name ASC');
+        $this->groupBy("region.id");
+        return $this->findAll();
+    }
 }

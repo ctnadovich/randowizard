@@ -306,6 +306,8 @@ class EventProcessor extends BaseController
 		$download_note = 'Download Note';
 		$this_organization = $club_name = $club['club_name'];
 
+		$club_event_info_url = $club_event_info_url ?: $event_info_url;  // default
+
 		// Route
 
 		$route_name = $route['name'];

@@ -73,7 +73,11 @@ class CheckinStatus extends EventProcessor
 			}
 		
 			$event_name_dist = $edata['event_name_dist'];
+			$website_url = $edata['website_url'];
+			$club_name = $edata['club_name'];
+			$icon_url = $edata['icon_url'];
 			$controles = $edata['controls'];
+			$club_event_info_url = $edata['club_event_info_url'];
 			$ncontroles = count($controles);
 
 			$local_event_id = $edata['local_event_id'];
@@ -196,7 +200,11 @@ class CheckinStatus extends EventProcessor
 			$view_data = compact(
 				'title',
 				'subject',
-				'checkin_table'
+				'checkin_table',
+				'icon_url',
+				'club_name',
+				'event_code',
+				'website_url'
 			);
 
 			$this->viewData = array_merge($this->viewData, $view_data);

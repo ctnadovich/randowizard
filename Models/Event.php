@@ -30,13 +30,13 @@ class Event extends Model
     protected $returnType     = 'array';
     protected $allowedFields = ['cue_version'];
 
-    public function getEventsForClub($club_acp_code)
-    {
-        $this->select('event.*, state.fullname as start_state');
-        $this->join('state', 'state.id=event.start_state_id');
-        $this->where('event.region_id', $club_acp_code);
-        return $this->findAll();
-    }
+    // public function getEventsForClub($club_acp_code)
+    // {
+    //     $this->select('event.*, state.fullname as start_state');
+    //     $this->join('state', 'state.id=event.start_state_id');
+    //     $this->where('event.region_id', $club_acp_code);
+    //     return $this->findAll();
+    // }
 
     public function nameDist($event)
     {
@@ -64,7 +64,7 @@ class Event extends Model
         return $q->getRowArray();
     }
 
-    public function getEventTable()
+    public function getEventsForClub($club_acp_code)
     {
 
         $sql =
@@ -75,7 +75,8 @@ class Event extends Model
             WHERE event.region_id=region.id and 
             s1.id=event.start_state_id and 
             s2.id=region.state_id  and
-            tz.id=region.event_timezone_id
+            tz.id=region.event_timezone_id and
+            event.region_id = " . $this->escape($club_acp_code) . "
             order by start_datetime";
         $q = $this->query($sql);
         return $q->getResultArray();
@@ -126,4 +127,53 @@ class Event extends Model
 
         $this->update($event_id, ['cue_version' => $cue_version])  or throw new \Exception('Could not set cuesheet version');
     }
+
+
+
+    private function duration($distance_km){
+        $speed_limits=[
+            ['d'=>200, 'min'=>15, 'max'=>34],
+            ['d'=>400, 'min'=>15, 'max'=>32],
+            ['d'=>600, 'min'=>15, 'max'=>30],
+            ['d'=>1000, 'min'=>11.428, 'max'=>28],
+            ['d'=>1300, 'min'=>13.333, 'max'=>26],
+            ['d'=>1E99, 'min'=>200/24, 'max'=>30]
+        ];
+        $prev=0;
+        $close=0;
+        foreach($speed_limits as $limit){
+            $segment=min($distance_km,$limit['d']) - $prev;
+            $close+=($segment)/$limit['min'];
+            $prev+=$segment;
+            if($distance_km<$limit['d']) break;
+        }
+
+        $minutes = floor($close * 60);
+
+        return new \DateInterval("PT" . $minutes . "M");
+    }
+
+    public function isUnderwayQ($event){
+
+        extract($event);
+        $startDatetime = new \DateTime($start_datetime, new \DateTimeZone($timezone_name));
+        $now = new \DateTime();
+        if ($startDatetime > $now) return false;
+        $cutoff_interval = $this->duration($distance);
+        $startDatetime->add($cutoff_interval);
+        if ($startDatetime < $now) return false;
+        return true;
+
+    }
+
+	public function statusQ($event,$attribute){
+
+ 		if(is_array($attribute)){
+			$attribs=implode('|',$attribute);
+			return (preg_match('/' . $attribs . '/', $event['status']) === 1);
+		}else{
+			return (strpos($event['status'], $attribute)!== false);
+		}
+  }
+
 }

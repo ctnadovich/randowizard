@@ -23,7 +23,7 @@
 <div class='w3-card w3-margin w3-padding'>
     <h1>About Randonneuring.org</h1>
 
-    <p>Randonneuring.org supports free IT tools that make randonneuring events
+    <p>Randonneuring.org supports a suite of free IT tools that make randonneuring events
         more enjoyable. More fun for participants. Easier on volunteer organizers and RBAs. </p>
 
     <h2>Manage Events for your Region</h2>

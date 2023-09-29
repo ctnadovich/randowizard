@@ -41,7 +41,7 @@ class Login extends BaseController
 
     public function logout()
     {
-        $this->session->set('logged_in', FALSE);
+        $this->clearSession();
         return redirect()->route('home');
     }
 

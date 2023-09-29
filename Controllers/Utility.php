@@ -50,4 +50,9 @@ class Utility extends BaseController
         }
         $this->die_message(__METHOD__, "Loaded $n RUSA members on " . date('c'), ['backtrace'=>false]);
     }
+
+    public function show_session()
+    {
+        $this->die_message('Session', print_r($this->session->get(),true));
+    }
 }

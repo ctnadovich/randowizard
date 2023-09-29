@@ -24,6 +24,10 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
+require_once(APPPATH . 'Libraries/Secret/Secrets.php');  // for Bike Captcha
+
+use Secrets;
+
 class Home extends BaseController
 {
 
@@ -48,13 +52,11 @@ class Home extends BaseController
         $this->viewData['eventful_regions'] = $this->regionModel->hasEvents();
 
         if ($this->session->get('logged_in')) {
-            return $this->load_view(['hero','eventful_regions']);
+            return $this->load_view(['hero', 'eventful_regions']);
         } else {
-
             $captcha = $this->bike_captcha();
-            $this->session->set('is_bike', $captcha['is_bike']);
             $this->viewData = array_merge($this->viewData, $captcha);
-            return $this->load_view(['hero', 'register','eventful_regions']);
+            return $this->load_view(['hero', 'register', 'eventful_regions']);
         }
     }
 
@@ -79,13 +81,13 @@ class Home extends BaseController
                     // This database design allows only one person to manage a region. 
                     static function ($value, $data, &$error, $field) {
                         $regionModel = model('Region');
-                        $r = $regionModel->find($value);
+                        $r = $regionModel->getClub($value);
                         if (empty($r))
                             throw new \Exception("Unknown region ID ($value). Registration failed.");
                         if (empty($r['rba_user_id'])) {
                             return true;
                         }
-                        $region_text = $r['state_code'] . ':' . $r['region_name'];
+                        $region_text = $r['region_state_code'] . ':' . $r['region_name'];
                         $error = "The region selected ($region_text) already has an organizer/rba assigned.";
                         return false;
                     },
@@ -152,16 +154,18 @@ class Home extends BaseController
         $is_bike = [];
         $vehicle_icon = [];
         $bikes = ['fas fa-bicycle', 'fa-solid fa-person-biking'];
-        $not_bikes = ['fas fa-car', 'fas fa-truck', 'fas fa-plane', 'fa-solid fa-car-side',  'fa-solid fa-bus', 'fa-solid fa-van-shuttle',
-        'fas fa-rocket', 'fas fa-taxi', 'fas fa-space-shuttle', 'fa-solid fa-truck-monster'];
+        $not_bikes = [
+            'fas fa-car', 'fas fa-truck', 'fas fa-plane', 'fa-solid fa-car-side',  'fa-solid fa-bus', 'fa-solid fa-van-shuttle',
+            'fas fa-rocket', 'fas fa-taxi', 'fas fa-space-shuttle', 'fa-solid fa-truck-monster'
+        ];
         $vehicle_checkboxes = "";
         $one_bike = mt_rand(0, $nChecks - 1);
         for ($i = 0; $i < $nChecks; $i++) {
             if ($i == $one_bike || mt_rand(0, 1) == 1) {
-                $is_bike[$i] = true;
+                $is_bike[$i] = $this->obfuscate_boolean(true);
                 $vehicle_icon[$i] = $bikes[mt_rand(1, count($bikes)) - 1];
             } else {
-                $is_bike[$i] = false;
+                $is_bike[$i] = $this->obfuscate_boolean(false);
                 $vehicle_icon[$i] = $not_bikes[mt_rand(1, count($not_bikes)) - 1];
             }
             $vehicle_checkboxes .= "<input type='checkbox' name='v[]' value='v$i'><i class='{$vehicle_icon[$i]}'></i> ";
@@ -170,16 +174,44 @@ class Home extends BaseController
         return compact('vehicle_checkboxes', 'vehicle_icon', 'is_bike');
     }
 
+    public function obfuscate_boolean($b){
+        $tf = $b?'T':'F';
+        $r = bin2hex(random_bytes(8));
+        $secret = Secrets::bicycle_captcha;
+        $plaintext = "$r-$tf-$secret";
+        $ciphertext = hash('sha256', $plaintext);
+		$hash = strtoupper(substr($ciphertext, 0, 8));
+        return "$r-$hash";
+    }
+
+    public function deobfuscate_boolean($h){
+        list ($r, $hash) = explode('-',$h);
+        $secret = Secrets::bicycle_captcha;
+        $plaintext_true = "$r-T-$secret";
+        $plaintext_false = "$r-F-$secret";
+        $ciphertext = hash('sha256', $plaintext_true);
+		$hash_true = strtoupper(substr($ciphertext, 0, 8));
+        $ciphertext = hash('sha256', $plaintext_false);
+		$hash_false = strtoupper(substr($ciphertext, 0, 8));
+        return $hash==$hash_true ? true : ($hash==$hash_false ? false : null);
+    }
+
     public function bicycle_check($str, $nBikes = 8)
     {
         $bike_error = false;
+            
+        
+        $isBike = $this->request->getVar("is_bike");
+        if (empty($isBike)) throw new \Exception("This can't happen. I forgot which were the bikes! Tell the developer. Thanks Sean for finding this bug.");
+        $isBike = explode(',',$isBike);
+        if (empty($isBike)) throw new \Exception("This can't happen. No bikes! Tell the developer. Thanks Sean for finding this bug.");
+
         for ($i = 0; $i < $nBikes; $i++) {
             $vi = $this->request->getVar("v");
-            $isChecked = (isset($vi) && false !== array_search("v$i", $vi)) ? 'true' : 'false';
+            $isChecked = (isset($vi) && false !== array_search("v$i", $vi)) ? true : false;
             $v[$i] = $isChecked;
-            $isBike = $this->session->get('is_bike');
-            if (empty($isBike)) return false;
-            if ($isBike[$i] != $isChecked) {
+            $isReallyBike = $this->deobfuscate_boolean($isBike[$i]);
+            if ($isReallyBike !== $isChecked) {
                 $bike_error = true;
             }
         }

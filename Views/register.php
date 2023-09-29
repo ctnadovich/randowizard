@@ -3,7 +3,8 @@
 
     <div class="w3-panel w3-center w3-border w3-margin" >
         <h3>RBAs and Organizers</h3>
-        <p><em>Register now to get started.</em></p>
+        <p><em>Read the <A HREF='https://randonneuring.org/about/quick_start'>Quick Start Guide</a> or 
+        the <A HREF='https://randonneuring.org/about'>documentation</a>, then register to get started.</em></p>
         <p><button onclick="document.getElementById('register-card').style.display='block'" class="w3-button w3-black">Register
                 &raquo;</button></p>
     </div>
@@ -59,6 +60,7 @@
                         </div>
                         <?php endforeach; ?>
                              <div>Select all bicycles</div>
+                             <input type='hidden' name='is_bike' value='<?=implode(',',$is_bike)?>'>
            </div>
 
                     <hr>

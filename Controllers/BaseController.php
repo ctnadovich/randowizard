@@ -222,4 +222,14 @@ abstract class BaseController extends Controller
             return false;
         }
     }
+
+    protected function clearSession(){
+        $this->session->remove('logged_in');
+        $this->session->remove('user_id');
+        $this->session->remove('first_name');
+        $this->session->remove('last_name');
+        $this->session->remove('first_last');
+        $this->session->remove('authorized_regions');
+        $this->session->remove('is_superuser');
+    }
 }

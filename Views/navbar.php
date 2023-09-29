@@ -7,12 +7,15 @@
                 <a href="/events" class="w3-bar-item w3-button">My Events</a>
                 <a href="/region" class="w3-bar-item w3-button">My Region</a>
                 <a href="/profile" class="w3-bar-item w3-button">My Profile</a>
+                <?php if ($session['is_superuser']) : ?>
+                <a href="https://randonneuring.org/phpmyadmin/index.php" class="w3-bar-item w3-button">phpMyAdmin</a>
+            <?php endif; ?>
+
                 <a href="/logout" class="w3-bar-item w3-button">Log Out</a>
             <?php else : ?>
                 <a href="/login" class="w3-bar-item w3-button">Log In</a>
             <?php endif; ?>
             <a href="/about" class="w3-bar-item w3-button">Documentation</a>
-            <a href="https://randonneuring.org/phpmyadmin/index.php" class="w3-bar-item w3-button">phpMyAdmin</a>
         </div>
     </div>
 

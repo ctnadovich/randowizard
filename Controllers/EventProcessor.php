@@ -445,6 +445,7 @@ class EventProcessor extends BaseController
 		extract($route_event);
 		$event_id = $event_code;  // published event ID is two part code
 		$name = $event_name;
+		$type = $event_type;
 		return compact(
 			'event_id',
 			'name',

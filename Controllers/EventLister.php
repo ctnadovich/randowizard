@@ -78,7 +78,7 @@ class EventLister extends EventProcessor
 			}
 
 			try {
-				$event_data = $this->get_event_data($event_code);
+				$event_data = $this->get_event_data($event);
 			} catch (\Exception $e) {
 				$status = $e->GetMessage();
 				$event_errors[] = $status;

@@ -72,6 +72,8 @@ class RegionCrud extends BaseController
         $crud->callbackEditField('epp_secret', [$this, 'clear_epp_secret_field']);
         $crud->callbackBeforeUpdate([$this, 'update_callback']);
 
+        $crud->setTexteditor(['region_description']);
+
 
         $output = $crud->render();
 

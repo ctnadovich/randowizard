@@ -302,6 +302,13 @@ EOT;
 	{
 
 		$this->die_not_admin($edata['club_acp_code']);
+
+
+		$roster = $edata['roster'];
+		$n_riders = count($roster);
+		if (0 == $n_riders) $this->die_message("No Riders", "No sign in sheet generated.", ['backtrace' => false]);
+
+
 		$tagname = $edata['event_tagname'];
 		extract($this->make_roster_table_array($edata));
 		$params = [

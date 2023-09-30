@@ -103,7 +103,7 @@ class EventInfo extends EventProcessor
             ], ['saveData' => false]];
 
 
-            return $this->load_view($view_list, false);
+            return $this->load_view($view_list, $edata['club_acp_code']);
 
         } catch (\Exception $e) {
             $this->die_exception($e);

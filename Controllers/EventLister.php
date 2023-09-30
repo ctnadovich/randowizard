@@ -113,6 +113,7 @@ class EventLister extends EventProcessor
 		}
 
 		$this->viewData = array_merge($this->viewData, $club);
+		$this->viewData['title'] = $club['club_name'] . ' Events';
 
 		$all_events = $this->eventModel->getEventsForClub($club_acp_code);
 
@@ -120,7 +121,7 @@ class EventLister extends EventProcessor
 		$this->viewData['past_events_table'] = $this->make_event_table($club, $all_events, 'past');
 		$this->viewData['underway_events_table'] = $this->make_event_table($club, $all_events, 'underway');
 
-		return $this->load_view('regional_events', false);
+		return $this->load_view('regional_events', $club_acp_code);
 	}
 
 

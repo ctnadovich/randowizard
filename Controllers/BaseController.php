@@ -66,12 +66,32 @@ abstract class BaseController extends Controller
         $this->regionModel = model('Region');
     }
 
-    protected function load_view($view_list,$navbar=true)
+    protected function load_view($view_list, $club_acp_code = null)
     {
 
-        $views =  view('head', $this->viewData);
-        
-        if($navbar)  $views .= view('navbar', $this->viewData);
+            $this->viewData['style_head'] = view('default_style_head', $this->viewData);
+
+        if ($club_acp_code == null) {
+            $views =  view('head', $this->viewData);
+            $views .= view('navbar', $this->viewData);
+            $region = null;
+        } else {
+            $region = $this->regionModel->getClub($club_acp_code);
+            if (empty($region)) $this->die_message('Error', "Invalid Region: $club_acp_code");
+
+            if (!empty($region['style_html'])) {
+                $this->viewData['style_head'] = $region['style_html'];
+            }
+            $views =  view('head', $this->viewData);
+
+            if (!empty($region['header_html'])) {
+                $this->viewData['output'] = $region['header_html'];
+                $views .= view('echo_output', $this->viewData);
+            }else{
+                $this->viewData = array_merge($this->viewData, $region);
+                $views .= view('default_region_header', $this->viewData);
+            }
+        }
 
         if (is_array($view_list)) {
             foreach ($view_list as $v) {
@@ -85,6 +105,18 @@ abstract class BaseController extends Controller
         } else {
             $views .= view($view_list, $this->viewData);
         }
+
+        if ($club_acp_code == null) {
+            $views .= view('footbar', $this->viewData);
+        } else {
+            if (!empty($region['footer_html'])) {
+                $this->viewData['output'] = $region['footer_html'];
+                $views .= view('echo_output', $this->viewData);
+            }else{
+                $views .= view('default_region_footer', $region);
+            }
+        }
+
 
         $views .= view('foot');
         return $views;
@@ -110,8 +142,9 @@ abstract class BaseController extends Controller
         exit();
     }
 
-    protected function die_message_notrace($severity, $text){
-        $this->die_message($severity,$text,['backtrace'=>false]);
+    protected function die_message_notrace($severity, $text)
+    {
+        $this->die_message($severity, $text, ['backtrace' => false]);
     }
 
 
@@ -170,41 +203,44 @@ abstract class BaseController extends Controller
         return $this->session->get('user_id');
     }
 
-     protected function login_check()
+    protected function login_check()
     {
         if (false == $this->isLoggedIn()) {
             $login_url = site_url("login");
-            $this->die_message_notrace('Access denied',  
-            "Please <A HREF=$login_url>log in</A> before using this function.");
+            $this->die_message_notrace(
+                'Access denied',
+                "Please <A HREF=$login_url>log in</A> before using this function."
+            );
         }
     }
 
-    protected function isRBAforClub($acp_club_code){
+    protected function isRBAforClub($acp_club_code)
+    {
         $region_list = $this->session->get('authorized_regions');
-        return (false===array_search($acp_club_code,$region_list))?false:true;
+        return (false === array_search($acp_club_code, $region_list)) ? false : true;
     }
 
 
-	protected function isAdmin($club_acp_code = null)
-	{
-		if (false == $this->isLoggedIn()) return false;
-		if ($this->isSuperuser()) return true;
-		if (empty($club_acp_code)) return false;
-		return $this->isRBAforClub($club_acp_code);
-	}
+    protected function isAdmin($club_acp_code = null)
+    {
+        if (false == $this->isLoggedIn()) return false;
+        if ($this->isSuperuser()) return true;
+        if (empty($club_acp_code)) return false;
+        return $this->isRBAforClub($club_acp_code);
+    }
 
-	protected function die_not_admin($club_acp_code = null)
-	{
+    protected function die_not_admin($club_acp_code = null)
+    {
 
-		if (false == $this->isAdmin($club_acp_code)) {
-			$this->die_message_notrace(
-				'Access Denied',
-				"Must be RBA/Organizer for Club (ACP ID $club_acp_code) to use this function."
-			);
-		}
-	}
+        if (false == $this->isAdmin($club_acp_code)) {
+            $this->die_message_notrace(
+                'Access Denied',
+                "Must be RBA/Organizer for Club (ACP ID $club_acp_code) to use this function."
+            );
+        }
+    }
 
-    
+
     protected function becomeUser($user)
     {
         if (is_numeric($user)) {
@@ -224,7 +260,8 @@ abstract class BaseController extends Controller
         }
     }
 
-    protected function clearSession(){
+    protected function clearSession()
+    {
         $this->session->remove('logged_in');
         $this->session->remove('user_id');
         $this->session->remove('first_name');

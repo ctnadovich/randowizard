@@ -59,7 +59,8 @@
             web page that direct people to the event info and roster info pages at 
             randonneuring.org. The URLs to link are
             <ul>
-                <li><b>Past and Future Events for your region: </b> https://randonneuring.org/regional_events/<code>&LT;ACP CLUB CODE&GT;</code></li>
+            <li><b>Past and Future Events for your region: </b> https://randonneuring.org/regional_events/<code>&LT;ACP CLUB CODE&GT;</code></li>
+                <li><b>Future Events JSON format: </b> https://randonneuring.org/ebrevet/future_events/<code>&LT;ACP CLUB CODE&GT;</code></li>
                 <li><b><i class="fa-solid fa-circle-info"></i> Info about a specific event: </b> https://randonneuring.org/event_info/<code>&LT;EVENT CODE&GT;</code></li>
                 <li><b><i class="fa-solid fa-users"></i> Rider roster, results, and check in status: </b> https://randonneuring.org/roster_info/<code>&LT;EVENT CODE&GT;</code>
                 </li>

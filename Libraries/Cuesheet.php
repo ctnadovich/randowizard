@@ -431,8 +431,8 @@ class Cuesheet extends Myfpdf
 
 	public function set_controle_date_format($re)
 	{
-		$this->datetime_format = (empty($re['event_date']) || empty($re['event_time'])) ?
-			$this->datetime_format_generic : $this->datetime_format_specific;
+		$this->datetime_format = (empty($re['event_date_str']) || empty($re['event_time_str'])) ? $this->datetime_format_generic : $this->datetime_format_specific;
+
 	}
 
 	public function draw_cuesheet_pages($edata)

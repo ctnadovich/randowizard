@@ -70,6 +70,7 @@ abstract class BaseController extends Controller
     {
 
         $views =  view('head', $this->viewData);
+        
         if($navbar)  $views .= view('navbar', $this->viewData);
 
         if (is_array($view_list)) {

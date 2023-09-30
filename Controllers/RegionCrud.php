@@ -79,7 +79,7 @@ class RegionCrud extends BaseController
 
         $this->viewData = array_merge((array)$output, $this->viewData);
 
-        return $this->load_view(['dashboard']);
+        return $this->load_view(['echo_output']);
     }
 
     protected $not_a_password = "not_a_password";

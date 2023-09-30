@@ -147,7 +147,7 @@ class EventsCrud extends BaseController
 
         $this->viewData = array_merge((array)$output, $this->viewData);
 
-        return $this->load_view(['dashboard']);
+        return $this->load_view(['echo_output']);
     }
 
     public function _event_code($value, $row)

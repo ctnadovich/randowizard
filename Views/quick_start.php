@@ -2,7 +2,9 @@
 
     <h1>Quick Start Guide</h1>
 
-    <P>This is a quick start guide for RBAs and Organizers.</P>
+    <P>This is a quick start guide for RBAs and Organizers. Refer to the 
+        <A HREF='https://randonneuring.org/about'>documentation home page</a> for more information. 
+    </P>
 
     <ol>
         <li><b>REGISTER:</b> Sign up for an account at the <A HREF=https://randonneuring.org>Randonneuing.org website</A>.

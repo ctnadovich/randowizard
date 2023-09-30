@@ -104,7 +104,7 @@ class MemberCrud extends BaseController
         // $output->output = str_replace("value='Update and go back to list'", "value='Save and Return'", $output->output);
 
         $this->viewData = array_merge((array)$output, $this->viewData);
-        return $this->load_view(['profile']);
+        return $this->load_view(['echo_output']);
     }
 
     public function clear_password_field($fieldValue, $primaryKeyValue, $rowData)

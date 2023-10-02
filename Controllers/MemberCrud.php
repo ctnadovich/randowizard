@@ -44,64 +44,92 @@ class MemberCrud extends BaseController
     {
         $this->login_check();
 
-        $subject = 'User';
+        $subject = 'Organizer/RBA';
         $crud = new GroceryCrud();
-
-        /*         $state = $crud->getState();
-        $state_info = $crud->getStateInfo();
-        switch ($state) {
-            case 'edit':
-            case 'update_validation':
-            case 'update':
-            case 'success':
-                $primary_key = $state_info->primary_key;
-                $member_id = $this->session->get('user_id');
-                if ($primary_key != $member_id) {
-                    trigger_error("ID Mismatch: pk=$primary_key; mi=$member_id", E_USER_ERROR);
-                }
-                break;
-            default:
-                trigger_error("This function can only be called in states edit/update_validation/success. State=$state", E_USER_ERROR);
-                break;
-        }
- */
 
 
         $crud->setSubject($subject);
         $crud->setTable('user');
+        $crud->setRead();
+
+        // $crud->setRelationNtoN('RBA_of','rba','region','user_id','region_id','{club_name}');
 
         // restrictions for unprivileged users
         if (false == $this->isSuperuser()) {
-            $crud->unsetAdd();
+            // $crud->unsetAdd();
             $crud->unsetDelete();
-            $crud->unsetEditFields(['privilege']);
+            $crud->unsetEditFields(['privilege','region']);
+            $crud->unsetAddFields(['privilege']);
+            $crud->unsetReadFields(['privilege', 'password_hash']);
             $crud->unsetColumns(['privilege']);
             $crud->where('id', $this->getMemberID());
         } else {
-            $crud->setActionButton('SU','fas fa-user', function ($row) {
+            $crud->setActionButton('SU', 'fas fa-user', function ($row) {
                 return site_url("su/$row");
             }, true);
         }
 
+        $crud->callbackColumn('Region', function ($value, $row) {
+            if ($this->isSuperuser()) return "All";
+            $rbaModel = model('Rba');
+            $user_id = $this->getMemberID();
+            $authorized_regions = $rbaModel->getAuthorizedRegionObjects($user_id);
+            $ar_list = [];
+            foreach ($authorized_regions as $r) {
+                extract($r);
+                $ar_list[] = "$state_code: $region_name";
+            }
+            return implode(',', $ar_list);
+        });
 
-// TODO Button to "become" another user
-// TODO Consider allowing all users for a given region to edit each other's profiles
 
+        $crud->columns(['first', 'last', 'email', 'Region']);
+        $crud->addFields(['first', 'last', 'email', 'password_hash','region']); // ,'rba_of']);
+
+        $crud->setRule('email', 'Email Address', 'trim|required|valid_email|is_unique[user.email]');
+        $crud->setRule('first', 'First Name', 'trim|required|alpha_space');
+        $crud->setRule('last', 'Last Name', 'trim|required|alpha_space');
+        $crud->setRule('password_hash', 'Password', 'trim|required|min_length[8]');
+
+        $crud->callbackAddField(
+            'region',
+
+            function ($field_type, $field_name) {
+                if ($this->isSuperuser()) {
+                    $aro = $this->regionModel->getRegions();
+                } else {
+                    $rbaModel = model('Rba');
+                    $member_id = $this->getMemberID();
+                    $aro = $rbaModel->getAuthorizedRegionObjects($member_id);
+                }
+
+                $field_text  = "<select name='rba_of' id='rba_of'>";
+                foreach ($aro as $r) {
+                    extract($r);
+                    $field_text .= "<option value=$club_acp_code>$state_code: $region_name</option>";
+                }
+                $field_text .= "</select>";
+
+                return $field_text;
+            }
+        );
+
+        /*         $crud->callbackAfterInsert(function ($stateParameters)  {
+                $rbaModel = model('Rba');
+                $user_id = $stateParameters->insertId;
+                $region_id = $stateParameters->data['region_id];
+                $rbaModel->insertRBAforRegion($user_id, $region_id);
+        
+            return $stateParameters;
+        });
+ */
         $crud->fieldType('password_hash', 'password');
         $crud->displayAs('password_hash', 'Password');
         $crud->callbackEditField('password_hash', [$this, 'clear_password_field']);
-        $crud->callbackBeforeUpdate([$this, 'update_callback']);
+        // $crud->callbackAddField('password_hash', [$this, 'clear_password_field']);
+        $crud->callbackBeforeUpdate([$this, 'update_password']);
+        $crud->callbackBeforeInsert([$this, 'hash_password']);
         $output = $crud->render();
-
-
-        // Horrid hack required to work around the removal of unset_list and unset_back_to_list functions
-        // in v2.x of Grocery Crud.  This str_replace relabels the buttons. The Routes system in CodeIgniter
-        // is used to redirect update_success back to the home page rather than the list. This isolation
-        // is somewhat dicey. Note the if ($primary_key != $member_id) test above that attempts to maintain
-        // the isolation. 
-
-        // $output->output = str_replace("value='Update changes'", "value='Save'", $output->output);
-        // $output->output = str_replace("value='Update and go back to list'", "value='Save and Return'", $output->output);
 
         $this->viewData = array_merge((array)$output, $this->viewData);
         return $this->load_view(['echo_output']);
@@ -112,7 +140,7 @@ class MemberCrud extends BaseController
         return "<input type='password' name='password_hash' value='{$this->not_a_password}' />";
     }
 
-    public function update_callback($stateParameters)
+    public function update_password($stateParameters)
     {
         $password = $stateParameters->data['password_hash'];
         if (!empty($password) && $password != $this->not_a_password) {
@@ -124,7 +152,20 @@ class MemberCrud extends BaseController
         return $stateParameters;
     }
 
-    public function su($member_id){
+    public function hash_password($stateParameters)
+    {
+        $password = $stateParameters->data['password_hash'];
+        if (!empty($password)) {
+            $stateParameters->data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+        } else {
+            $stateParameters->data['password_hash'] = password_hash(date("U"), PASSWORD_DEFAULT);  // :-)
+        }
+
+        return $stateParameters;
+    }
+
+    public function su($member_id)
+    {
         $user = $this->userModel->find($member_id);
         if (!empty($user) && $this->isSuperuser()) {
 
@@ -134,6 +175,5 @@ class MemberCrud extends BaseController
         } else {
             throw new \Exception("Can't become user ID=$member_id");
         }
-
     }
 }

@@ -69,7 +69,7 @@ abstract class BaseController extends Controller
     protected function load_view($view_list, $club_acp_code = null)
     {
 
-            $this->viewData['style_head'] = view('default_style_head', $this->viewData);
+        $this->viewData['style_head'] = view('default_style_head', $this->viewData);
 
         if ($club_acp_code == null) {
             $views =  view('head', $this->viewData);
@@ -87,7 +87,7 @@ abstract class BaseController extends Controller
             if (!empty($region['header_html'])) {
                 $this->viewData['output'] = $region['header_html'];
                 $views .= view('echo_output', $this->viewData);
-            }else{
+            } else {
                 $this->viewData = array_merge($this->viewData, $region);
                 $views .= view('default_region_header', $this->viewData);
             }
@@ -112,7 +112,7 @@ abstract class BaseController extends Controller
             if (!empty($region['footer_html'])) {
                 $this->viewData['output'] = $region['footer_html'];
                 $views .= view('echo_output', $this->viewData);
-            }else{
+            } else {
                 $views .= view('default_region_footer', $region);
             }
         }
@@ -252,7 +252,12 @@ abstract class BaseController extends Controller
             $this->session->set('first_name', $user['first']);
             $this->session->set('last_name', $user['last']);
             $this->session->set('first_last', $user['first'] . ' ' . $user['last']);
-            $this->session->set('authorized_regions', $this->regionModel->getAuthorizedRegions($user['id']));
+
+            // $this->session->set('authorized_regions', $this->regionModel->getAuthorizedRegions($user['id']));
+
+            $rbaModel = model('Rba');
+            $this->session->set('authorized_regions', $rbaModel->getAuthorizedRegions($user['id']));
+
             $this->session->set('is_superuser', str_contains($user['privilege'], 'superuser'));
             return $user;
         } else {

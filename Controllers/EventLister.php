@@ -124,6 +124,20 @@ class EventLister extends EventProcessor
 		return $this->load_view('regional_events', $club_acp_code);
 	}
 
+	public function eventful_regions()
+	{
+
+		try {
+			 $er_array = $this->regionModel->hasEvents();
+			
+			$this->viewData['eventful_regions'] = $er_array;
+			
+			return $this->load_view('eventful_regions');
+		} catch (\Exception $e) {
+			$this->die_exception($e);
+		}
+	}
+
 
 	private function make_event_table($club, $all_events = [], $timerange = 'all')
 	{
@@ -143,7 +157,7 @@ class EventLister extends EventProcessor
 			if ($this->eventModel->statusQ($event, 'hidden')) continue;
 
 			extract($event);
-			$isUnderway=$this->eventModel->isUnderwayQ($event);
+			$isUnderway = $this->eventModel->isUnderwayQ($event);
 			$startDatetime = (new \DateTime($start_datetime, $club['event_timezone']));
 			$now = new \DateTime();
 			if ($timerange == 'future' && $startDatetime < $now) continue;

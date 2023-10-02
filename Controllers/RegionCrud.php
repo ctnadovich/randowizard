@@ -44,33 +44,46 @@ class RegionCrud extends BaseController
     {
 
         $this->login_check();
+        $member_id = $this->getMemberID();
+        $rbaModel = model('Rba');
+        $authorized_regions = $rbaModel->getAuthorizedRegions($member_id);
+        if (empty($authorized_regions) && false == $this->isSuperuser())
+            $this->die_info('Access Denied', "No regions authorized for this user.");
 
         $crud = new GroceryCrud();
         $crud->setTable('region');
         $crud->setRelation('event_timezone_id', 'tz', '{name}');
         $crud->setRelation('state_id', 'state', '{fullname}');
         $crud->setRelation('country_id', 'country', '{fullname}');
-        $crud->setRelation('rba_user_id', 'user', '{first} {last}');
+        
+        $crud->unsetEditFields(['epp_secret', 'id', 'state_code', 'state_id', 'country_id', 'region_name', 'club_name']);
+
         if (false == $this->isSuperuser()) {
             $crud->unsetAdd();
             $crud->unsetDelete();
-            $crud->unsetEditFields(['rba_user_id', 'id', 'state_code', 'state_id', 'country_id', 'region_name', 'club_name']);
-            $crud->where('rba_user_id', $this->getMemberID());
+
+            $where_list = array_map(fn ($r) => "region.id = $r", $authorized_regions);
+            $where_clause = '(' . implode(' OR ', $where_list) . ')';
+            $crud->where($where_clause);
         }
         $crud->setRead();
         $crud->setSubject('Region', 'Regions');
-        $crud->columns(['state_id', 'region_name', 'club_name', 'rba_user_id', 'event_timezone_id']);
-        $crud->displayAs('rba_user_id', 'RBA');
+        $crud->columns(['state_id', 'region_name', 'club_name', 'event_timezone_id','events']);
+
+        $crud->callbackColumn('events', array($this, '_event_info'));
+
+
+        // $crud->displayAs('id', 'RBA');
         $crud->displayAs('event_timezone_id', 'Time Zone');
         $crud->displayAs('state_id', "State");
         $crud->fieldType('website_url', 'url');
-        $crud->displayAs('id', 'ACP Code');
+        // $crud->displayAs('id', 'ACP Code');
 
-        $crud->fieldType('epp_secret', 'password');
-        $crud->displayAs('epp_secret', 'EPP Secret');
+        // $crud->fieldType('epp_secret', 'password');
+        // $crud->displayAs('epp_secret', 'EPP Secret');
         $crud->unsetReadFields(['epp_secret']);
-        $crud->callbackEditField('epp_secret', [$this, 'clear_epp_secret_field']);
-        $crud->callbackBeforeUpdate([$this, 'update_callback']);
+        // $crud->callbackEditField('epp_secret', [$this, 'clear_epp_secret_field']);
+        // $crud->callbackBeforeUpdate([$this, 'update_callback']);
 
         $crud->setTexteditor(['region_description']);
 
@@ -80,6 +93,17 @@ class RegionCrud extends BaseController
         $this->viewData = array_merge((array)$output, $this->viewData);
 
         return $this->load_view(['echo_output']);
+    }
+    public function _event_info($value, $row)
+    {
+        $region_id = $row->id;
+        $wizard_url = site_url("regional_events/$region_id");
+
+        return <<<EOT
+        <div class='w3-container w3-center' >
+<A HREF='$wizard_url' class='w3-button w3-blue'><i class='w3-large fa-solid fa-info-circle'></i></A>
+</div>
+EOT;
     }
 
     protected $not_a_password = "not_a_password";

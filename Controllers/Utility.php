@@ -53,6 +53,6 @@ class Utility extends BaseController
 
     public function show_session()
     {
-        $this->die_message('Session', print_r($this->session->get(),true));
+        $this->die_message_notrace('Session', print_r($this->session->get(),true));
     }
 }

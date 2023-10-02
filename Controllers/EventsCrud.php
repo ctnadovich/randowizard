@@ -32,7 +32,7 @@ class EventsCrud extends BaseController
     protected $helpers = ['form'];
     protected $rosterModel;
 
-    protected $user_id ;
+    protected $user_id;
     protected $authorized_regions;
 
     public function initController(
@@ -43,10 +43,8 @@ class EventsCrud extends BaseController
         parent::initController($request, $response, $logger);
         $this->rosterModel =  model('Roster');
 
-         $this->user_id = $this->session->get('user_id');
-         $this->authorized_regions = $this->session->get('authorized_regions');
-    
-
+        $this->user_id = $this->session->get('user_id');
+        $this->authorized_regions = $this->session->get('authorized_regions');
     }
 
     public function events($timerange = 'all')
@@ -54,19 +52,40 @@ class EventsCrud extends BaseController
 
         $this->login_check();
 
+
+        $rbaModel = model('Rba');
+        $member_id = $this->getMemberID();
+
+        if ($this->isSuperuser()) {
+            $region_underscore_where_clause = null;
+            $region_dot_where_clause = null;
+        } else {
+            $authorized_regions = $rbaModel->getAuthorizedRegions($member_id);
+            if (empty($authorized_regions))
+                $this->die_info('Access Denied', "No regions authorized for this user.");
+
+
+            // If GroceryCrud had orWhere this wouldn't be needed
+            // Not sure if both _id and .id are really needed, but this works
+            
+            $where_list = array_map(fn ($r) => "region_id = $r", $authorized_regions);
+            $region_underscore_where_clause = '(' . implode(' OR ', $where_list) . ')';
+
+            $where_list = array_map(fn ($r) => "region.id = $r", $authorized_regions);
+            $region_dot_where_clause = '(' . implode(' OR ', $where_list) . ')';
+        }
+
         $crud = new GroceryCrud();
         $crud->setTable('event');
 
-        if(count($this->authorized_regions) == 1  && false == $this->isSuperuser()){
-            $my_region = reset($this->authorized_regions);
-            $crud->setRelation('region_id', 'region', '{club_name}', ['rba_user_id' => $this->user_id],null,$my_region);
-        }else{
-            $crud->setRelation('region_id', 'region', '{club_name}', 
-               ($this->isSuperuser())?null:['rba_user_id' => $this->user_id]);
-
-        }
+        $crud->setRelation(
+            'region_id',
+            'region',
+            '{club_name}',
+            $this->isSuperuser() ? null : $region_dot_where_clause
+        );
         $crud->setRelation('start_state_id', 'state', '{fullname}');
-        $crud->setRelation('start_country_id', 'country', '{fullname}',null,null,236);  // US Default
+        $crud->setRelation('start_country_id', 'country', '{fullname}', null, null, 236);  // US Default
 
 
         $dt = new \DateTime();
@@ -92,11 +111,11 @@ class EventsCrud extends BaseController
         }
 
         if (false == $this->isSuperuser()) {
-            $crud->where('rba_user_id', $this->getMemberID());
+            $crud->where($region_underscore_where_clause);
         }
 
         $crud->setAdd();
-        $crud->unsetAddFields(['status','cue_version']);
+        $crud->unsetAddFields(['status', 'cue_version']);
 
         $crud->setRule('region', 'Region', 'required');
         $crud->setRule('country', 'Country', 'required');
@@ -133,7 +152,7 @@ class EventsCrud extends BaseController
         //     return ("route_manager/$x");}, false);
 
 
-        $crud->columns(['event_code','region_id', 'name', 'distance', 'start_datetime', 'status', 'event_info', 'roster', 'route', 'generate']);
+        $crud->columns(['event_code', 'region_id', 'name', 'distance', 'start_datetime', 'status', 'event_info', 'roster', 'route', 'generate']);
         // $crud->unsetEditFields(['region_id']);
         $crud->displayAs('start_datetime', 'Start Date/Time');
         $crud->displayAs('start_state_id', 'State');
@@ -158,7 +177,6 @@ class EventsCrud extends BaseController
         $event_code = "$region_id-$event_id";
 
         return $event_code;
-
     }
 
     public function _roster_url($value, $row)
@@ -188,7 +206,6 @@ class EventsCrud extends BaseController
 <A HREF='$wizard_url' class='w3-button w3-blue'>Manage&nbsp;<i class='fa-solid fa-hat-wizard'></i></A>
 </div>
 EOT;
-
     }
 
     public function _event_info($value, $row)
@@ -203,15 +220,14 @@ EOT;
 <A HREF='$wizard_url' class='w3-button w3-blue'><i class='w3-large fa-solid fa-info-circle'></i></A>
 </div>
 EOT;
-
     }
-        public function _paperwork($value, $row)
-        {
-            $event_id = $row->id;
-            $region_id = $row->region_id;
-            $event_code = "$region_id-$event_id";
-            // $wizard_url = site_url("route_manager/$event_code");
-    
+    public function _paperwork($value, $row)
+    {
+        $event_id = $row->id;
+        $region_id = $row->region_id;
+        $event_code = "$region_id-$event_id";
+        // $wizard_url = site_url("route_manager/$event_code");
+
 
         $dropdown = <<<EOT
 <div class="w3-dropdown-hover">
@@ -237,7 +253,7 @@ EOT;
 
 
         return $dropdown;
-        
+
         // "<A class='w3-button w3-light-gray w3-round' HREF='$wizard_url'>
         // Cue Wizard</A>";
     }

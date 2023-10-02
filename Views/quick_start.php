@@ -2,8 +2,8 @@
 
     <h1>Quick Start Guide</h1>
 
-    <P>This is a quick start guide for RBAs and Organizers. Refer to the 
-        <A HREF='https://randonneuring.org/about'>documentation home page</a> for more information. 
+    <P>This is a quick start guide for RBAs and Organizers. Refer to the
+        <A HREF='https://randonneuring.org/about'>documentation home page</a> for more information.
     </P>
 
     <ol>
@@ -11,7 +11,8 @@
             After you log in
             with your new account, make sure all your individual contact info, and detailed info for your region is correct.
             Review these in the
-            user profile <i class='fas fa-user'></i> and the region profile <i class='fas fa-map'></i> links.</li>
+            user profile <i class='fas fa-user'></i> and the region profile <i class='fas fa-map'></i> links.</li> There are options for
+        custom HTML/CSS styling for your region pages -- ignore that advanced stuff for now (or forever).
 
 
         <li><b>CREATE EVENT: </b>To create your first event click on the Event Manager <i class='fas fa-biking'></i>.
@@ -34,7 +35,8 @@
             data from the RWGPS site and store a local copy with randonneuring.org. If
             you make changes at RWGPS, those changes will not be available to the Route
             Processor till you fetch the data again.
-            <i>Don't forget to fetch the updated route.</i> </li>
+            <i>Don't forget to fetch the updated route.</i>
+        </li>
 
         <li><B>FIX ERRORS: </B> Cue Wizard only works if
             the route is properly set up in RWGPS. Of course,
@@ -56,18 +58,22 @@
         </li>
         <li><b>LINK: </b>With your event published at randonneuring.org, if you so desire
             you can put links on your club/regional
-            web page that direct people to the event info and roster info pages at 
+            web page that direct people to the event info and roster info pages at
             randonneuring.org. The URLs to link are
             <ul>
-            <li><b>Past and Future Events for your region: </b> https://randonneuring.org/regional_events/<code>&LT;ACP CLUB CODE&GT;</code></li>
+                <li><b>Past and Future Events for your region: </b> https://randonneuring.org/regional_events/<code>&LT;ACP CLUB CODE&GT;</code></li>
                 <li><b>Future Events JSON format: </b> https://randonneuring.org/ebrevet/future_events/<code>&LT;ACP CLUB CODE&GT;</code></li>
                 <li><b><i class="fa-solid fa-circle-info"></i> Info about a specific event: </b> https://randonneuring.org/event_info/<code>&LT;EVENT CODE&GT;</code></li>
                 <li><b><i class="fa-solid fa-users"></i> Rider roster, results, and check in status: </b> https://randonneuring.org/roster_info/<code>&LT;EVENT CODE&GT;</code>
                 </li>
             </ul>
-            where the <code>&LT;EVENT CODE&GT;</code> is the unique identifying code for the event that combines 
+            where the <code>&LT;EVENT CODE&GT;</code> is the unique identifying code for the event that combines
             your ACP Club Code with an event ID number (eg 905106-123). These event codes
-            can be seen listed in the event manager and elsewhere on randonneuring.org. 
-        <li><B>CONGRATULATIONS: </B>You've published your event and route data with randonneuring.org.    </ol>
+            can be seen listed in the event manager and elsewhere on randonneuring.org.
+            If you don't like the style of these pages, you can use the advanced 'style_html', 'header_html', and 'footer_html' fields 
+            in the region settings to tune the styling of the pages to match your home website. 
+        <li><B>CONGRATULATIONS: </B>You've published your event and route data with randonneuring.org and you may
+            now offer eBrevet EPP for your events.
+    </ol>
 
 </div>

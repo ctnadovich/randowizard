@@ -49,20 +49,21 @@ class Home extends BaseController
     public function home()
     {
 
-        $this->viewData['eventful_regions'] = $this->regionModel->hasEvents();
+        // $this->viewData['eventful_regions'] = $this->regionModel->hasEvents();
 
         if ($this->session->get('logged_in')) {
-            return $this->load_view(['hero', 'eventful_regions']);
+            return $this->load_view(['hero']); // , 'eventful_regions']);
         } else {
             $captcha = $this->bike_captcha();
             $this->viewData = array_merge($this->viewData, $captcha);
-            return $this->load_view(['hero', 'register', 'eventful_regions']);
+            return $this->load_view(['hero', 'register']); // , 'eventful_regions']);
         }
     }
 
 
     public function register()
     {
+
 
         // Registration Form submitted
         if ($this->request->is('post')) {
@@ -78,17 +79,21 @@ class Home extends BaseController
                 'region' => [
                     "required",
                     "is_not_unique[region.id]",  // the region exists (redundant test below)
-                    // This database design allows only one person to manage a region. 
-                    static function ($value, $data, &$error, $field) {
+                    static function ($club_acp_code, $data, &$error, $field) {
                         $regionModel = model('Region');
-                        $r = $regionModel->getClub($value);
+                        $rbaModel = model('Rba');
+                        $r = $regionModel->getClub($club_acp_code);
                         if (empty($r))
-                            throw new \Exception("Unknown region ID ($value). Registration failed.");
-                        if (empty($r['rba_user_id'])) {
-                            return true;
-                        }
+                            throw new \Exception("Unknown region ID ($club_acp_code). Registration failed.");
+                        // Only the first person to sign up to manage a region can do so unauthenticated. 
+                        if (false == $rbaModel->hasRBA($club_acp_code)) return true;
+                        // if (empty($r['rba_user_id'])) {
+                        //     return true;
+                        // }
                         $region_text = $r['region_state_code'] . ':' . $r['region_name'];
-                        $error = "The region selected ($region_text) already has an organizer/rba assigned.";
+                        $error = "The region selected ($region_text) already has an organizer/rba 
+                        assigned. Please ask this previous organizer/rba to give you an invitation link so
+                        you can be added as an additional organizer for this region";
                         return false;
                     },
                 ],
@@ -129,6 +134,8 @@ class Home extends BaseController
 
     protected function register_new_user($requestData)
     {
+        $rbaModel = model('Rba');
+
         extract($requestData);
         $password_hash =
             password_hash($password, PASSWORD_DEFAULT);
@@ -144,7 +151,9 @@ class Home extends BaseController
         $userID = $u['id'];
 
         // $regionModel = model('Region');
-        $this->regionModel->update($region, ['rba_user_id' => $userID]);
+        // $this->regionModel->update($region, ['rba_user_id' => $userID]);
+        $rbaModel->insert(['user_id' => $userID, 'region_id' => $region], false) or
+            $this->die_message(__METHOD__, "Couldn't add RBA to region.");
     }
 
 
@@ -174,36 +183,38 @@ class Home extends BaseController
         return compact('vehicle_checkboxes', 'vehicle_icon', 'is_bike');
     }
 
-    public function obfuscate_boolean($b){
-        $tf = $b?'T':'F';
+    public function obfuscate_boolean($b)
+    {
+        $tf = $b ? 'T' : 'F';
         $r = bin2hex(random_bytes(8));
         $secret = Secrets::bicycle_captcha;
         $plaintext = "$r-$tf-$secret";
         $ciphertext = hash('sha256', $plaintext);
-		$hash = strtoupper(substr($ciphertext, 0, 8));
+        $hash = strtoupper(substr($ciphertext, 0, 8));
         return "$r-$hash";
     }
 
-    public function deobfuscate_boolean($h){
-        list ($r, $hash) = explode('-',$h);
+    public function deobfuscate_boolean($h)
+    {
+        list($r, $hash) = explode('-', $h);
         $secret = Secrets::bicycle_captcha;
         $plaintext_true = "$r-T-$secret";
         $plaintext_false = "$r-F-$secret";
         $ciphertext = hash('sha256', $plaintext_true);
-		$hash_true = strtoupper(substr($ciphertext, 0, 8));
+        $hash_true = strtoupper(substr($ciphertext, 0, 8));
         $ciphertext = hash('sha256', $plaintext_false);
-		$hash_false = strtoupper(substr($ciphertext, 0, 8));
-        return $hash==$hash_true ? true : ($hash==$hash_false ? false : null);
+        $hash_false = strtoupper(substr($ciphertext, 0, 8));
+        return $hash == $hash_true ? true : ($hash == $hash_false ? false : null);
     }
 
     public function bicycle_check($str, $nBikes = 8)
     {
         $bike_error = false;
-            
-        
+
+
         $isBike = $this->request->getVar("is_bike");
         if (empty($isBike)) throw new \Exception("This can't happen. I forgot which were the bikes! Tell the developer. Thanks Sean for finding this bug.");
-        $isBike = explode(',',$isBike);
+        $isBike = explode(',', $isBike);
         if (empty($isBike)) throw new \Exception("This can't happen. No bikes! Tell the developer. Thanks Sean for finding this bug.");
 
         for ($i = 0; $i < $nBikes; $i++) {

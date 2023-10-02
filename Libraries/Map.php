@@ -20,6 +20,11 @@
 
 namespace App\Libraries;
 
+require_once(APPPATH . 'Libraries/Secret/Secrets.php');  // for RUSA API KEY
+
+use Secrets;
+
+
 class Map extends Units{
 
 
@@ -122,7 +127,7 @@ EOT;
 		$lr_lat=$lr['lat'];
 		$lr_lng=$lr['lng'];
 
-
+		$access_token=Secrets::map_access_token;
 		switch($provider){
 			case 'mapbox':
 				$script=<<<EOT
@@ -138,7 +143,7 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_toke
     id: 'mapbox/streets-v11',
     tileSize: 512,
     zoomOffset: -1,
-    accessToken: 'pk.eyJ1IjoiY3RuYWRvdmljaCIsImEiOiJjbG1jOW10a24xNXp6M2NycWtzYmFhMm9nIn0.gYN6kTjXYEPXpfdJk8AUNw'
+    accessToken: '$access_token',
 }).addTo($mapvar);
 $markers
 $track

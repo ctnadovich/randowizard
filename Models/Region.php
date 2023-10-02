@@ -32,7 +32,7 @@ class Region extends Model
 
     public function getRegions()
     {
-        $this->select('region.*, tz.name as event_timezone_name, state.code as state_code, country.code as country_code');
+        $this->select('region.*, region.id as club_acp_code, tz.name as event_timezone_name, state.code as state_code, country.code as country_code');
         $this->join('tz', 'region.event_timezone_id=tz.id');
         $this->join('state', 'region.state_id=state.id');
         $this->join('country', 'region.country_id=country.id');

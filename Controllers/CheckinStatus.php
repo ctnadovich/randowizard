@@ -79,6 +79,7 @@ class CheckinStatus extends EventProcessor
 			$controles = $edata['controls'];
 			$club_event_info_url = $edata['club_event_info_url'];
 			$ncontroles = count($controles);
+			$club_acp_code = $edata['club_acp_code'];
 
 			$local_event_id = $edata['local_event_id'];
 			$epp_secret = $edata['epp_secret'];
@@ -208,7 +209,7 @@ class CheckinStatus extends EventProcessor
 			);
 
 			$this->viewData = array_merge($this->viewData, $view_data);
-			return $this->load_view(['checkin_status'],false);
+			return $this->load_view(['checkin_status'],$club_acp_code);
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}

@@ -42,6 +42,17 @@ class Rba extends Model
         return $this->findColumn('region_id');
     }
 
+    public function deleteRBAUser($user_id)
+    {
+        $this->where('user_id', $user_id);
+        return $this->delete();
+    }
+
+    public function insertRBAforRegion($user_id, $region_id){
+        $this->insert(compact('user_id','region_id'));
+    }
+
+
     public function getAuthorizedRegionObjects($user_id)
     {
         $this->select('rba.region_id as club_acp_code, region.*, state.code as state_code');
@@ -52,4 +63,18 @@ class Rba extends Model
         $this->where('user_id', $user_id);
         return $this->findAll();
     }
+
+    public function getAuthorizedUsers($region_id){
+        $this->where('region_id', $region_id);
+        return $this->findColumn('user_id');
+    }
+
+    public function getAuthorizedUserObjects($region_id){
+        $this->select('user_id, user.*');
+        $this->join('user', 'rba.user_id=user.id');
+       $this->where('region_id', $region_id);
+        return $this->findAll();
+    }
+
+
 }

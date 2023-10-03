@@ -24,6 +24,10 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
+require_once(APPPATH . 'Libraries/Secret/Secrets.php');  // for token
+
+use Secrets;
+
 class Utility extends BaseController
 {
 
@@ -41,8 +45,12 @@ class Utility extends BaseController
         $this->rusaModel = model('Rusa');
     }
 
-    public function rusa_update()
+    public function rusa_update($token=null)
     {
+
+        if(false == $this->isSuperuser()){
+            if($token == null || $token != Secrets::utility) $this->die_info('Access Denied', "You are not authorized to execute this function");
+        }
         try {
             $n = $this->rusaModel->cache_update();
         } catch (\Exception $e) {

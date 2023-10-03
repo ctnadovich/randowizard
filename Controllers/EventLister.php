@@ -151,6 +151,7 @@ class EventLister extends EventProcessor
 			''
 		];
 
+		$year = null; 
 		$rows = [];
 		foreach ($all_events as $event) {
 
@@ -178,10 +179,23 @@ class EventLister extends EventProcessor
 				$status_style = '';
 			}
 
+			$start_year = $startDatetime->format('Y');
+
+			if($start_year != $year){
+				$rows[] = "<TR class='w3-gray'><TH COLSPAN=6>$start_year</TH></TR>";
+				$rows[] = "<TR><TH>" . implode('</TH><TH>', $headings) . "</TH></TR>";
+
+				$year = $start_year;
+			}
+
+			$no_route = empty($route_url);
+			
 			$sdtxt = $startDatetime->format("M j @ H:i T");
 			$event_code = $this->eventModel->getEventCode($event);
-			$infolink = "<A class='w3-button' TITLE='Info' HREF='" . site_url("event_info/$event_code") . "'><i class='fa fa-circle-info'></i></a>";
-			$resultslink = "<A class='w3-button' TITLE='Riders/Results' HREF='" . site_url("roster_info/$event_code") . "'><i class='fa fa-users'></a>";
+			$infolink = $no_route?"<i class='fa fa-circle-info' style='color: lightgray;'></i>":
+			"<A class='w3-button' TITLE='Info' HREF='" . site_url("event_info/$event_code") . "'><i class='fa fa-circle-info'></i></a>";
+			$resultslink = $no_route?"<i class='fa fa-users' style='color: lightgray;'></i>":
+			"<A class='w3-button' TITLE='Riders/Results' HREF='" . site_url("roster_info/$event_code") . "'><i class='fa fa-users'></a>";
 			$row = [$sdtxt,  "$sanction", "$name $distance K", $infolink,  $resultslink, $status];
 
 			$rows[] = "<TR class='$status_style'><TD>" . implode('</TD><TD>', $row) . "</TD></TR>";
@@ -191,7 +205,6 @@ class EventLister extends EventProcessor
 			return "<p>None.</p>";
 		} else {
 			$event_table  = "<table class='w3-table-all w3-centered'>";
-			$event_table .= "<TR><TH>" . implode('</TH><TH>', $headings) . "</TH></TR>";
 			$event_table .= implode('', $rows);
 			$event_table .= "</table>";
 			return $event_table;

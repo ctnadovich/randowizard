@@ -58,7 +58,10 @@ class RouteManager extends EventProcessor
             $this->die_not_admin($club_acp_code);
 
             $event = $this->eventModel->eventByCode($event_code);
-            if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE');
+            if (empty($event['route_url'])) $this->die_info(
+                'No Route Map URL',
+                'Sorry, but you can not use any Route Manager (CueWizard) functions until you add a route URL to your event.'
+            );
 
 
             // Still needed by views in case we die getting event data

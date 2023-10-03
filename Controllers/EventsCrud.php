@@ -124,7 +124,7 @@ class EventsCrud extends BaseController
         $crud->setRule('type', 'Event Type', 'required');
         $crud->setRule('description', 'Description of Event', 'required');
         $crud->setRule('info_url', 'Route URL', 'permit_empty|valid_url_strict');
-        $crud->setRule('route_url', 'Route URL', 'required|valid_url_strict');
+        $crud->setRule('route_url', 'Route URL', 'permit_empty|valid_url_strict');
         $crud->setRule('distance', 'Official Distance', 'required|is_natural_no_zero');
         $crud->setRule('gravel_distance', 'Gravel Distance', 'permit_empty|is_natural');
         $crud->setRule('start_datetime', 'Start Date and Time', 'required');
@@ -196,10 +196,14 @@ class EventsCrud extends BaseController
 
     public function _route($value, $row)
     {
+
+        if(empty ($row->route_url)) return "No Route";
+
         $event_id = $row->id;
         $region_id = $row->region_id;
         $event_code = "$region_id-$event_id";
         $wizard_url = site_url("route_manager/$event_code");
+
 
         return <<<EOT
         <div class='w3-container w3-center' style="background-color:rgb(206,206,206);">
@@ -223,6 +227,9 @@ EOT;
     }
     public function _paperwork($value, $row)
     {
+
+        if(empty ($row->route_url)) return "No Route";
+
         $event_id = $row->id;
         $region_id = $row->region_id;
         $event_code = "$region_id-$event_id";

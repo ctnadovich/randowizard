@@ -103,8 +103,11 @@ class EventProcessor extends BaseController
 		$club_acp_code = $event['region_id'];
 		$event_code = $this->eventModel->getEventCode($event);
 
-		if (empty($event['route_url']))
-			throw new \Exception('NO ROUTE FOR EVENT. You must specify a URL for the event route map.');
+		if (empty($event['route_url'])) $this->die_info('No Route Map URL',  
+		   'Sorry, but you can not use any Route Manager (CueWizard) functions until you add a route URL to your event.');
+
+		// if (empty($event['route_url']))
+		// 	throw new \Exception('NO ROUTE FOR EVENT. You must specify a URL for the event route map.');
 
 		$club = $this->regionModel->getClub($club_acp_code);
 		if (empty($club)) {
@@ -330,8 +333,6 @@ class EventProcessor extends BaseController
 		else
 			$route_tags = [];
 
-		// Only one route_tag supported 
-		$pavement_type = (empty($route_tags['pavement_type'])) ? "Unspecified" : $route_tags['pavement_type'];
 
 		$df_links = [];
 		foreach ($route['route_datafile'] as $ext => $fn) {
@@ -349,6 +350,13 @@ class EventProcessor extends BaseController
 		$difficulty = empty($route['difficulty']) ? '-' : $route['difficulty'];
 		$unpaved_pct = (isset($route['unpaved_pct'])) ? $route['unpaved_pct'] . "%" : '-';
 
+		// Only one route_tag supported 
+		if(empty($route_tags['pavement_type'])) {
+			$pavement_type = $route['unpaved_pct'] < 1 ? "Less than 1% gravel" : "$unpaved_pct gravel";
+		}else{
+			$pavement_type = $route_tags['pavement_type'];
+		}
+		
 		$units = $this->unitsLibrary;
 		$distance_km = round($route['distance'] / $units::m_per_km, 1);
 		$distance_mi = round($distance_km / $units::km_per_mi, 1);
@@ -502,18 +510,12 @@ class EventProcessor extends BaseController
 		$error_text = $e->getMessage();
 		
 		$msg = <<<EOT
-<h3>Invalid Event Data</h3>
-<p>I'm very sorry but I'm afraid 
-errors were found in the route or event data. Therefore the event info 
-that should have appeared here cannot be displayed. 
-To allow event info to be displayed properly, the event administrator must 
-correct the data in the event description or 
-route map and re-fetch the data
-into the event manager. Till then, this event should be set to 'hidden'.</p>
+<p>At this time complete information
+for this event cannot be displayed.</p>
 <div class='w3-panel w3-border'>$error_text</div>
 EOT;
 
-		$this->die_message('Error in Data', $msg, ['backtrace' => false]);
+		$this->die_message('Event Information Unavailable', $msg, ['backtrace' => false]);
 
 	}
 

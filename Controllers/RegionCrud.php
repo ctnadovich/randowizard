@@ -68,10 +68,22 @@ class RegionCrud extends BaseController
         }
         $crud->setRead();
         $crud->setSubject('Region', 'Regions');
-        $crud->columns(['state_id', 'region_name', 'club_name', 'event_timezone_id','events']);
+        $crud->columns(['state_id', 'region_name', 'club_name', 'event_timezone_id','administrator','events']);
 
         $crud->callbackColumn('events', array($this, '_event_info'));
 
+        // Comma separated list of authorized users to display in datagrid
+        $crud->callbackColumn('administrator', function ($value, $row) {
+            $rbaModel = model('Rba');
+            $region_id = $row->id;
+            $authorized_users = $rbaModel->getAuthorizedUserObjects($region_id);
+            $ar_list = [];
+            foreach ($authorized_users as $u) {
+                extract($u);
+                $ar_list[] = "$first $last";
+            }
+            return implode(', ', $ar_list);
+        });
 
         // $crud->displayAs('id', 'RBA');
         $crud->displayAs('event_timezone_id', 'Time Zone');

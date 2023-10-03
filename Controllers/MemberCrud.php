@@ -44,36 +44,63 @@ class MemberCrud extends BaseController
     {
         $this->login_check();
 
+        $rbaModel = model('Rba');
+        $user_id = $this->getMemberID();
+        $authorized_regions = $rbaModel->getAuthorizedRegionObjects($user_id);
+
+        // all the users authorized for all the regions THIS user is authorized for
+        $au_hash = [];
+        foreach ($authorized_regions as $r) {
+            extract($r);
+            $au = $rbaModel->getAuthorizedUsers($club_acp_code);
+            foreach ($au as $u) {
+                $au_hash[$u] = true;
+            }
+        }
+        $authorized_users = array_keys($au_hash);
+
+
+        // $this->die_info(__METHOD__,print_r($authorized_regions,true));
+
         $subject = 'Organizer/RBA';
         $crud = new GroceryCrud();
-
 
         $crud->setSubject($subject);
         $crud->setTable('user');
         $crud->setRead();
 
+        // NtoN is largely broken in GC
         // $crud->setRelationNtoN('RBA_of','rba','region','user_id','region_id','{club_name}');
 
-        // restrictions for unprivileged users
         if (false == $this->isSuperuser()) {
-            // $crud->unsetAdd();
-            $crud->unsetDelete();
-            $crud->unsetEditFields(['privilege','region']);
+            // restrictions for unprivileged users
+            if(count($authorized_users)==1) $crud->unsetDelete();
+            $crud->unsetEditFields(['privilege', 'region']);
             $crud->unsetAddFields(['privilege']);
             $crud->unsetReadFields(['privilege', 'password_hash']);
             $crud->unsetColumns(['privilege']);
-            $crud->where('id', $this->getMemberID());
+            if (empty($authorized_regions) || empty($authorized_users)) {
+                $crud->where('id', $this->getMemberID());
+            } else {
+                $where_list=[];
+                foreach ($authorized_users as $u) {
+                    $where_list[] = "id = $u";
+                }
+                $crud->where('(' . implode(' OR ', $where_list) . ')');
+            }
         } else {
+            // Extras for superuser
             $crud->setActionButton('SU', 'fas fa-user', function ($row) {
                 return site_url("su/$row");
             }, true);
         }
 
-        $crud->callbackColumn('Region', function ($value, $row) {
+        $crud->columns(['first', 'last', 'email', 'Region']);
+
+        // Comma separated list of authorized regions to display in datagrid
+        $crud->callbackColumn('Region', function ($value, $row) use ($authorized_regions) {
             if ($this->isSuperuser()) return "All";
-            $rbaModel = model('Rba');
-            $user_id = $this->getMemberID();
-            $authorized_regions = $rbaModel->getAuthorizedRegionObjects($user_id);
+            if (empty($authorized_regions)) return "None";
             $ar_list = [];
             foreach ($authorized_regions as $r) {
                 extract($r);
@@ -83,27 +110,31 @@ class MemberCrud extends BaseController
         });
 
 
-        $crud->columns(['first', 'last', 'email', 'Region']);
-        $crud->addFields(['first', 'last', 'email', 'password_hash','region']); // ,'rba_of']);
+        $crud->addFields(['first', 'last', 'email', 'password_hash', 'region']);
+        $crud->fieldType('password_hash', 'password');
+        $crud->displayAs('password_hash', 'Password');
 
         $crud->setRule('email', 'Email Address', 'trim|required|valid_email|is_unique[user.email]');
         $crud->setRule('first', 'First Name', 'trim|required|alpha_space');
         $crud->setRule('last', 'Last Name', 'trim|required|alpha_space');
         $crud->setRule('password_hash', 'Password', 'trim|required|min_length[8]');
 
+        // We replace the actual password with not_a_password, which consequently, 
+        // is never allowed to be the password. What are the chances? 
+        $crud->callbackEditField('password_hash', [$this, 'clear_password_field']);
+
+        // Generate select/option HTML field for adding RBA to one of the authorized regions
         $crud->callbackAddField(
             'region',
 
-            function ($field_type, $field_name) {
+            function ($field_type, $field_name)  use ($authorized_regions) {
                 if ($this->isSuperuser()) {
                     $aro = $this->regionModel->getRegions();
                 } else {
-                    $rbaModel = model('Rba');
-                    $member_id = $this->getMemberID();
-                    $aro = $rbaModel->getAuthorizedRegionObjects($member_id);
+                    $aro = $authorized_regions;
                 }
 
-                $field_text  = "<select name='rba_of' id='rba_of'>";
+                $field_text  = "<select name='region' id='region'>";
                 foreach ($aro as $r) {
                     extract($r);
                     $field_text .= "<option value=$club_acp_code>$state_code: $region_name</option>";
@@ -114,23 +145,26 @@ class MemberCrud extends BaseController
             }
         );
 
-        /*         $crud->callbackAfterInsert(function ($stateParameters)  {
-                $rbaModel = model('Rba');
-                $user_id = $stateParameters->insertId;
-                $region_id = $stateParameters->data['region_id];
-                $rbaModel->insertRBAforRegion($user_id, $region_id);
-        
+        // Convert plaintext password to hash
+        // For some reason this doesn't get called when we use callbackInsert
+         // $crud->callbackBeforeInsert([$this, 'hash_password']);
+
+        // Since region isn't a field in the user table, and we can't rely on NtoN functions
+        // we need to roll our own insert that deals with the region
+
+        $crud->callbackInsert([$this, 'insert_with_region']);
+
+        // Convert plaintext password to hash and save only if the password was changed
+        $crud->callbackBeforeUpdate([$this, 'update_password']);
+
+        $crud->callbackAfterDelete(function ($stateParameters) use($rbaModel) {
+            $rbaModel->deleteRBAUser($stateParameters->primaryKeyValue);
             return $stateParameters;
         });
- */
-        $crud->fieldType('password_hash', 'password');
-        $crud->displayAs('password_hash', 'Password');
-        $crud->callbackEditField('password_hash', [$this, 'clear_password_field']);
-        // $crud->callbackAddField('password_hash', [$this, 'clear_password_field']);
-        $crud->callbackBeforeUpdate([$this, 'update_password']);
-        $crud->callbackBeforeInsert([$this, 'hash_password']);
-        $output = $crud->render();
 
+
+
+        $output = $crud->render();
         $this->viewData = array_merge((array)$output, $this->viewData);
         return $this->load_view(['echo_output']);
     }
@@ -138,6 +172,22 @@ class MemberCrud extends BaseController
     public function clear_password_field($fieldValue, $primaryKeyValue, $rowData)
     {
         return "<input type='password' name='password_hash' value='{$this->not_a_password}' />";
+    }
+
+    public function insert_with_region($stateParameters)
+    {
+
+        $region_id = $stateParameters->data['region'];
+        unset($stateParameters->data['region']);
+
+        $stateParameters = $this->hash_password($stateParameters);
+
+        $user_id = $this->userModel->insert($stateParameters->data);
+        $stateParameters->insertId = $user_id; // $insertId;
+
+        $rbaModel = model('Rba');
+        $rbaModel->insertRBAforRegion($user_id, $region_id);
+        return $stateParameters;
     }
 
     public function update_password($stateParameters)
@@ -158,7 +208,7 @@ class MemberCrud extends BaseController
         if (!empty($password)) {
             $stateParameters->data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
         } else {
-            $stateParameters->data['password_hash'] = password_hash(date("U"), PASSWORD_DEFAULT);  // :-)
+            trigger_error('Password not set', E_USER_ERROR);
         }
 
         return $stateParameters;

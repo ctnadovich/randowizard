@@ -155,6 +155,8 @@ class EventProcessor extends BaseController
 			$event['start_datetime'] = "2000-01-01 00:00:00";
 		}
 
+		$utc_tz = new \DateTimeZone('UTC');
+
 		$event_timezone_name = $club['event_timezone_name'];  // For now, events can't have individual TZ
 		$event_tz = new \DateTimeZone($event_timezone_name);
 
@@ -167,13 +169,19 @@ class EventProcessor extends BaseController
 			throw new \Exception("INVALID START DATE OR TIME");
 		}
 
+		$last_event_change_datetime = @date_create($event['last_changed'], $utc_tz);
+		if (false == $last_event_change_datetime) {
+			throw new \Exception("INVALID UPDATE DATE OR TIME");
+		}
+		$last_event_change_datetime->SetTimezone($event_tz);
+		$last_event_change_str = $last_event_change_datetime->format("Y-m-j H:i:s T");
+
 		$event_datetime_str = $event_datetime->format($this->controletimesLibrary->event_datetime_format);
 		$event_datetime_str_verbose = $event_datetime->format($this->controletimesLibrary->event_datetime_format_verbose);
 		$event_date_str = $event_datetime->format('j F Y');
 		$event_date_str_ymd = $event_datetime->format('Y-m-d');
 		$event_time_str = $event_datetime->format('g:i A T');
 
-		$utc_tz = new \DateTimeZone('UTC');
 		$event_datetime_utc = clone $event_datetime;
 		$event_datetime_utc->SetTimezone($utc_tz);
 		$start_datetime_utc = $event_datetime_utc->format('c'); // Y-m-d H:i T';);
@@ -325,7 +333,9 @@ class EventProcessor extends BaseController
 		$last_download = $last_download_datetime->format("Y-m-j H:i:s T");
 
 		$download_note = $route['download_note'];
-		$publish_is_stale = ($has_cuesheet && ($published_at_datetime < $last_update_datetime));
+		$publish_is_stale = ($has_cuesheet && 
+			($published_at_datetime < $last_update_datetime || 
+		$published_at_datetime < $last_event_change_datetime));
 
 
 		if (!empty($route['description']))
@@ -411,7 +421,10 @@ class EventProcessor extends BaseController
 			'has_cuesheet',
 			'has_rwgps_route',
 			'last_download',
+			'last_event_change_datetime',
+			'last_event_change_str',
 			'last_update',
+			'last_update_datetime',
 			'local_event_id',
 			'now_str',
 			'now',

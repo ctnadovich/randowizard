@@ -57,6 +57,10 @@
 
     <p>Want to know what to tell riders about EPP and eBrevet? Send them to the <A HREF=<?=site_url('about/ebrevet_faq')?>>eBrevet FAQ</A></p> 
 
+    <p>Find a bug or want to suggest an improvement? 
+        You can <A HREF='https://github.com/ctnadovich/randowizard/issues'>open 
+    an issue or suggestion on github</a></p>
+
 
     <div class="w3-card w3-center w3-margin w3-padding" style="width:15%; float: right;">
         <A HREF="https://github.com/ctnadovich/ebrevet/blob/main/README.md">

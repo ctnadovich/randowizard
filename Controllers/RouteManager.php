@@ -168,11 +168,16 @@ EOT;
 
 
         if ($publish_is_stale) {
+            $elc_style = ($last_event_change_datetime < $published_at_datetime)?'':"style = 'color: red;'";
+            $rlc_style = ($last_update_datetime < $published_at_datetime)?'':"style = 'color: red;'";
             $warning_body .= <<<EOT
 <h4>STALE PUBLISHED ROUTE</h4>
 <p>Fetched route data was changed after the route was published. Please
 publish again so the latest route data becomes live. </p> 
-<ul><li>Route last changed $last_update</li><li>Route last published $published_at_str</li></ul>
+<ul>
+<li $elc_style>Event last changed $last_event_change_str</li>
+<li $rlc_style>Route last changed $last_update</li>
+<li style = 'color: red;'>Route last published $published_at_str</li></ul>
 EOT;
         }
 

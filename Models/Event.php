@@ -28,7 +28,7 @@ class Event extends Model
     protected $table      = 'event';
     protected $primaryKey = 'id';
     protected $returnType     = 'array';
-    protected $allowedFields = ['cue_version'];
+    protected $allowedFields = ['cue_version','last_changed'];
 
     // public function getEventsForClub($club_acp_code)
     // {

@@ -89,6 +89,10 @@
 <h3>But what if the app breaks or a dog eats my phone?</h3>
 <p>Yes cell phones do sometimes fail, and software does sometimes have bugs. Prudent riders using EPP also write onto their paper brevet card their time of arrival and "control check in codes"  from the app at each intermediate control  as a paper backup.  Writing down your time and these codes isn't required -- it's simply prudent. If you think your phone is about to fail, battery die, or the app is acting wonky, record all check-in codes and be ready switch to old-school brevet card control check-in processes (get merchant initials, receipts, etc...) for the remainder of the event. The RBA will likely not accept 'my phone died' and a blank card as proof of passage. </p>
 
+<h3>What if I find a bug or want to suggest an improvement?</h3>
+<p>You can <A HREF='https://github.com/ctnadovich/ebrevet/issues'>open 
+    an issue or suggestion on github</a></p>
+
 <h2>Conclusion</h2>
 
 <p>Enjoy the blessings of technology in this app, but keep in mind that this is still randonneuring. Per our traditions, you as a rider must check-in at controls and must provide the required proof of passage for your ride.</p>

@@ -9,11 +9,15 @@
             <TD><?= $route_name ?></TD>
         </TR>
         <TR>
-            <TD>Last Modified</TD>
+            <TD>Event Last Changed</TD>
+            <TD><?= $last_event_change_str ?></TD>
+        </TR>
+        <TR>
+            <TD>Route Last Modified</TD>
             <TD><?= $last_update ?></TD>
         </TR>
         <TR>
-            <TD>Last Fetched</TD>
+            <TD>Route Last Fetched</TD>
             <TD><?= $last_download ?></TD>
         </TR>
         <TR>

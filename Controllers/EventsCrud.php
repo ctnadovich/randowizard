@@ -25,6 +25,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 use App\Libraries\GroceryCrud;
+use stdClass;
 
 class EventsCrud extends BaseController
 {
@@ -51,7 +52,6 @@ class EventsCrud extends BaseController
     {
 
         $this->login_check();
-
 
         $rbaModel = model('Rba');
         $member_id = $this->getMemberID();
@@ -115,7 +115,7 @@ class EventsCrud extends BaseController
         }
 
         $crud->setAdd();
-        $crud->unsetAddFields(['status', 'cue_version']);
+        $crud->unsetAddFields(['status', 'cue_version', 'created', 'last_change']);
 
         $crud->setRule('region', 'Region', 'required');
         $crud->setRule('country', 'Country', 'required');
@@ -153,7 +153,7 @@ class EventsCrud extends BaseController
 
 
         $crud->columns(['event_code', 'region_id', 'name', 'distance', 'start_datetime', 'status', 'event_info', 'roster', 'route', 'generate']);
-        // $crud->unsetEditFields(['region_id']);
+        $crud->unsetEditFields(['created', 'last_change']);
         $crud->displayAs('start_datetime', 'Start Date/Time');
         $crud->displayAs('start_state_id', 'State');
         $crud->displayAs('start_country_id', 'Country');
@@ -162,11 +162,28 @@ class EventsCrud extends BaseController
         $crud->displayAs('gravel_distance', 'Official Gravel (km)');
         $crud->displayAs('event_info', 'Info');
 
+        $crud->callbackAfterUpdate([$this,'_set_last_change_time']);
+
         $output = $crud->render();
 
         $this->viewData = array_merge((array)$output, $this->viewData);
 
         return $this->load_view(['echo_output']);
+    }
+
+    public function update_nine(){
+        $stateParameters = new stdClass;
+        $stateParameters->primaryKeyValue = 9;
+        $stateParameters = $this->_set_last_change_time($stateParameters);
+        $this->die_info(__METHOD__,print_r($stateParameters,true));
+    }
+
+    public function _set_last_change_time($stateParameters)  {
+        $eventModel = model('Event');
+        $now = (new \DateTime('now', (new \DateTimeZone('UTC'))))->format('Y-m-d H:i:s');
+        $id = $stateParameters->primaryKeyValue;
+        $eventModel->update($id, ['last_changed'=>"$now"]);
+        return $stateParameters;
     }
 
     public function _event_code($value, $row)

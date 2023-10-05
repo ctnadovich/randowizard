@@ -97,10 +97,6 @@
 
 <p>Enjoy the blessings of technology in this app, but keep in mind that this is still randonneuring. Per our traditions, you as a rider must check-in at controls and must provide the required proof of passage for your ride.</p>
 
-<h3>Is it mandatory to use eBrevet? Can't I use some other form of EPP?</h3>
-
-<p>This is up to your RBA, but once you and your RBA see how easy it is to use eBrevet compared to other forms of EPP, why would you choose anything else? </p>
-
 
 
 </div>

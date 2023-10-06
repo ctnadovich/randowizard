@@ -162,6 +162,7 @@ class Home extends BaseController
 
         $is_bike = [];
         $vehicle_icon = [];
+        $vehicle_title = [];
         $bikes = ['fas fa-bicycle', 'fa-solid fa-person-biking'];
         $not_bikes = [
             'fas fa-car', 'fas fa-truck', 'fas fa-plane', 'fa-solid fa-car-side',  'fa-solid fa-bus', 'fa-solid fa-van-shuttle',
@@ -183,10 +184,10 @@ class Home extends BaseController
                 $vehicle_icon[$i] = $not_bikes[mt_rand(1, count($not_bikes)) - 1];
                 $vehicle_title[$i] = $non_bike_names[mt_rand(1, count($non_bike_names)) - 1];
             }
-            $vehicle_checkboxes .= "<input title='{$vehicle_title[$i]}' type='checkbox' name='v[]' value='v$i'><i class='{$vehicle_icon[$i]}'></i> ";
+            $vehicle_checkboxes .= "<div ><input type='checkbox' name='v[]' value='v$i'><i class='{$vehicle_icon[$i]}'></i></div>";
         }
 
-        return compact('vehicle_checkboxes', 'vehicle_icon', 'is_bike');
+        return compact('vehicle_checkboxes', 'vehicle_icon', 'vehicle_title', 'is_bike');
     }
 
     public function obfuscate_boolean($b)

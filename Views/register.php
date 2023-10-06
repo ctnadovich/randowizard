@@ -54,8 +54,8 @@
                     <?= input_field('password', 'Set Access Password', $errors, 'password') ?>
 
                     <div class='w3-container w3-center'>
-                        <?php foreach ($vehicle_icon as $i => $v) : ?>
-                            <div class='w3-button w3-white w3-margin'>
+                        <?php foreach ($vehicle_icon as $i => $v) : $vt = $vehicle_title[$i]; ?>
+                            <div title = '<?=$vt?>' class='w3-button w3-white w3-margin'>
                                 <input type='checkbox' name='v[]' value='v<?= $i ?>'><span style='margin-left: 8px;'><i class='<?= $v ?> w3-purple w3-padding'></span></i>
                         </div>
                         <?php endforeach; ?>

@@ -54,7 +54,10 @@
         <li><b>PUBLISH: </b>Once you are SURE you have fixed all the errors it's time to publish the route. Once
             published,
             the event and route will be
-            automatically available to <A HREF=https://github.com/ctnadovich/ebrevet/blob/main/README.md>eBrevet</a> and all the event details will appear live on the randonneuring.org website.
+            automatically available to <A HREF=https://github.com/ctnadovich/ebrevet/blob/main/README.md>eBrevet</a> and 
+            all the event details will appear live on the randonneuring.org website.
+            <i>NB: New events are hidden by default. You'll need to go to the event manager <i class='fas fa-biking'></i> and 
+            remove "Hidden" from the status for the published event to be fully visible. </i>
         </li>
         <li><b>LINK: </b>With your event published at randonneuring.org, if you so desire
             you can put links on your club/regional

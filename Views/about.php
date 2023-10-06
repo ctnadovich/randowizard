@@ -55,7 +55,7 @@
 <p>Get up to speed quickly with these tools. 
     Read the RBA/Organizer <A HREF=<?=site_url('about/quick_start')?>>Quick Start Guide</a>.</p>
 
-    <p>Want to know what to tell riders about EPP and eBrevet? Send them to the <A HREF=<?=site_url('about/ebrevet_faq')?>>eBrevet FAQ</A></p> 
+    <p>Want to know what to tell riders about eBrevet? Send them to the <A HREF=<?=site_url('about/ebrevet_faq')?>>eBrevet FAQ</A></p> 
 
     <p>Find a bug or want to suggest an improvement? 
         You can <A HREF='https://github.com/ctnadovich/randowizard/issues'>open 

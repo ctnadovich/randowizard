@@ -9,7 +9,7 @@
     </P>
 
     <h2>Introduction</h2>
-    <p>Electronic Proof of Passage (EPP) using the eBrevet cell phone app is now availible for brevets. Riders who have used this app generally report that it's fast, easy to operate, doesn't drain the phone battery, and is simpler than getting merchant signatures and receipts. You can use eBrevet exclusively on the ride without needing to get merchant signatures, receipts, answer info questions, or take photos.  Just ride the bike, and when you get to a control, click the button on eBrevet to check in. Then ride on.
+    <p>The eBrevet cell phone app is now availible for brevets. Riders who have used this app generally report that it's fast, easy to operate, doesn't drain the phone battery, and is simpler than getting merchant signatures and receipts. You can use eBrevet exclusively on the ride without needing to get merchant signatures, receipts, answer info questions, or take photos.  Just ride the bike, and when you get to a control, click the button on eBrevet to check in. Then ride on.
 </p>
 
     <h3>What is eBrevet?</h3>
@@ -28,7 +28,7 @@
     <h3>Can a throw away my paper brevet card?</h3>
     <p><b>NO!</b> This app does not eliminate your need for a paper brevet card!</p>
 
-    <h3>Why do I still need a paper brevet card if this app provides EPP?</h3>
+    <h3>Why do I still need a paper brevet card?</h3>
 
     <P>Three reasons:</p>
    <ol> 
@@ -40,7 +40,7 @@
 
 
 <h3>Wait, what do I have to do, again?</h3>
-<p>In summary, when using eBrevet EPP you must</p>
+<p>In summary, when using eBrevet you must</p>
 
 <p>Obtain the start code from your paper brevet card and use it to start the app.
    Open the app at each control and press the Check-In button.
@@ -56,7 +56,7 @@
     <li>The FINISH CODE from the app.</li>
 </ol>
 
-<p>If you used eBrevet EPP and these three things are not on your brevet card at the finish, you can be disqualified. </p>
+<p>If you used eBrevet and these three things are not on your brevet card at the finish, you can be disqualified. </p>
 
 <h2>Troubleshooting</h2>
 
@@ -87,7 +87,7 @@
 <p>If you are physically near (&LT;500 meters) a control at the correct time (after the control opens, before it closes) a "Check-In" button should appear next to the control on the app. Sometimes it takes the GPS in your phone  a few seconds to update your location. If you are impatient, press the "GPS UPDATE" button. If the "Check-In" button still doesn't appear, maybe you've disallowed Location Permissions for the eBrevet app. Check your phone Settings and make sure that eBrevet has LOCATION permission. </p>
 
 <h3>But what if the app breaks or a dog eats my phone?</h3>
-<p>Yes cell phones do sometimes fail, and software does sometimes have bugs. Prudent riders using EPP also write onto their paper brevet card their time of arrival and "control check in codes"  from the app at each intermediate control  as a paper backup.  Writing down your time and these codes isn't required -- it's simply prudent. If you think your phone is about to fail, battery die, or the app is acting wonky, record all check-in codes and be ready switch to old-school brevet card control check-in processes (get merchant initials, receipts, etc...) for the remainder of the event. The RBA will likely not accept 'my phone died' and a blank card as proof of passage. </p>
+<p>Yes cell phones do sometimes fail, and software does sometimes have bugs. Prudent riders using eBrevet also write onto their paper brevet card their time of arrival and "control check in codes"  from the app at each intermediate control  as a paper backup.  Writing down your time and these codes isn't required -- it's simply prudent. If you think your phone is about to fail, battery die, or the app is acting wonky, record all check-in codes and be ready switch to old-school brevet card control check-in processes (get merchant initials, receipts, etc...) for the remainder of the event. The RBA will likely not accept 'my phone died' and a blank card as proof of passage. </p>
 
 <h3>What if I find a bug or want to suggest an improvement?</h3>
 <p>You can <A HREF='https://github.com/ctnadovich/ebrevet/issues'>open 

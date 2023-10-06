@@ -167,17 +167,23 @@ class Home extends BaseController
             'fas fa-car', 'fas fa-truck', 'fas fa-plane', 'fa-solid fa-car-side',  'fa-solid fa-bus', 'fa-solid fa-van-shuttle',
             'fas fa-rocket', 'fas fa-taxi', 'fas fa-space-shuttle', 'fa-solid fa-truck-monster'
         ];
+
+        $bike_names = ['Colnogo', 'Trek', 'Schwinn', 'Huffy', 'Giant'];
+        $non_bike_names = ['Evenrude', 'Ford', 'Sikorsky', 'Space-X'];
+
         $vehicle_checkboxes = "";
         $one_bike = mt_rand(0, $nChecks - 1);
         for ($i = 0; $i < $nChecks; $i++) {
             if ($i == $one_bike || mt_rand(0, 1) == 1) {
                 $is_bike[$i] = $this->obfuscate_boolean(true);
                 $vehicle_icon[$i] = $bikes[mt_rand(1, count($bikes)) - 1];
+                $vehicle_title[$i] = $bike_names[mt_rand(1, count($bike_names)) - 1];
             } else {
                 $is_bike[$i] = $this->obfuscate_boolean(false);
                 $vehicle_icon[$i] = $not_bikes[mt_rand(1, count($not_bikes)) - 1];
+                $vehicle_title[$i] = $non_bike_names[mt_rand(1, count($non_bike_names)) - 1];
             }
-            $vehicle_checkboxes .= "<input type='checkbox' name='v[]' value='v$i'><i class='{$vehicle_icon[$i]}'></i> ";
+            $vehicle_checkboxes .= "<input title='{$vehicle_title[$i]}' type='checkbox' name='v[]' value='v$i'><i class='{$vehicle_icon[$i]}'></i> ";
         }
 
         return compact('vehicle_checkboxes', 'vehicle_icon', 'is_bike');

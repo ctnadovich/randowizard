@@ -47,34 +47,39 @@ class Roster extends Model
         return $this->findAll();
     }
 
+    public function get_result($local_event_id, $rider_id){
+        return $this->get_record($local_event_id, $rider_id);
+    }
+
     public function get_record($local_event_id, $rider_id){
         $this->where([
             'rider_id' => $rider_id,
             'event_id' => $local_event_id
         ]);
-        $this->select(['result']);
+        $this->select(['result','elapsed_time']);
         return $this->first();
     }
 
     public function record_finish($local_event_id, $rider_id, $elapsed_time){
-        $this->where([
-            'rider_id' => $rider_id,
-            'event_id' => $local_event_id
-        ]);
+        $this->where('rider_id', $rider_id);
+        $this->where('event_id', $local_event_id);
 
-        $data=['result'=>'finish', 'elapsed_time'=>$elapsed_time];
+        // throw new \Exception(__METHOD__ . "  $local_event_id, $rider_id, $elapsed_time");
 
-        $this->update($data);
+
+        $this->set('result','finish');
+        $this->set('elapsed_time',$elapsed_time);
+
+        $this->update();
 
     }
 
     public function upsert_result($local_event_id, $rider_id, $result){
-        $this->where([
+        $data=[
             'rider_id' => $rider_id,
-            'event_id' => $local_event_id
-        ]);
-
-        $data=['result'=>$result];
+            'event_id' => $local_event_id,
+            'result'=>$result
+        ];
 
         $this->upsert($data);
 

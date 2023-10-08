@@ -147,10 +147,13 @@ class PostCheckin extends EventProcessor
 				$result = $this->rosterModel->get_result($local_event_id, $rider_id);
 
 				if ($result != 'finish' ) {  // roster finish is immutable
+
 					if ($overall_outcome == 'finish') {
-							if (array_key_exists('finish_elapsed_time', $d))
+						if (array_key_exists('finish_elapsed_time', $d))
 								$this->rosterModel->record_finish($local_event_id, $rider_id, $d['finish_elapsed_time']);
 					}else{
+
+
 							$this->rosterModel->upsert_result($local_event_id, $rider_id, $overall_outcome);
 					}
 				}

@@ -182,6 +182,7 @@ class CheckinStatus extends EventProcessor
 					if (count($elapsed_array) == 3) {
 						list($hh, $mm, $ss) = $elapsed_array;
 						$elapsed_hhmm =  "$hh$mm";
+						$global_event_id = $event_code;
 						$d = compact('elapsed_hhmm', 'global_event_id', 'rider_id');
 						$finish_code = $this->cryptoLibrary->make_finish_code($d, $epp_secret);
 

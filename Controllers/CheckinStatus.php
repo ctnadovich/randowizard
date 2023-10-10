@@ -110,10 +110,10 @@ class CheckinStatus extends EventProcessor
 			foreach ($headlist as $key => $row) {
 				$head_row[$key] = '<TH></TH><TH>' . implode('</TH><TH>', $row) . '</TH>';
 			}
-			$checkin_table .= "<TR class='w3-blue'>" . $head_row['number'] . "<TH ROWSPAN=4>Final</TH></TR>";
-			$checkin_table .= "<TR class='w3-light-blue' style='font-size: 0.7em;'>" . $head_row['name'] . "</TR>";
-			$checkin_table .= "<TR class='w3-light-blue'>" . $head_row['cd_mi'] . "</TR>";
-			$checkin_table .= "<TR class='w3-light-blue'>" . $head_row['close'] . "</TR>";
+			$checkin_table .= "<TR class='w3-dark-gray'>" . $head_row['number'] . "<TH ROWSPAN=4>Final</TH></TR>";
+			$checkin_table .= "<TR class='w3-light-gray' style='font-size: 0.7em;'>" . $head_row['name'] . "</TR>";
+			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['cd_mi'] . "</TR>";
+			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['close'] . "</TR>";
 
 
 			$registeredRiders = $this->rosterModel->registered_riders($local_event_id);

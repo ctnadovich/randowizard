@@ -206,6 +206,7 @@ class EventProcessor extends BaseController
 		// Processing of individual controls
 
 		$controls = [];
+		$controls_extra = [];
 		foreach ($route_controles as $cdata) {
 
 			$a = $cdata['attributes'];
@@ -226,6 +227,9 @@ class EventProcessor extends BaseController
 
 			$question = (array_key_exists('question', $a)) ? $a['question'] : '';
 
+			$long = $cdata['x'];
+			$lat = $cdata['y'];
+
 			$controls[] = [
 				'dist_mi' => $cd_mi,
 				'dist_km' => $cd_km,
@@ -240,6 +244,8 @@ class EventProcessor extends BaseController
 				// 'sif'=>$sif
 
 			];
+			$open_datetime = $openDatetime; $close_datetime=$closeDatetime;
+			$controls_extra[] = compact('open_datetime','close_datetime','lat','long');
 		}
 
 		// More Event Data
@@ -362,7 +368,7 @@ class EventProcessor extends BaseController
 
 		// Only one route_tag supported 
 		if(empty($route_tags['pavement_type'])) {
-			$pavement_type = $route['unpaved_pct'] < 1 ? "Less than 1% gravel" : "$unpaved_pct gravel";
+			$pavement_type = ''; // $route['unpaved_pct'] < 1 ? "Less than 1% gravel" : "$unpaved_pct gravel";
 		}else{
 			$pavement_type = $route_tags['pavement_type'];
 		}
@@ -387,6 +393,7 @@ class EventProcessor extends BaseController
 			'club_name',
 			'controle_warnings',
 			'controls',
+			'controls_extra',
 			'cue_next_version',
 			'cue_url',
 			'cue_version_str',
@@ -417,6 +424,7 @@ class EventProcessor extends BaseController
 			'event_type_uc',
 			'event_type',
 			'event_tz',
+			'event_timezone_name',
 			'gravel_distance',
 			'has_cuesheet',
 			'has_rwgps_route',

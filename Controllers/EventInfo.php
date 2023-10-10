@@ -53,19 +53,17 @@ class EventInfo extends EventProcessor
 
         try {
 
- 
+
             $event = $this->eventModel->eventByCode($event_code);
 
             if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE.');
             $route_url = $event['route_url'];
 
             $edata = $this->get_event_data($event);
-
-
         } catch (\Exception $e) {
             $this->die_data_exception($e);
         }
-    
+
         try {
             $this->viewData = array_merge($this->viewData, $edata);
 
@@ -73,11 +71,42 @@ class EventInfo extends EventProcessor
             $this->viewData['title'] = $this->viewData['subject'] = $this->viewData['event_name_dist'];
 
             if ($this->eventModel->statusQ($event, 'canceled')) $status_text = "THIS EVENT IS CANCELED";
-			elseif ($this->eventModel->statusQ($event, 'suspended')) $status_text = "THIS EVENT IS SUSPENDED";
-			elseif ($this->eventModel->statusQ($event, 'hidden')) $status_text = "THIS EVENT IS HIDDEN";
+            elseif ($this->eventModel->statusQ($event, 'suspended')) $status_text = "THIS EVENT IS SUSPENDED";
+            elseif ($this->eventModel->statusQ($event, 'hidden')) $status_text = "THIS EVENT IS HIDDEN";
             elseif ($this->eventModel->isUnderwayQ($event)) $status_text = "THIS EVENT IS UNDERWAY!";
-			else $status_text = '';
-            $this->viewData['status_text']=$status_text;
+            else $status_text = '';
+            $this->viewData['status_text'] = $status_text;
+
+            $start_control = reset($edata['controls_extra']);
+            $finish_control = end($edata['controls_extra']);
+            $eventTimezoneName = $edata['event_timezone_name'];
+            $start_open_datetime = $start_control['open_datetime'];
+            $finish_close_datetime = $finish_control['close_datetime'];
+            $fcdt_copy = clone $finish_close_datetime;
+            $fcdt_copy->setTimezone($edata['event_tz']);
+            $cutoff_datetime_str = $fcdt_copy->format('m-d, g:i A T');
+
+            $cutoff_interval = $start_open_datetime->diff($finish_close_datetime);
+            $dhm = [];
+            $tothours = $cutoff_interval->h + $cutoff_interval->d * 24;
+            if ($tothours >  1)  $dhm[] = $tothours . ' hours';
+            if ($tothours == 1)  $dhm[] = $tothours . ' hour';
+            if ($cutoff_interval->i >  1)  $dhm[] = $cutoff_interval->i . ' minutes';
+            if ($cutoff_interval->i == 1)  $dhm[] = $cutoff_interval->i . ' minute';
+            $cutoff_interval_str = implode(', ', $dhm);
+
+            $this->viewData = array_merge(
+                $this->viewData,
+                $this->sunrise_sunset(
+                    $start_open_datetime,
+                    $finish_close_datetime,
+                    $start_control['lat'],
+                    $start_control['long'],
+                    $eventTimezoneName
+                )
+            );
+
+            $this->viewData = array_merge($this->viewData,  compact('cutoff_interval_str', 'cutoff_datetime_str'));
 
             $view_list = [];
             $view_list[] = 'event_head';
@@ -104,7 +133,6 @@ class EventInfo extends EventProcessor
 
 
             return $this->load_view($view_list, $edata['club_acp_code']);
-
         } catch (\Exception $e) {
             $this->die_exception($e);
         }
@@ -173,5 +201,19 @@ class EventInfo extends EventProcessor
         }
         $cdt .= "</div>";
         return $cdt;
+    }
+
+
+    private function sunrise_sunset($start_datetime, $cutoff_datetime, $lat, $long, $timezoneId)
+    {
+        $sun_info = date_sun_info($start_datetime->getTimestamp(), $lat, $long); // Easton, PA
+        date_default_timezone_set($timezoneId);
+        $data['sunrise_str'] = date('H:i', $sun_info['sunrise']);
+        $data['sunset_str'] =  date('H:i', $sun_info['sunset']);
+        $data['riding_at_night'] =
+            $sun_info['sunrise'] > $start_datetime->getTimestamp() ||
+            $sun_info['sunset']  < $cutoff_datetime->getTimestamp();
+
+        return $data;
     }
 }

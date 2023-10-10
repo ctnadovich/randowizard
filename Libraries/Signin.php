@@ -35,6 +35,8 @@ class Signin extends Myfpdf
     private $size = 'letter'; // A3, A4, A5, letter, legal
 
     // Configuration variables
+    public $rusa_logo_url = "https://randonneuring.org/assets/local/images/rusa-logo.png";
+
     public $logo_width = 0.12; // fraction of frame width
     public $logo_height = 0.06; // fraction of frame height
     public $logo_center_y = 0.04; // fraction of overall page height
@@ -145,7 +147,7 @@ class Signin extends Myfpdf
         $pw = $this->page_width;
         $ph = $this->page_height;
 
-        $this->Image($this->edata['icon_url'], $pw * $this->logo_center_x, $ph * $this->logo_center_y, $pw * $this->logo_width, $ph * $this->logo_height);
+        $this->Image($this->edata['icon_url'] ?: $this->rusa_logo_url, $pw * $this->logo_center_x, $ph * $this->logo_center_y, $pw * $this->logo_width, $ph * $this->logo_height);
 
         $event_name_dist = $this->my_utf8_decode($this->edata['event_name_dist']);
         $cue_version = $this->edata['cue_version_str'];

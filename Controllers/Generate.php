@@ -66,7 +66,7 @@ class Generate extends EventProcessor
 			generated because errors have 
 			been found in the route or event data. Please <A HREF='$route_manager_url'>go to the 
 			Route Manager</A> to see what these errors
-			are so that they can be fixed. We apologize for this inconvenience.");
+			are so that they can be fixed.");
 
 
 			$this->viewData = array_merge($this->viewData, $edata);
@@ -216,12 +216,12 @@ EOT;
 
 	// PDF Rendered Brevet Card Views
 
-	private function generate_card_inside($edata)
+	private function generate_card_inside_validatefirst($edata)
 	{
 		$this->generate_card($edata, ['side' => 'inside', 'validate_first' => true]);  // stamp first control with logo
 	}
 
-	private function generate_card_inside_novalidatefirst($edata)
+	private function generate_card_inside($edata)
 	{
 		$this->generate_card($edata, ['side' => 'inside']);
 	}

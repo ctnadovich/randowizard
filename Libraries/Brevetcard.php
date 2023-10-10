@@ -54,7 +54,7 @@ class Brevetcard extends Myfpdf
     // the first intermediate will be number 1
     // and the final FINISH
     // public $parando_logo_url="https://parando.org/images/parando3D.png";
-    public $rusa_logo_url = "https://parando.org/images/rusa-logo.png";
+    public $rusa_logo_url = "https://randonneuring.org/assets/local/images/rusa-logo.png";
     public $logo_width = 0.75; // fraction of frame width
     public $logo_height = 0.31; // fraction of frame height
     public $logo_center_y = 0.27; // fraction of overall card height
@@ -346,7 +346,7 @@ class Brevetcard extends Myfpdf
         $this->draw_frames($this->thin_width, self::LIGHT_GRAY);
         $nc = $this->n_cards;
         $logo_url = $this->rusa_logo_url;
-        if (isset($route_event['icon_url']))    $logo_url = $route_event['icon_url'];
+        if (!empty($route_event['icon_url']))    $logo_url = $route_event['icon_url'];
         switch ($this->n_folds) {
             case 2:
                 $this->em_points = 14;

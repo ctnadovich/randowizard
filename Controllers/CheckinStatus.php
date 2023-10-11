@@ -77,6 +77,7 @@ class CheckinStatus extends EventProcessor
 			$club_name = $edata['club_name'];
 			$icon_url = $edata['icon_url'];
 			$controles = $edata['controls'];
+			$controles_extra = $edata['controls_extra'];
 			$club_event_info_url = $edata['club_event_info_url'];
 			$ncontroles = count($controles);
 			$club_acp_code = $edata['club_acp_code'];
@@ -92,22 +93,30 @@ class CheckinStatus extends EventProcessor
 			$headlist = [];
 			$controle_num = 0;
 			foreach ($controles as $c) {
-				$controle_num++;
 				$cd_mi = $c['dist_mi'] . " mi";
 				$cd_km = $c['dist_km'];
 				$is_start = isset($c['start']);
 				$is_finish = isset($c['finish']);
+				$lat = $controles_extra[$controle_num]['lat'];
+				$long = $controles_extra[$controle_num]['long'];
+				
+				$controle_num++;
 				$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");
 				$open = (new \DateTime($c['open']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']))->format('D-H:i');
 				$close = (new \DateTime($c['close']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']))->format('D-H:i');
 
 				// $close = $c['close']; // ->format('D-H:i');
 				$name = $c['name'];
-				$headlist[] = compact('number', 'cd_mi', 'cd_km', 'is_start', 'is_finish', 'open', 'close', 'name');
+				$headlist[] = compact('number', 'cd_mi', 'cd_km', 'is_start', 'is_finish', 'open', 'close', 'name','lat','long');
 			}
 
 			$headlist = $this->flipDiagonally($headlist);
 			foreach ($headlist as $key => $row) {
+				if($key=='name'){
+					for($i=0; $i<$controle_num; $i++)
+						$row[$i] .= "<br><A HREF='https://maps.google.com/?q=" . 
+						  $headlist['lat'][$i].','.$headlist['long'][$i]."'><i style='font-size: 1.4em;' class='fa-solid fa-map-location-dot'></i></A>";
+				}
 				$head_row[$key] = '<TH></TH><TH>' . implode('</TH><TH>', $row) . '</TH>';
 			}
 			$checkin_table .= "<TR class='w3-dark-gray'>" . $head_row['number'] . "<TH ROWSPAN=4>Final</TH></TR>";

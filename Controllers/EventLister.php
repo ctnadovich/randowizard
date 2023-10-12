@@ -202,7 +202,7 @@ class EventLister extends EventProcessor
 		}
 
 		if (count($rows) == 0) {
-			return "<p>None.</p>";
+			return null;
 		} else {
 			$event_table  = "<table class='w3-table-all w3-centered'>";
 			$event_table .= implode('', $rows);

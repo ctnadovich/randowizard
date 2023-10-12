@@ -134,6 +134,7 @@ class EventsCrud extends BaseController
         $crud->setRule('emergency_phone', 'Emergency Phone', 'required');
 
         $crud->setRead();
+        $crud->setClone();
         $crud->callbackColumn('event_code', array($this, '_event_code'));
         $crud->callbackColumn('status', array($this, '_status_icons'));
         $crud->callbackColumn('generate', array($this, '_paperwork'));

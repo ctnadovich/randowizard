@@ -814,6 +814,8 @@ class Cuesheet extends Myfpdf
 		$d_total = 0;
 		$d_segment_start = 0;
 
+		if(null==$this->event) return []; // throw new \Exception('NULL: ' . print_r($this->event,true));
+
 		$event_tz = $this->event['event_tz'];
 
 		foreach ($cues as $cue) {

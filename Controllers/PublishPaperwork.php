@@ -108,7 +108,6 @@ class PublishPaperwork extends EventProcessor
 			
 			$edata = $this->get_event_data($event);
 
-
 			$this->viewData = array_merge($this->viewData, $edata);
 
 			$edata['cue_version'] = $cue_version = 1 + $edata['cue_version'];

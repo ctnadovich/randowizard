@@ -46,9 +46,9 @@
 
     <h3>PREVIEW</h3>
     <P>Press the buttons below for <b>preview versions</b> of the cuesheet and brevet cards generated
-        now based on the last route data fetched. <i>If you change the route at RWGPS make sure you re-fetch the
-            route data or these previews won't reflect the latest data.</i> Also, this paperwork won't appear live until you press
-        the 'Publish Paperwork to Event' button.</P>
+        now based on the last route data fetched. These are for preview only -- they are the NEXT version 
+    that will be published. <B>DO NOT PRINT THESE!</B> Use the published versions that 
+appear under the Downloads menu. </P>
     <!-- <FORM ACTION=<?= $event_preview_url ?> METHOD=POST enctype="multipart/form-data"> -->
 
     <div class="w3-row">

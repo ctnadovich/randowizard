@@ -840,12 +840,12 @@ class Cuesheet extends Myfpdf
 
 				$open_daytime_o = $controle['open'];
 				$open_daytime = clone $open_daytime_o;
-				$open_daytime->setTimezone($event_tz)->format($this->datetime_format);
+				$open_daytime->setTimezone($event_tz);
 				$open_time_str = $open_daytime->format($this->datetime_format);
 
-				$close_daytime_o = $controle['open'];
+				$close_daytime_o = $controle['close'];
 				$close_daytime = clone $close_daytime_o;
-				$close_daytime->setTimezone($event_tz)->format($this->datetime_format);
+				$close_daytime->setTimezone($event_tz);
 				$close_time_str = $close_daytime->format($this->datetime_format);
 
 				$cd_mi = round($controle['d'] / (self::m_per_km * self::km_per_mi), 1);

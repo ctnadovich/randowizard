@@ -170,8 +170,21 @@ class EventInfo extends EventProcessor
                 $is_start = (isset($route_controles[$i]['start'])) ? " [START]" : "";
                 $is_finish = (isset($route_controles[$i]['finish'])) ? " [FINISH]" : "";
                 $controle_num = $i + 1;
-                $open_str = $route_controles[$i]['open']->format('m-d H:i');
-                $close_str = $route_controles[$i]['close']->format('m-d H:i');
+
+
+				$open_daytime_o = $route_controles[$i]['open'];
+				$open_daytime = clone $open_daytime_o;
+				$open_daytime->setTimezone($event_tz);
+				$open_str = $open_daytime->format('m-d H:i');
+
+				$close_daytime_o = $route_controles[$i]['close'];
+				$close_daytime = clone $close_daytime_o;
+				$close_daytime->setTimezone($event_tz);
+				$close_str = $close_daytime->format('m-d H:i');
+
+
+                //$open_str = $route_controles[$i]['open']->format('m-d H:i');
+                //$close_str = $route_controles[$i]['close']->format('m-d H:i');
                 $lat = $controls_extra[$i]['lat'] ?? 40;
 				$long = $controls_extra[$i]['long'] ?? -75;
                 $maplink = "<A HREF='https://maps.google.com/?q=$lat,$long'><i style='font-size: 1.4em;' class='fa-solid fa-map-location-dot'></i></A>";

@@ -39,7 +39,6 @@ class CheckinStatus extends EventProcessor
 
 		$this->rusaModel = model('Rusa');
 		$this->cryptoLibrary = new \App\Libraries\Crypto();
-
 	}
 
 
@@ -59,19 +58,17 @@ class CheckinStatus extends EventProcessor
 
 			try {
 
- 
+
 				$event = $this->eventModel->eventByCode($event_code);
-	
+
 				if (empty($event['route_url'])) throw new \Exception('NO MAP URL FOR ROUTE.');
 				$route_url = $event['route_url'];
-	
+
 				$edata = $this->get_event_data($event);
-	
-	
 			} catch (\Exception $e) {
 				$this->die_data_exception($e);
 			}
-		
+
 			$event_name_dist = $edata['event_name_dist'];
 			$website_url = $edata['website_url'];
 			$club_name = $edata['club_name'];
@@ -90,6 +87,7 @@ class CheckinStatus extends EventProcessor
 
 			$reclass = $this->unitsLibrary;
 
+
 			$headlist = [];
 			$controle_num = 0;
 			foreach ($controles as $c) {
@@ -99,25 +97,34 @@ class CheckinStatus extends EventProcessor
 				$is_finish = isset($c['finish']);
 				$lat = $controles_extra[$controle_num]['lat'];
 				$long = $controles_extra[$controle_num]['long'];
-				
+
+				$open_datetime = (new \DateTime($c['open']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+				$close_datetime = (new \DateTime($c['close']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+				$open = $open_datetime->format('D-H:i');
+				$close = $close_datetime->format('D-H:i');
+
 				$controle_num++;
 				$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");
-				$open = (new \DateTime($c['open']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']))->format('D-H:i');
-				$close = (new \DateTime($c['close']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']))->format('D-H:i');
 
 				// $close = $c['close']; // ->format('D-H:i');
 				$name = $c['name'];
-				$headlist[] = compact('number', 'cd_mi', 'cd_km', 'is_start', 'is_finish', 'open', 'close', 'name','lat','long');
+				$headlist[] = compact('number', 'cd_mi', 'cd_km', 'is_start', 'is_finish', 'open', 'close',  'name', 'lat', 'long');
 			}
 
 			$headlist = $this->flipDiagonally($headlist);
+
+
 			foreach ($headlist as $key => $row) {
-				if($key=='name'){
-					for($i=0; $i<$controle_num; $i++)
-						$row[$i] .= "<br><A HREF='https://maps.google.com/?q=" . 
-						  $headlist['lat'][$i].','.$headlist['long'][$i]."'><i style='font-size: 1.4em;' class='fa-solid fa-map-location-dot'></i></A>";
+				if ($key == 'name') {
+					for ($i = 0; $i < $controle_num; $i++)
+						$row[$i] .= "<br><A HREF='https://maps.google.com/?q=" .
+							$headlist['lat'][$i] . ',' . $headlist['long'][$i] . "'><i style='font-size: 1.4em;' class='fa-solid fa-map-location-dot'></i></A>";
 				}
-				$head_row[$key] = '<TH></TH><TH>' . implode('</TH><TH>', $row) . '</TH>';
+				if ($key == 'open_datetime' || $key == 'close_datetime') {
+					$head_row[$key] = $row;
+				} else {
+					$head_row[$key] = '<TH></TH><TH>' . implode('</TH><TH>', $row) . '</TH>';
+				}
 			}
 			$checkin_table .= "<TR class='w3-dark-gray'>" . $head_row['number'] . "<TH ROWSPAN=4>Final</TH></TR>";
 			$checkin_table .= "<TR class='w3-light-gray' style='font-size: 0.7em;'>" . $head_row['name'] . "</TR>";
@@ -140,33 +147,39 @@ class CheckinStatus extends EventProcessor
 					$first_last = $m['first_name']  . ' ' . $m['last_name'];
 				}
 				$rider = "$first_last ($rider_id)";
-			
+
 
 				$checklist = [];
 				for ($i = 0; $i < $ncontroles; $i++) {
 					$open = $controles[$i]['open'];
 					$close = $controles[$i]['close'];
+					$open_datetime = (new \DateTime($open))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+					$close_datetime = (new \DateTime($close))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+	
 					$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $edata['event_timezone_name']);
 					if (empty($c)) {
 						$checklist[] = '-';
 					} else {
 
-						$checkin_time = $c['checkin_time'];
+						$checkin_time = $c['checkin_time'];  // a DateTime object
 
 						$el = "";
 						if ($c['preride']) {
 							$el = "<br><span class='green italic sans smaller'>Preride</span>";
-						} elseif ($checkin_time < $open) {
-							$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
-						} elseif ($checkin_time > $close) {
-							$el = "<br><span class='red italic sans smaller'>LATE!</span>";
+						} elseif ($checkin_time < $open_datetime) {
+							$cit_str = $checkin_time->format('H:i');
+							$open_str = $close_datetime->format('H:i');							$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
+						} elseif ($checkin_time > $close_datetime) {
+							$cit_str = $checkin_time->format('H:i');
+							$close_str = $close_datetime->format('H:i');
+							$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";
 						}
 
 						$control_index = $i;
 						$d = compact('control_index', 'event_code', 'rider_id');
 						$checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
 
-						if ($this->isAdmin()) {
+						if ($this->isAdmin($club_acp_code)) {
 							$el .= "&nbsp; <i title='$checkin_code' class='fa fa-check-circle' style='color: #355681;'></i>";
 						}
 
@@ -183,8 +196,8 @@ class CheckinStatus extends EventProcessor
 				$finish_text = "";
 				$r = $this->rosterModel->get_record($local_event_id, $rider_id);
 
-				if (empty($r)){ // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
-					$r['result']='NOT IN ROSTER';
+				if (empty($r)) { // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
+					$r['result'] = 'NOT IN ROSTER';
 				}
 				if ($r['result'] == "finish") {
 					$elapsed_array = explode(':', $r['elapsed_time'], 3);
@@ -197,7 +210,7 @@ class CheckinStatus extends EventProcessor
 
 						$finish_text = $hh .  "h&nbsp;" . $mm . "m";
 
-						if ($this->isAdmin()) {
+						if ($this->isAdmin($club_acp_code)) {
 							$finish_text .= "<br>($finish_code)";
 						}
 					}
@@ -219,7 +232,7 @@ class CheckinStatus extends EventProcessor
 			);
 
 			$this->viewData = array_merge($this->viewData, $view_data);
-			return $this->load_view(['checkin_status'],$club_acp_code);
+			return $this->load_view(['checkin_status'], $club_acp_code);
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}
@@ -240,6 +253,4 @@ class CheckinStatus extends EventProcessor
 		}
 		return $out;
 	}
-
-
 }

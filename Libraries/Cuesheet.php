@@ -529,13 +529,17 @@ class Cuesheet extends Myfpdf
 		$x = $this->hmargin + $text_column * ($text_column_width + $this->column_padding);
 		$max_y = $this->vmargin + $h;
 
+		$char_width = $this->GetStringWidth('_');
+
+
+
 		// Determine maximum widths of each cue column
 		foreach ($cue_lines as $line) {
 			$i = 0;
 			$controle_i = array_shift($line);
 			if ($controle_i === false) { // only consider non_controles
 				foreach ($line as $field) {
-					$sw = $this->GetStringWidth($field);
+					$sw = max(4*$char_width,$this->GetStringWidth($field));
 					$max_width[$i] = (isset($max_width[$i])) ? max($sw, $max_width[$i]) : $sw;
 					$i++;
 				}
@@ -810,6 +814,8 @@ class Cuesheet extends Myfpdf
 		$d_total = 0;
 		$d_segment_start = 0;
 
+		$event_tz = $this->event['event_tz'];
+
 		foreach ($cues as $cue) {
 
 			$d_total_mi = number_format(($cue['d']) / self::m_per_km / self::km_per_mi, 1);
@@ -830,8 +836,15 @@ class Cuesheet extends Myfpdf
 
 				if (empty($this->datetime_format)) trigger_error("The datetime_format property not set for this cuesheet.", E_USER_ERROR);
 
-				$open_time_str = $controle['open']->format($this->datetime_format);
-				$close_time_str = $controle['close']->format($this->datetime_format);
+				$open_daytime_o = $controle['open'];
+				$open_daytime = clone $open_daytime_o;
+				$open_daytime->setTimezone($event_tz)->format($this->datetime_format);
+				$open_time_str = $open_daytime->format($this->datetime_format);
+
+				$close_daytime_o = $controle['open'];
+				$close_daytime = clone $close_daytime_o;
+				$close_daytime->setTimezone($event_tz)->format($this->datetime_format);
+				$close_time_str = $close_daytime->format($this->datetime_format);
 
 				$cd_mi = round($controle['d'] / (self::m_per_km * self::km_per_mi), 1);
 				$cd_km = round($controle['d'] / (self::m_per_km), 1);

@@ -115,7 +115,7 @@ class EventsCrud extends BaseController
         }
 
         $crud->setAdd();
-        $crud->unsetAddFields(['status', 'cue_version', 'created', 'last_change']);
+        $crud->unsetAddFields(['status', 'cue_version', 'created', 'last_changed']);
 
         $crud->setRule('region', 'Region', 'required');
         $crud->setRule('country', 'Country', 'required');
@@ -154,7 +154,7 @@ class EventsCrud extends BaseController
 
 
         $crud->columns(['event_code', 'region_id', 'name', 'distance', 'start_datetime', 'status', 'event_info', 'roster', 'route', 'generate']);
-        $crud->unsetEditFields(['created', 'last_change']);
+        $crud->unsetEditFields(['created', 'last_changed']);
         $crud->displayAs('start_datetime', 'Start Date/Time');
         $crud->displayAs('start_state_id', 'State');
         $crud->displayAs('start_country_id', 'Country');

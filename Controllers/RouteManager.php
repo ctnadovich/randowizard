@@ -142,6 +142,8 @@ class RouteManager extends EventProcessor
         $warning_body = '';
         extract($edata); // All route_event variables are now local
 
+        $not_published = ($cue_version<1);
+
 
         if ($route_has_warnings || $publish_is_stale) {
             $warning_body .= <<<EOT
@@ -178,6 +180,14 @@ publish again so the latest route data becomes live. </p>
 <li $elc_style>Event last changed $last_event_change_str</li>
 <li $rlc_style>Route last changed $last_update</li>
 <li style = 'color: red;'>Route last published $published_at_str</li></ul>
+EOT;
+        }
+
+        if ($not_published) {
+            $warning_body .= <<<EOT
+<h4><span class='w3-red w3-padding-small'>NOT PUBLISHED</span></h4>
+<p>This route has not been published for use with eBrevet. Cuesheets and other data will not be available.  
+When you are satisfied with the route, please hit the "Publish" button below so the route data becomes live. </p> 
 EOT;
         }
 

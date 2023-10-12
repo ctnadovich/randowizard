@@ -155,7 +155,7 @@ class EventInfo extends EventProcessor
                     $controles_table .= "<TR><TH>Controle</TH><TH>Distance</TH><TH>Open/Close</TH><TH>Note</TH><TH>Description (attributes)</TH></TR>";
                     break;
                 case 'info':
-                    $controles_table .= "<TR><TH>Controle</TH><TH>Distance</TH><TH>Open/Close</TH><TH>Location</TH></TR>";
+                    $controles_table .= "<TR><TH>Controle</TH><TH>Distance</TH><TH>Open/Close</TH><TH>Location</TH><TH>Map</TH></TR>";
                     break;
                 default:
                     $this->die_message(__METHOD__, 'Unknown control table style.');
@@ -172,6 +172,11 @@ class EventInfo extends EventProcessor
                 $controle_num = $i + 1;
                 $open_str = $route_controles[$i]['open']->format('m-d H:i');
                 $close_str = $route_controles[$i]['close']->format('m-d H:i');
+                $lat = $controls_extra[$i]['lat'] ?? 40;
+				$long = $controls_extra[$i]['long'] ?? -75;
+                $maplink = "<A HREF='https://maps.google.com/?q=$lat,$long'><i style='font-size: 1.4em;' class='fa-solid fa-map-location-dot'></i></A>";
+
+
                 switch ($style) {
                     case 'wizard':
                         $ca = $this->format_attributes($route_controles[$i]['attributes']);
@@ -180,7 +185,7 @@ class EventInfo extends EventProcessor
                         break;
                     case 'info':
                         $cd = $this->format_control_description_table($route_controles[$i]['attributes']);
-                        $controles_table .= "<TR><TD>$controle_num$is_start$is_finish</TD><TD>$cd_mi mi<br>$cd_km km</TD><TD>$open_str<br>$close_str</TD><TD>$cd</TD></TR>";
+                        $controles_table .= "<TR><TD>$controle_num$is_start$is_finish</TD><TD>$cd_mi mi<br>$cd_km km</TD><TD>$open_str<br>$close_str</TD><TD>$cd</TD><TD>$maplink</TD></TR>";
                         break;
                 }
             }

@@ -60,8 +60,7 @@
         </div>
         <div class="w3-half w3-bar-block w3-center w3-padding">
 
-            <A class="w3-bar-item w3-button w3-margin w3-teal" HREF="<?= $event_preview_url ?>/card_inside_novalidatefirst">Brevet Card Inside</A>
-            <A class="w3-bar-item w3-button w3-margin w3-teal" HREF="<?= $event_preview_url ?>/card_inside">Brevet Card Inside (start stamped)</A>
+            <A class="w3-bar-item w3-button w3-margin w3-teal" HREF="<?= $event_preview_url ?>/card_inside">Brevet Card Inside</A>
             <A class="w3-bar-item w3-button w3-margin w3-teal" HREF="<?= $event_preview_url ?>/card_outside_blank">Brevet Card Outside (single blank)</A>
             <A class="w3-bar-item w3-button w3-margin w3-teal" HREF="<?= $event_preview_url ?>/card_outside_roster">Brevet Card Outside (all riders)</A>
 

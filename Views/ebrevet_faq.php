@@ -73,6 +73,12 @@
 
 <p>Make sure you have the latest version of the app and the latest version of the events downloaded into the app. The most common reason a start-code isn't accepted by the app is because either the events cue sheet has changed recently and you need to download the latest event info. Either that, or the app is out of date. </p> 
 
+<h3>My brevet card is for version 6 of the route, but my phone says version 7. Am I screwed?</h3>
+
+<p>eBrevet WILL allow someone to ride if the version on their phone is NEWER than the paperwork. If your brevet card has a start codes for, say, version 6 of the route, but for some reason your phone has a <em>newer</em> version, say version 7, that's fine. You can use the older brevet start code with the newer route.</p>
+
+<p>But the reverse is not true. If your card is for version 7 and you still have version 6 in your phone, you will need to update the data on the phone. eBrevet will not allow you to start with a cue/route version OLDER than the brevet card. </p>
+
 <h3>What if I "forget" to check in at a  control. </h3>
 
 <p>If you "forget" to check in at a control the app will always notice. You will NOT get a finish code. The app will give you a DNQ.  You must not skip any control. If you miss a control, you need to go back and check in (either with the app, or with traditional signature/receipt). If you skip controls you could be disqualified. </p>

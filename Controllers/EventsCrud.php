@@ -116,6 +116,7 @@ class EventsCrud extends BaseController
 
         $crud->setAdd();
         $crud->unsetAddFields(['status', 'cue_version', 'created', 'last_changed']);
+        $crud->unsetCloneFields(['status', 'cue_version', 'created', 'last_changed']);
 
         $crud->setRule('region', 'Region', 'required');
         $crud->setRule('country', 'Country', 'required');

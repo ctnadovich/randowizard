@@ -57,35 +57,74 @@ class PublishPaperwork extends EventProcessor
 	public function recache($event_code)
 	{
 
+
 		try {
 			$event = $this->eventModel->eventByCode($event_code);
-			$edata = $this->get_event_data($event);
+			// $edata = $this->get_event_data($event);
 
-			$this->die_not_admin($edata['club_acp_code']);
 
-			$route_id = $edata['route_id'];
+			$local_event_id = $event['event_id'];
+			$club_acp_code = $event['region_id'];
+			$event_code = $this->eventModel->getEventCode($event);
 
-			$this->viewData['event_name_dist']=$edata['event_name_dist'];
-			$this->viewData['route_url']=$edata['route_url'];
-			$this->viewData['route_manager_url']=$edata['route_manager_url'];
-			$this->viewData['event_info_url']=$edata['event_info_url'];
+			$this->die_not_admin($club_acp_code);
+
+
+			if (empty($event['route_url'])) $this->die_info(
+				'No Route Map URL',
+				'Sorry, but you can not use any Route Manager (CueWizard) functions until you add a route URL to your event.'
+			);
+
+
+			$club = $this->regionModel->getClub($club_acp_code);
+			if (empty($club)) {
+				throw new \Exception("UNKNOWN CLUB");
+			}
+
+			// Try to get route data
+			$route_url = $event['route_url'];
+			$route_id = $this->rwgpsLibrary->extract_route_id($route_url);
+
+
+			if ($route_id == null) {
+				throw new \Exception("INVALID ROUTE URL: $route_url");
+			} else {
+				$route = $this->rwgpsLibrary->get_route($route_id);
+				$has_rwgps_route = true;
+				$rwgps_url = $this->rwgpsLibrary->make_route_url($route_id);
+			}
+
+			// DRY VIOLATION! These also appear in EventProcessor
+			$route_manager_url = site_url("route_manager/$event_code");
+			$event_info_url = site_url("event_info/$event_code");
+
+			$this->viewData['event_name_dist'] = $this->eventModel->nameDist($event);
+			$this->viewData['route_url'] = $route_url;
+			$this->viewData['route_manager_url'] = $route_manager_url;
+			$this->viewData['event_info_url'] = $event_info_url;
 
 			if (false == $this->rwgpsLibrary->is_good_route_id($route_id)) throw new \Exception("Invalid parameters.");
 			$result = $this->rwgpsLibrary->download_route_data($route_id);
 			if ($result !== true) throw new \exception($result);
 
-			$route=$this->rwgpsLibrary->get_route($route_id);
+
+			$utc_tz = new \DateTimeZone('UTC');
+
+			$event_timezone_name = $club['event_timezone_name'];  // For now, events can't have individual TZ
+			$event_tz = new \DateTimeZone($event_timezone_name);
+	
+
+			$route = $this->rwgpsLibrary->get_route($route_id);
 
 			$last_update_datetime = new \DateTime('@' . $route['updated_at']);
-			$last_update_datetime->SetTimezone($edata['event_tz']);
+			$last_update_datetime->SetTimezone($event_tz);
 			$this->viewData['last_update'] = $last_update_datetime->format("Y-m-j H:i:s T");
-	
-			$last_download_datetime = new \DateTime('@' . $route['downloaded_at']);
-			$last_download_datetime->SetTimezone($edata['event_tz']);
-			$this->viewData['last_download'] = $last_download_datetime->format("Y-m-j H:i:s T");
-	
-			return $this->load_view('fetch_success');
 
+			$last_download_datetime = new \DateTime('@' . $route['downloaded_at']);
+			$last_download_datetime->SetTimezone($event_tz);
+			$this->viewData['last_download'] = $last_download_datetime->format("Y-m-j H:i:s T");
+
+			return $this->load_view('fetch_success');
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}
@@ -105,7 +144,7 @@ class PublishPaperwork extends EventProcessor
 		try {
 			$event = $this->eventModel->eventByCode($event_code);
 			$this->die_not_admin($event['region_id']);
-			
+
 			$edata = $this->get_event_data($event);
 
 			$this->viewData = array_merge($this->viewData, $edata);
@@ -118,7 +157,6 @@ class PublishPaperwork extends EventProcessor
 			$cue_data_C = $this->publish_csv_cuesheet($edata);
 
 			$this->eventModel->set_cuesheet_version($event_code, $cue_version);
-			
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}

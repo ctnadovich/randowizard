@@ -142,7 +142,7 @@ class RouteManager extends EventProcessor
         $warning_body = '';
         extract($edata); // All route_event variables are now local
 
-        $not_published = ($cue_version<1);
+        $not_published = (empty($cue_version) || $cue_version<1);
 
 
         if ($route_has_warnings || $publish_is_stale) {

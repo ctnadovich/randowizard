@@ -166,6 +166,13 @@ class Event extends Model
 
     }
 
+    public function getCutoffDatetime($event){
+        extract($event);
+        $startDatetime = new \DateTime($start_datetime, new \DateTimeZone($timezone_name));
+        $cutoff_interval = $this->duration($distance);
+        return $startDatetime->add($cutoff_interval);
+    }
+
 	public function statusQ($event,$attribute){
 
  		if(is_array($attribute)){

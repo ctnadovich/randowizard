@@ -154,35 +154,41 @@ class Rusa extends Model
         return $m;
     }
 
-    public function check_rusa_membership_at_date($rusa_id, $last_name, $event_cutoff_datetime)
-    {
-        $r = $this->rusa_status_at_date($rusa_id, $last_name, $event_cutoff_datetime);
-        if ($r != 'OK') $this->rusa_error($r);
+
+    public function last_name_mismatchq($a,$b){
+        $a=preg_replace('/[^a-z]/','',strtolower($a));
+        $b=preg_replace('/[^a-z]/','',strtolower($b));
+        //$this->die_error(__METHOD__,"'$a=$b'");
+        return (empty($a) || empty($b) || levenshtein($a,$b)>1);
     }
+
     public function rusa_status_at_date($rusa_id, $last_name, $event_cutoff_datetime)
     {
-        $result = 'OK';
+        $result = "This can't happen";
+
         if (empty($rusa_id)) {
-            $result = ("No RUSA ID");
+            $result = ("No Rider ID");
         } else {
             $rusa_m = $this->query_rusa_id($rusa_id);
             if (false === $rusa_m) {
-                $result = ("RUSA ID <b>$rusa_id</b> Not Found in RUSA Database");
+                $result = ("Rider ID '$rusa_id' is not a member of RUSA");
             } else {
                 if ($this->last_name_mismatchq($rusa_m['last_name'], $last_name)) {
                     $a = preg_replace('/[^a-z]/', '', strtolower($rusa_m['last_name']));
                     $b = preg_replace('/[^a-z]/', '', strtolower($last_name));
 
-                    $result = ("Last name <b>" . strtoupper($last_name) . "</b> does not match last name for RUSA ID $rusa_id"); // ($a != $b)");
+                    $result = ("Last name '" . strtoupper($last_name) . "' does not match last name for Rider ID $rusa_id"); // ($a != $b)");
                 } else {
                     $rusa_exp = $rusa_m['expires'];
                     $rusa_expires_datetime = new \DateTime($rusa_exp);
                     $now_datetime = new \DateTime('now');
                     if ($now_datetime > $rusa_expires_datetime) {
-                        $result = ("The membership for RUSA ID $rusa_id expired on $rusa_exp.");
+                        $result = ("The RUSA membership for Rider ID $rusa_id expired on $rusa_exp.");
                     } else {
                         if ($event_cutoff_datetime > $rusa_expires_datetime) {
-                            $result = ("Your RUSA membership expires $rusa_exp, which is before the date of this event.");
+                            $result = ("The RUSA membership for Rider ID $rusa_id expires $rusa_exp, which is before the date of this event.");
+                        }else{
+                            $result = $rusa_expires_datetime;
                         }
                     }
                 }

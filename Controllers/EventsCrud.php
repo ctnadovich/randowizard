@@ -26,12 +26,14 @@ use Psr\Log\LoggerInterface;
 
 use App\Libraries\GroceryCrud;
 use stdClass;
+use CodeIgniter\Files\File;
 
 class EventsCrud extends BaseController
 {
 
     protected $helpers = ['form'];
     protected $rosterModel;
+    protected $eventModel;
 
     protected $user_id;
     protected $authorized_regions;
@@ -43,6 +45,7 @@ class EventsCrud extends BaseController
     ) {
         parent::initController($request, $response, $logger);
         $this->rosterModel =  model('Roster');
+        $this->eventModel =  model('Event');
 
         $this->user_id = $this->session->get('user_id');
         $this->authorized_regions = $this->session->get('authorized_regions');
@@ -67,7 +70,7 @@ class EventsCrud extends BaseController
 
             // If GroceryCrud had orWhere this wouldn't be needed
             // Not sure if both _id and .id are really needed, but this works
-            
+
             $where_list = array_map(fn ($r) => "region_id = $r", $authorized_regions);
             $region_underscore_where_clause = '(' . implode(' OR ', $where_list) . ')';
 
@@ -164,27 +167,29 @@ class EventsCrud extends BaseController
         $crud->displayAs('gravel_distance', 'Official Gravel (km)');
         $crud->displayAs('event_info', 'Info');
 
-        $crud->callbackAfterUpdate([$this,'_set_last_change_time']);
+        $crud->callbackAfterUpdate([$this, '_set_last_change_time']);
 
         $output = $crud->render();
 
         $this->viewData = array_merge((array)$output, $this->viewData);
 
-        return $this->load_view(['echo_output']);
+        return $this->load_view(['crud_output']);
     }
 
-    public function update_nine(){
+    public function update_nine()
+    {
         $stateParameters = new stdClass;
         $stateParameters->primaryKeyValue = 9;
         $stateParameters = $this->_set_last_change_time($stateParameters);
-        $this->die_info(__METHOD__,print_r($stateParameters,true));
+        $this->die_info(__METHOD__, print_r($stateParameters, true));
     }
 
-    public function _set_last_change_time($stateParameters)  {
+    public function _set_last_change_time($stateParameters)
+    {
         $eventModel = model('Event');
         $now = (new \DateTime('now', (new \DateTimeZone('UTC'))))->format('Y-m-d H:i:s');
         $id = $stateParameters->primaryKeyValue;
-        $eventModel->update($id, ['last_changed'=>"$now"]);
+        $eventModel->update($id, ['last_changed' => "$now"]);
         return $stateParameters;
     }
 
@@ -205,18 +210,200 @@ class EventsCrud extends BaseController
         $region_id = $row->region_id;
         $event_code = "$region_id-$event_id";
         $roster_url = site_url("roster/$event_code");
-
-
-        $span_center = '<span style="width:100%;text-align:center;display:block;">';
+        $roster_upload_url = site_url("roster_upload/$event_code");
         $n_riders = $this->rosterModel->n_riders($event_id); // =$value; //$this->truncate($value,30);
-        return "$span_center<A HREF='{$roster_url}' TITLE='Roster'><i class='fas fa-users'  style='color: blue;'></i></A> ($n_riders)</span>";
+
+
+        return <<<EOT
+<span style="width:100%;text-align:center;display:block;">
+<A HREF='$roster_url' TITLE='Roster'><i class='fas fa-users' style='color: blue;'></i>($n_riders)</A> 
+<A HREF='$roster_upload_url' TITLE='Upload'><i class='fas fa-upload' style='color: blue;'></i></A>
+</span>
+EOT;
+    }
+
+    public function roster_upload($event_code)
+    {
+
+        $event = $this->eventModel->eventByCode($event_code);
+
+        $this->viewData['errors'] = [];
+        $this->viewData['event_code'] = $event_code;
+        $this->viewData['event_name_dist'] = $this->eventModel->nameDist($event);
+
+        if ($this->request->is('get'))
+            return $this->load_view('roster_upload_form');
+
+        $validationRule = [
+            'userfile' => [
+                'label' => 'Roster File',
+                'rules' => [
+                    'uploaded[userfile]',
+                    'ext_in[userfile,csv]',
+                    'max_size[userfile,100]',
+                ],
+            ],
+        ];
+        if (!$this->validate($validationRule)) {
+            $this->viewData['errors'] = $this->validator->getErrors();
+            return $this->load_view('roster_upload_form');
+        }
+
+        $img = $this->request->getFile('userfile');
+
+        if (!$img->isValid()) {
+            throw new \Exception($img->getErrorString() . '(' . $img->getError() . ')');
+        }
+
+        $filepath = WRITEPATH . 'uploads/' . $img->store();
+        $uploadedFile = new File($filepath);
+        $this->viewData['uploadedFile'] = $uploadedFile;
+
+        $processingResult = $this->processRosterFile($uploadedFile, $event);
+        $this->viewData = array_merge($this->viewData, $processingResult);
+
+        if (!empty($processingResult['errors'])) {
+            return $this->load_view('roster_upload_form');
+        }
+
+        $output = $this->load_view('roster_upload_success');
+        unlink($filepath);
+        return $output;
+    }
+
+    private function processRosterFile($uploadedFile, $event)
+    {
+        $errors = [];
+        $n_riders = 0;
+
+        $rusaModel =  model('Rusa');
+
+        $event_cutoff_datetime = $this->eventModel->getCutoffDatetime($event);
+        $local_event_id = $event['event_id'];
+
+        try {
+            $f = $uploadedFile->openFile();
+            $roster_data = [];
+            while (!$f->eof()) {
+                $roster_data[] = $f->fgetcsv();
+            }
+            $header = array_shift($roster_data);
+            if (empty($header)) throw new \Exception("No header.");
+            if (empty($roster_data)) throw new \Exception("No riders.");
+
+            // Card O Matic CSV Format Spec
+            //
+            // "RUSA" or variations ("rusa number", etc)  -- REQUIRED
+            // "FIRST" or variations ("firstname", "first name", etc)
+            // "LAST" or variations  -- REQUIRED
+            // "ADDRESS" or "STREET"
+            // "CITY"
+            // "STATE"
+            // "ZIP" 
+
+            $fnp = [
+                'rider_id' => '/.*(RUSA|rider[_ ]?id).*/i',
+                'first' => '/.*first.*/i',
+                'last' => '/.*last.*/i',
+                'address' => '/.*(address|street).*/i',
+                'city' => '/.*city.*/i',
+                'state' => '/.*state.*/i',
+                'zip' => '/.*(zip|code).*/i'
+            ];
+
+            // Standardize the header and remove unrecognized columns
+            $header = preg_filter(array_values($fnp), array_keys($fnp), $header);
+            if (empty($header)) throw new \Exception("No recognized header fields.");
+ 
+
+            // Find all unique column names
+            $field_j = array_flip($header);
+
+
+            // Verify that required columns are present
+            if (false == array_key_exists('rider_id', $field_j)) $errors[] = "No Rider ID (RUSA) column.";
+            if (false == array_key_exists('last', $field_j)) $errors[] = "No Last Name (LAST) column.";
+            if (!empty($errors)) throw new \Exception("Can't continue.");
+
+            // RUSA Vetting will add the expiration field
+            $header[]='expires';
+
+            // Process each data row
+            $roster = [];
+            $line_number=0;
+
+            foreach ($roster_data as $r) {
+                $rider = [];
+                $line_number++;
+                foreach ($header as $i => $field_name) {
+                    if (!isset($rider[$field_name])) {
+                        $rider[$field_name] = trim($r[$i] ?? '');
+                    } else {
+                        if ($field_name == 'address')
+                            $rider['address'] .= "; " . trim($r[$i] ?? '');
+                        // else silently ignore duplicate columns
+                    }
+                }
+
+                extract($rider);
+
+                if (empty($rider_id) || !is_numeric($rider_id)) {
+                    $errors[] = "Rider ID '$rider_id' (record: $line_number) is invalid.";
+                    continue;
+                }
+
+                if (!empty($roster[$rider_id])) {
+                    $errors[] = "Duplicate Rider ID '$rider_id' (record: $line_number).";
+                    continue;
+                }
+
+                $rusa_result = $rusaModel->rusa_status_at_date($rider_id, $last, $event_cutoff_datetime);
+
+                if (is_string($rusa_result)) {
+                    $errors[] = "Rider ID '$rider_id' (record: $line_number): $rusa_result";
+                    continue;
+                }
+
+                // Rider is known good, add expires date, and save to roster
+
+                $rider['expires'] = $rusa_result->format('Y-m-d');
+                $roster[$rider_id] = $rider;
+            }
+
+            $n_riders = count($roster_data);
+
+        } catch (\Exception $e) {
+            $message = $e->GetMessage();
+            $errors[] = "Roster CSV Processing Exception: $message";
+        }
+
+        if (empty($errors)){
+            
+            // clear old roster
+            $this->rosterModel->where('event_id', $local_event_id)->delete();
+
+            // write new roster
+            foreach($roster as $rider_id => $rider_data){
+                $rc = $this->rosterModel->insert(['rider_id' => $rider_id, 'event_id'=>$local_event_id], false);
+                if($rc===false){
+                    $errors[] = "Failed to save rider_id = $rider_id to roster. File upload incomplete.";
+                    break;
+                }
+            }
+
+        }else{
+            $errors[] = "Errors in CSV, roster not saved.";
+        }
+
+
+        return compact('errors', 'n_riders', 'header', 'roster');
     }
 
 
     public function _route($value, $row)
     {
 
-        if(empty ($row->route_url)) return "No Route";
+        if (empty($row->route_url)) return "No Route";
 
         $event_id = $row->id;
         $region_id = $row->region_id;
@@ -247,7 +434,7 @@ EOT;
     public function _paperwork($value, $row)
     {
 
-        if(empty ($row->route_url)) return "No Route";
+        if (empty($row->route_url)) return "No Route";
 
         $event_id = $row->id;
         $region_id = $row->region_id;

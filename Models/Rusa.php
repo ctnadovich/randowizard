@@ -83,7 +83,7 @@ class Rusa extends Model
         return $m;
     }
 
-    public function query_rusa_id($rusa_id)
+    public function query_rusa_id($rusa_id, $now_datetime=null)
     {
 
         $m = $this->check_member_cache($rusa_id);
@@ -91,7 +91,7 @@ class Rusa extends Model
             $expires = $m['expires'];
             $tz_utc = new \DateTimeZone('utc');
             $exp_datetime = new \DateTime($expires, $tz_utc);
-            $now_datetime = new \DateTime('now', $tz_utc);
+            $now_datetime = $now_datetime ?? new \DateTime('now', $tz_utc);
             if ($exp_datetime > $now_datetime) return $m;
         }
 
@@ -104,8 +104,7 @@ class Rusa extends Model
     {
         $m = $this->get_member($rusa_id);
         if (null === $m) return false; // not found
-        $m['from_cache'] = true;
-        $m['from_api'] = false;
+        $m['checked_by'] = 'Cache';
         return $m;
     }
 
@@ -148,8 +147,7 @@ class Rusa extends Model
         // Convert YYYY/MM/DD date to ISO 8601 YYYY-MM-DD
         $m['expires'] = str_replace('/', '-', $m['expires']);
 
-        $m['from_cache'] = false;
-        $m['from_api'] = true;
+        $m['checked_by'] = 'API';
 
         return $m;
     }
@@ -169,7 +167,7 @@ class Rusa extends Model
         if (empty($rusa_id)) {
             $result = ("No Rider ID");
         } else {
-            $rusa_m = $this->query_rusa_id($rusa_id);
+            $rusa_m = $this->query_rusa_id($rusa_id, $event_cutoff_datetime);
             if (false === $rusa_m) {
                 $result = ("Rider ID '$rusa_id' is not a member of RUSA");
             } else {
@@ -180,6 +178,7 @@ class Rusa extends Model
                     $result = ("Last name '" . strtoupper($last_name) . "' does not match last name for Rider ID $rusa_id"); // ($a != $b)");
                 } else {
                     $rusa_exp = $rusa_m['expires'];
+                    $checked_by = $rusa_m['checked_by'];
                     $rusa_expires_datetime = new \DateTime($rusa_exp);
                     $now_datetime = new \DateTime('now');
                     if ($now_datetime > $rusa_expires_datetime) {
@@ -188,7 +187,7 @@ class Rusa extends Model
                         if ($event_cutoff_datetime > $rusa_expires_datetime) {
                             $result = ("The RUSA membership for Rider ID $rusa_id expires $rusa_exp, which is before the date of this event.");
                         }else{
-                            $result = $rusa_expires_datetime;
+                            $result = compact('rusa_expires_datetime', 'checked_by');
                         }
                     }
                 }

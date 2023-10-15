@@ -327,6 +327,8 @@ EOT;
 
             // RUSA Vetting will add the expiration field
             $header[]='expires';
+            $header[]='checked_by';
+            
 
             // Process each data row
             $roster = [];
@@ -366,7 +368,8 @@ EOT;
 
                 // Rider is known good, add expires date, and save to roster
 
-                $rider['expires'] = $rusa_result->format('Y-m-d');
+                $rider['expires'] = $rusa_result['rusa_expires_datetime']->format('Y-m-d');
+                $rider['checked_by'] = $rusa_result['checked_by'];
                 $roster[$rider_id] = $rider;
             }
 
@@ -378,7 +381,7 @@ EOT;
         }
 
         if (empty($errors)){
-            
+
             // clear old roster
             $this->rosterModel->where('event_id', $local_event_id)->delete();
 

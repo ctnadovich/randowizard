@@ -26,7 +26,7 @@ use Psr\Log\LoggerInterface;
 
 use App\Libraries\GroceryCrud;
 
-class RosterCrud extends BaseController
+class CheckinCrud extends BaseController
 {
 
     protected $rosterModel;
@@ -40,10 +40,9 @@ class RosterCrud extends BaseController
         parent::initController($request, $response, $logger);
         $this->rosterModel =  model('Roster');
         $this->eventModel =  model('Event');
-        // $this->regionModel =  model('Event');
     }
 
-    public function roster($event_code)
+    public function checkin_manage($event_code)
     {
 
         $this->login_check();
@@ -60,17 +59,18 @@ class RosterCrud extends BaseController
         $name_dist = $this->eventModel->nameDist($event);
 
         $crud = new GroceryCrud();
-        $crud->setSubject("$name_dist Rider", "$name_dist Riders");
-        $crud->setTable('roster');
-        $crud->where('event_id', $local_event_id);
+        $crud->setSubject("$name_dist Checkin", "$name_dist Checkins");
+        $crud->setTable('checkin');
         $crud->setPrimaryKey('rusa_id','rusa');
         $crud->setRelation('rider_id', 'rusa', '{last_name}, {first_name}  #{rusa_id}');
+        $crud->columns(['rider_id','control_number','time','created','preride','comment']);
+        $crud->where('event_id', $local_event_id);
 
-        // $crud->setRelation('event_id','event','{name} {distance}',null,'start_datetime');
-
-        $crud->columns(['rider_id','result','elapsed_time','comment']);
-        $crud->unsetEditFields(['rider_id','event_id','created','last_change']); 
-        $crud->unsetAddFields(['created','last_change']); 
+        $crud->setRead();
+        $crud->setClone();
+        $crud->callbackColumn('preride',fn($val,$row)=>($val?'PRERIDE':''));
+        $crud->unsetEditFields(['rider_id','event_id','created']); 
+        $crud->unsetAddFields(['created']); 
         $crud->callbackAddField('event_id', function ($fieldType, $fieldName) use ($event) {
             $local_event_id = $event['id'];
             $name_dist = $event['name'] . ' ' . $event['distance'];
@@ -78,31 +78,13 @@ class RosterCrud extends BaseController
         });
 
         $crud->displayAs('rider_id','Rider');
-        $crud->displayAs('elapsed_time','Elapsed Time (HH:MM:SS)');
 
-        $crud->setRule('elapsed_time', 'ElapsedTime', 'permit_empty|regex_match[/\d{1,2}:\d{2}(|:\d{2})/]');
-
-
-        $crud->callbackBeforeInsert(function ($stateParameters) use ($local_event_id) {
-
-
-            $stateParameters->data['event_id'] = $local_event_id;
-            return $stateParameters;
-        });
-
-        $crud->setAdd();
-        $crud->setRead();
- 
         $output = $crud->render();
 
         $this->viewData = array_merge((array)$output, $this->viewData);
 
         return $this->load_view(['echo_output']);
+
     }
-
-
-
-
-
 
 }

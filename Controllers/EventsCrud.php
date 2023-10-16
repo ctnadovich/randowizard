@@ -143,7 +143,7 @@ class EventsCrud extends BaseController
         $crud->callbackColumn('status', array($this, '_status_icons'));
         $crud->callbackColumn('generate', array($this, '_paperwork'));
         $crud->callbackColumn('event_info', array($this, '_event_info'));
-        $crud->callbackColumn('roster', array($this, '_roster_url'));
+        $crud->callbackColumn('riders', array($this, '_roster_manage'));
         $crud->callbackColumn('route', array($this, '_route'));
 
         $crud->setTexteditor(['description']);
@@ -157,7 +157,7 @@ class EventsCrud extends BaseController
         //     return ("route_manager/$x");}, false);
 
 
-        $crud->columns(['event_code', 'region_id', 'name', 'distance', 'start_datetime', 'status', 'event_info', 'roster', 'route', 'generate']);
+        $crud->columns(['event_code', 'region_id', 'name', 'distance', 'start_datetime', 'status', 'event_info', 'riders', 'route', 'cue_version', 'generate']);
         $crud->unsetEditFields(['created', 'last_changed']);
         $crud->displayAs('start_datetime', 'Start Date/Time');
         $crud->displayAs('start_state_id', 'State');
@@ -166,6 +166,7 @@ class EventsCrud extends BaseController
         $crud->displayAs('region_id', 'Region');
         $crud->displayAs('gravel_distance', 'Official Gravel (km)');
         $crud->displayAs('event_info', 'Info');
+        $crud->displayAs('cue_version', 'Version');
 
         $crud->callbackAfterUpdate([$this, '_set_last_change_time']);
 
@@ -221,6 +222,50 @@ class EventsCrud extends BaseController
 </span>
 EOT;
     }
+
+    public function _roster_manage($value, $row)
+    {
+
+        if (empty($row->route_url)) return "No Route";
+
+        $event_id = $row->id;
+        $region_id = $row->region_id;
+        $event_code = "$region_id-$event_id";
+        $n_riders = $this->rosterModel->n_riders($event_id); // =$value; //$this->truncate($value,30);
+
+
+
+        $dropdown = <<<EOT
+<div class="w3-dropdown-hover">
+<button class="w3-button w3-blue">$n_riders Riders&nbsp;<i class="fa-solid fa-users"></i></button>
+<div class="w3-dropdown-content w3-bar-block w3-border">
+EOT;
+
+        $drop_items = [
+            ["roster/$event_code", "<i class='fas fa-users' style='color: blue;'></i> Manage Roster"],
+            ["roster_upload/$event_code", "<i class='fas fa-upload' style='color: blue;'></i> Upload Roster"],
+            ["checkin_manage/$event_code", "<i class='fas fa-check' style='color: blue;'></i> Manage Checkins"],
+            
+        ];
+
+        foreach ($drop_items as $i) {
+            list($url, $desc) = $i;
+            $url = site_url($url);
+            $dropdown .=  "<A class='w3-bar-item w3-button' HREF='$url'>$desc</A>";
+        }
+        $dropdown .= "</div></div>";
+
+
+        return $dropdown;
+
+        // "<A class='w3-button w3-light-gray w3-round' HREF='$wizard_url'>
+        // Cue Wizard</A>";
+    }
+
+
+
+
+
 
     public function roster_upload($event_code)
     {
@@ -416,7 +461,7 @@ EOT;
 
         return <<<EOT
         <div class='w3-container w3-center' style="background-color:rgb(206,206,206);">
-<A HREF='$wizard_url' class='w3-button w3-blue'>Manage&nbsp;<i class='fa-solid fa-hat-wizard'></i></A>
+<A HREF='$wizard_url' class='w3-button w3-blue'>Wizard&nbsp;<i class='fa-solid fa-hat-wizard'></i></A>
 </div>
 EOT;
     }

@@ -5,8 +5,8 @@
     </TR>
     <?php if (empty($fatal_route_error)) : ?>
         <TR>
-            <TD>Route Name</TD>
-            <TD><?= $route_name ?></TD>
+            <TD>Event</TD>
+            <TD><?="$event_name_dist"?></TD>
         </TR>
         <TR>
             <TD>Event Last Changed</TD>
@@ -22,7 +22,7 @@
         </TR>
         <TR>
             <TD>Last Published</TD>
-            <TD><?= $published_at_str ?></TD>
+            <TD><?= $cue_version>0 ? "Version $cue_version at " : ""?><?= $published_at_str ?></TD>
         </TR>
     <?php endif; ?>
 </TABLE>

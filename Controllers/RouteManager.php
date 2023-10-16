@@ -87,7 +87,7 @@ class RouteManager extends EventProcessor
             $view_list = [];
 
             $view_list[] = ['event_info_panel', [
-                'panel_title' => 'Route Overview',
+                'panel_title' => 'Overview',
                 'panel_data' => view('route_info_table', $this->viewData)
             ]];
 
@@ -172,22 +172,23 @@ EOT;
         if ($publish_is_stale) {
             $elc_style = ($last_event_change_datetime < $published_at_datetime)?'':"style = 'color: red;'";
             $rlc_style = ($last_update_datetime < $published_at_datetime)?'':"style = 'color: red;'";
+            $version_str = $cue_version ?: '';
             $warning_body .= <<<EOT
-<h4>STALE PUBLISHED ROUTE</h4>
-<p>Fetched route data was changed after the route was published. Please
-publish again so the latest route data becomes live. </p> 
+<h4>PUBLISHED VERSION IS STALE</h4>
+<p>Either the event data or the RWGPS route was changed after the version was published. Please
+publish again so the latest event and route data becomes live. </p> 
 <ul>
 <li $elc_style>Event last changed $last_event_change_str</li>
 <li $rlc_style>Route last changed $last_update</li>
-<li style = 'color: red;'>Route last published $published_at_str</li></ul>
+<li style = 'color: red;'>Version {$version_str} was published $published_at_str</li></ul>
 EOT;
         }
 
         if ($not_published) {
             $warning_body .= <<<EOT
 <h4><span class='w3-red w3-padding-small'>NOT PUBLISHED</span></h4>
-<p>This route has not been published for use with eBrevet. Cuesheets and other data will not be available.  
-When you are satisfied with the route, please hit the "Publish" button below so the route data becomes live. </p> 
+<p>This event and route has not been published for use with eBrevet. Cuesheets and other data will not be available.  
+When you are satisfied with the event and route data, please hit the "Publish" button below so the latest data becomes live. </p> 
 EOT;
         }
 

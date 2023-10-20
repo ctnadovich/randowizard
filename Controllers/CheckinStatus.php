@@ -70,6 +70,11 @@ class CheckinStatus extends EventProcessor
 			}
 
 			$event_name_dist = $edata['event_name_dist'];
+
+			$gravel_distance = $edata['gravel_distance'];
+			$is_gravel=$gravel_distance > 0 ? true : false;
+	
+
 			$website_url = $edata['website_url'];
 			$club_name = $edata['club_name'];
 			$icon_url = $edata['icon_url'];
@@ -87,7 +92,7 @@ class CheckinStatus extends EventProcessor
 
 			$reclass = $this->unitsLibrary;
 
-
+			$is_untimed=[];
 			$headlist = [];
 			$controle_num = 0;
 			foreach ($controles as $c) {
@@ -95,6 +100,8 @@ class CheckinStatus extends EventProcessor
 				$cd_km = $c['dist_km'];
 				$is_start = isset($c['start']);
 				$is_finish = isset($c['finish']);
+				$is_intermediate = !$is_start && !$is_finish;
+
 				$lat = $controles_extra[$controle_num]['lat'];
 				$long = $controles_extra[$controle_num]['long'];
 
@@ -102,6 +109,11 @@ class CheckinStatus extends EventProcessor
 				$close_datetime = (new \DateTime($c['close']))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
 				$open = $open_datetime->format('D-H:i');
 				$close = $close_datetime->format('D-H:i');
+
+
+				$style=$c['style'];
+				$is_untimed['controle_num'] = $is_intermediate && ($is_gravel || ($style=='info' || $style=='photo'));
+	            $close= $is_untimed['controle_num'] ? 'Untimed' : $close_datetime->format('D-H:i');
 
 				$controle_num++;
 				$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");
@@ -166,10 +178,11 @@ class CheckinStatus extends EventProcessor
 						$el = "";
 						if ($c['preride']) {
 							$el = "<br><span class='green italic sans smaller'>Preride</span>";
-						} elseif ($checkin_time < $open_datetime) {
+						}elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
 							$cit_str = $checkin_time->format('H:i');
-							$open_str = $close_datetime->format('H:i');							$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
-						} elseif ($checkin_time > $close_datetime) {
+							$open_str = $close_datetime->format('H:i');							
+							$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
+						} elseif ($checkin_time > $close_datetime && !$is_untimed[$i]) {
 							$cit_str = $checkin_time->format('H:i');
 							$close_str = $close_datetime->format('H:i');
 							$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";

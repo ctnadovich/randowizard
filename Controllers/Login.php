@@ -75,8 +75,8 @@ class Login extends BaseController
                 } else {
                     $email = $this->request->getVar('email');
                     $password = $this->request->getVar('password');
-
-                    $user = $this->userModel->where('email', $email)->first();
+                    $eemail = $this->userModel->escape($email);
+                    $user = $this->userModel->where("UPPER(email) = UPPER($eemail)")->first();
                     if (!empty($user) && password_verify($password, $user['password_hash'])) {
                         $this->becomeUser($user);
                         return redirect()->route('home');

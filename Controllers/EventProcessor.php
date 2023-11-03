@@ -263,7 +263,7 @@ class EventProcessor extends BaseController
 		$start_state = $event['start_state'];
 		$cue_version = $event['cue_version'];
 		$club_event_info_url = $event['info_url'];
-		$event_description = $event['description'];
+		$event_description = $event['description'] ?? '';
 
 		$roster = $this->rosterModel->registered_riders($local_event_id);
 

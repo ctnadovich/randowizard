@@ -210,6 +210,7 @@ ini_set('memory_limit', '1024M'); // or you could use 1G
 					if(is_array($kv) && count($kv)==2){
 						list($k,$v)=$kv;
 						$k=strtolower(trim($k)); $v=trim($v);  // lowcase key, remove leading/trailing whitespace
+						if($k=='style') $v=strtolower($v); // lowercase style values
 						if(is_array($valid) && false === array_search($k, $valid)) 
 							$unrecognized[]="#$k=$v";
 						else

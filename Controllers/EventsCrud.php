@@ -126,7 +126,7 @@ class EventsCrud extends BaseController
         $crud->setRule('sanction', 'Sanction', 'required');
         $crud->setRule('name', 'Event Name', 'required');
         $crud->setRule('type', 'Event Type', 'required');
-        $crud->setRule('description', 'Description of Event', 'required');
+        # $crud->setRule('description', 'Description of Event', 'required');
         $crud->setRule('info_url', 'Route URL', 'permit_empty|valid_url_strict');
         $crud->setRule('route_url', 'Route URL', 'permit_empty|valid_url_strict');
         $crud->setRule('distance', 'Official Distance', 'required|is_natural_no_zero');

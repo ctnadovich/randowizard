@@ -777,7 +777,7 @@ class Brevetcard extends Myfpdf
     {
 
         $ca = $controle['attributes'];
-        $style_text = $ca['style'] ?? "unspecified";
+        $style_text = strtolower($ca['style'] ?? "unspecified");
         $event_tz = $this->event['event_tz'];
 
         $open_time_str = $controle['open']->setTimezone($event_tz)->format($this->datetime_format);

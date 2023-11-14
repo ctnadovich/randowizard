@@ -387,7 +387,8 @@ class Brevetcard extends Myfpdf
                 // 					$this->draw_barcode($sig_fold,$riders);
                 // 				}
 
-                $logo_url = $this->CI->model_parando->get_card_image($route_event['event_id'], 3);
+                // $logo_url = $this->CI->model_parando->get_card_image($route_event['event_id'], 3);
+                $logo_url = key_exists('page3_image', $route_event) ? $route_event['page3_image'] : null;
 
                 for ($c = 0; $c < $nc; $c++) {
                     $this->draw_page3($page3_fold, $logo_url);
@@ -421,10 +422,10 @@ class Brevetcard extends Myfpdf
                     $this->draw_page3($page3_fold, $logo_url);
                 }
 
-                $logo_url = $this->CI->model_parando->get_card_image($route_event['event_id'], 4);
+                // $logo_url = $this->CI->model_parando->get_card_image($route_event['event_id'], 4);
 
                 for ($c = 0; $c < $nc; $c++) {
-                    $this->draw_page3($page4_fold, $logo_url);
+                    $this->draw_page3($page4_fold, null);
                 }
 
                 break;

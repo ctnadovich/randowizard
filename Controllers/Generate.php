@@ -196,15 +196,18 @@ EOT;
 		extract($edata);
 		$controles = $edata['route_controles'];
 
-		$cuesheetLibrary = new \App\Libraries\Cuesheet();
+		$cuesheetLibrary = new \App\Libraries\Cuesheet(['edata'=>$edata]);
 		$cuesheetLibrary->set_controle_date_format($edata);
 
 		$event_tagname = $edata['event_tagname'];
 		$csv_filename = "$event_tagname-CueSheet.csv";
 
-
 		$header_text = $cuesheetLibrary->header_text_array($edata);
 		$cue_text = $cuesheetLibrary->cue_text_array($cues, $controles);
+
+
+// $this->die_message(__METHOD__, print_r($cue_text,true));
+
 		$this->emit_csv(array_merge($header_text, $cue_text), $csv_filename);
 		exit();
 	}

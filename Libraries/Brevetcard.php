@@ -665,7 +665,7 @@ class Brevetcard extends Myfpdf
 
 
         if (empty($street . $city . $state . $zip . $country)) {
-            $address1 = 'Adddress:';
+            $address1 = 'Address:';
             $address2 = '';
         } else {
             $city_state = "$city $state"; // $zip";	

@@ -90,7 +90,7 @@ class Rusa extends Model
         if ($m !== false) {
             $expires = $m['expires'];
             $tz_utc = new \DateTimeZone('utc');
-            $exp_datetime = new \DateTime($expires, $tz_utc);
+            $exp_datetime = new \DateTime("$expires 12:00:00", $tz_utc);
             $now_datetime = $now_datetime ?? new \DateTime('now', $tz_utc);
             if ($exp_datetime > $now_datetime) return $m;
         }
@@ -177,15 +177,20 @@ class Rusa extends Model
 
                     $result = ("Last name '" . strtoupper($last_name) . "' does not match last name for Rider ID $rusa_id"); // ($a != $b)");
                 } else {
+                    $tz_utc = new \DateTimeZone('utc');
                     $rusa_exp = $rusa_m['expires'];
                     $checked_by = $rusa_m['checked_by'];
-                    $rusa_expires_datetime = new \DateTime($rusa_exp);
-                    $now_datetime = new \DateTime('now');
+                    $rusa_expires_datetime = new \DateTime("$rusa_exp 12:00:00", $tz_utc);
+                    $rusa_expires_datetime_str = $rusa_expires_datetime->format('c');
+                    $event_cutoff_datetime_str = $event_cutoff_datetime->format('c');
+
+                    $now_datetime = new \DateTime('now', $tz_utc);
+
                     if ($now_datetime > $rusa_expires_datetime) {
                         $result = ("The RUSA membership for Rider ID $rusa_id expired on $rusa_exp.");
                     } else {
                         if ($event_cutoff_datetime > $rusa_expires_datetime) {
-                            $result = ("The RUSA membership for Rider ID $rusa_id expires $rusa_exp, which is before the date of this event.");
+                            $result = ("RUSA membership of Rider ID $rusa_id expires, $rusa_expires_datetime_str, before the event cutoff $event_cutoff_datetime_str.");
                         }else{
                             $result = compact('rusa_expires_datetime', 'checked_by');
                         }

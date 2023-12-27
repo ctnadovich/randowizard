@@ -37,6 +37,8 @@ class Rusa extends Model
     const min_rusa_year = 1990;
     const max_rusa_year = 2099;
 
+    const rusa_exp_time = "23:59:59";
+
 
     const rusa_csv_fields = [
         'rusa_id',
@@ -90,7 +92,8 @@ class Rusa extends Model
         if ($m !== false) {
             $expires = $m['expires'];
             $tz_utc = new \DateTimeZone('utc');
-            $exp_datetime = new \DateTime("$expires 12:00:00", $tz_utc);
+            $exp_time = self::rusa_exp_time;
+            $exp_datetime = new \DateTime("$expires $exp_time", $tz_utc);
             $now_datetime = $now_datetime ?? new \DateTime('now', $tz_utc);
             if ($exp_datetime > $now_datetime) return $m;
         }
@@ -180,7 +183,8 @@ class Rusa extends Model
                     $tz_utc = new \DateTimeZone('utc');
                     $rusa_exp = $rusa_m['expires'];
                     $checked_by = $rusa_m['checked_by'];
-                    $rusa_expires_datetime = new \DateTime("$rusa_exp 12:00:00", $tz_utc);
+                    $exp_time = self::rusa_exp_time;
+                    $rusa_expires_datetime = new \DateTime("$rusa_exp $exp_time", $tz_utc);
                     $rusa_expires_datetime_str = $rusa_expires_datetime->format('c');
                     $event_cutoff_datetime_str = $event_cutoff_datetime->format('c');
 

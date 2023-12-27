@@ -243,6 +243,7 @@ EOT;
 
         $drop_items = [
             ["roster/$event_code", "<i class='fas fa-users' style='color: blue;'></i> Manage Roster"],
+            ["vet_roster/$event_code", "<i class='fas fa-users' style='color: blue;'></i> Check RUSA Membership"],
             ["roster_upload/$event_code", "<i class='fas fa-upload' style='color: blue;'></i> Upload Roster"],
             ["checkin_manage/$event_code", "<i class='fas fa-check' style='color: blue;'></i> Manage Checkins"],
             
@@ -262,7 +263,41 @@ EOT;
         // Cue Wizard</A>";
     }
 
+    public function vet_roster($event_code){
+        $event = $this->eventModel->eventByCode($event_code);
+        $cutoff_datetime = $this->eventModel->getCutoffDatetime($event);
 
+        extract( $this->eventModel->parseEventCode($event_code) );
+        $roster_in = $this->rosterModel->registered_riders($local_event_id);
+        $n_riders=count($roster_in);
+        $rusaModel = model('Rusa');
+        $bad_riders = 0; 
+
+        $table_body = '';
+        foreach ($roster_in as $r){
+            $rusa_id=$r['rusa_id'];
+            $first_name=$r['first_name'];
+            $last_name=$r['last_name'];
+            $status = $rusaModel->rusa_status_at_date($rusa_id, $last_name, $cutoff_datetime);
+            if(is_string($status)){ // Vetting failed
+                $table_body .= "<TR class='w3-red'><TD style='width: 25%'>$first_name $last_name</TD>";
+                $table_body .= "<TD style='word-wrap: break-word;'> $status</TD>";
+                $bad_riders++;
+            }else{
+                $table_body .= "<TR><TD>$first_name $last_name</TD>";
+                $table_body .= "<TD>" . $status['rusa_expires_datetime']->format('Y-m-d') . "</TD>";
+            }
+            $table_body .= "</TR>";
+        }
+
+        // $this -> die_message(__METHOD__, $table_body);
+        $this->viewData =  array_merge( $this->viewData, ['bad_riders'=>$bad_riders, 'n_riders'=>$n_riders, 'table_body' => $table_body]);
+
+
+        $output = $this->load_view('vet_roster');
+        return $output;
+
+    }
 
 
 

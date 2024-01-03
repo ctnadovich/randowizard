@@ -26,7 +26,19 @@
     <p>Randonneuring.org supports a suite of free IT tools that make randonneuring events
         more enjoyable. More fun for participants. Easier on volunteer organizers and RBAs. </p>
 
-    <h2>Manage Events for your Region</h2>
+    <h2>Manage Events in your Region</h2>
+    <div class="w3-panel w3-leftbar w3-light-grey">
+        <p class="w3-serif">
+            <i>The tools at randonneuring.org support 
+                the <A HREF=https://github.com/ctnadovich/ebrevet/blob/main/README.md>eBrevet</a> cell phone application,
+                but none of these tools are required in order to use eBrevet. You can manage events with your own 
+                system and directly use eBrevet by 
+                configuring your website to <A HREF=https://github.com/ctnadovich/ebrevet#clubregion-webserver-support>publish 
+                event and route information</a> as required by eBrevet. On the other hand, if you don't want to bother with the 
+                web development required to directly support eBrevet, 
+                you may find the tools here at randonneuring.org useful.</i>
+        </p>
+    </div>
 
     <p>Randonneuring.org provides several randonneuring event management tools. These are intended to
         be used by the RBA or Event Organizer of a region. Once you sign up for
@@ -46,20 +58,20 @@
             by the <A HREF=https://github.com/ctnadovich/ebrevet/blob/main/README.md>eBrevet</a> cell phone app. You will also be able to produce paperwork (brevet cards, cue sheets, etc...)
             for
             these events using the Route Processor.</li>
-        <li><i class="fa-li fas fa-hat-wizard"></i><b>Route Processor</b> The CueWizard Route processor 
-            takes a RWGPS route and makes it usable by the eBrevet app. CueWizard will 
+        <li><i class="fa-li fas fa-hat-wizard"></i><b>Route Processor</b> The CueWizard Route processor
+            takes a RWGPS route and makes it usable by the eBrevet app. CueWizard will
             also produce quality paperwork for your route to
             distribute at your event, including cue sheets, brevet cards, and more.</li>
     </ul>
 
-<p>Get up to speed quickly with these tools. 
-    Read the RBA/Organizer <A HREF=<?=site_url('about/quick_start')?>>Quick Start Guide</a>.</p>
+    <p>Get up to speed quickly with these tools.
+        Read the RBA/Organizer <A HREF=<?= site_url('about/quick_start') ?>>Quick Start Guide</a>.</p>
 
-    <p>Want to know what to tell riders about eBrevet? Send them to the <A HREF=<?=site_url('about/ebrevet_faq')?>>eBrevet FAQ</A></p> 
+    <p>Want to know what to tell riders about eBrevet? Send them to the <A HREF=<?= site_url('about/ebrevet_faq') ?>>eBrevet FAQ</A></p>
 
-    <p>Find a bug or want to suggest an improvement? 
-        You can <A HREF='https://github.com/ctnadovich/randowizard/issues'>open 
-    an issue or suggestion on github</a></p>
+    <p>Find a bug or want to suggest an improvement?
+        You can <A HREF='https://github.com/ctnadovich/randowizard/issues'>open
+            an issue or suggestion on github</a></p>
 
 
     <div class="w3-card w3-center w3-margin w3-padding" style="width:15%; float: right;">

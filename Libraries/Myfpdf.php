@@ -51,6 +51,7 @@ class Myfpdf extends FPDF
 	public $font_size = 1; // multiplier
 	public $fine_print = 0.75; // em size of fine text
 	public $big_print = 1.5; // em size of big text
+	public $larger_print = 1.2; // em size of big text
 
 	public $baseline_skip = 0.15;  // Space between text lines
 
@@ -123,6 +124,11 @@ class Myfpdf extends FPDF
 	public function font_bigprint()
 	{
 		$this->font_size = $this->big_print;
+		$this->SetFont($this->font_current, $this->font_style, $this->em_points * $this->font_size);
+	}
+	public function font_largerprint()
+	{
+		$this->font_size = $this->larger_print;
 		$this->SetFont($this->font_current, $this->font_style, $this->em_points * $this->font_size);
 	}
 

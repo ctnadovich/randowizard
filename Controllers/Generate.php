@@ -353,17 +353,17 @@ EOT;
 
 			$header_row = [
 				['font' => 'bold', 'text' => '#', 'align' => 'C', 'width' => 4],
-				['font' => 'bold', 'text' => 'Start Code', 'align' => 'C', 'style' => 'fit', 'width' => 5],
-				['font' => 'bold', 'text' => 'RUSA', 'align' => 'C', 'width' => 6],
+				['font' => 'bold', 'text' => 'Start Code', 'align' => 'C', 'style' => 'fit', 'width' => 7],
+				['font' => 'bold', 'text' => 'RUSA', 'align' => 'C', 'width' => 9],
 				['font' => 'bold', 'text' => 'Name', 'align' => 'C', 'width' => 30],
-				['font' => 'bold', 'text' => 'Sign', 'align' => 'C', 'width' => 30],
+				['font' => 'bold', 'text' => 'Sign', 'align' => 'C', 'width' => 25],
 				['font' => 'bold', 'text' => 'Time In', 'align' => 'C', 'width' => 25],
 			];
 
 			$roster_table_array[] = [
 				['text' => "$i"],
-				['text' => "$start_code", 'font' => 'fineprint'],
-				['text' => "$rusa_id"],
+				['text' => "$start_code", 'font' => 'largerprint'],
+				['text' => "$rusa_id", 'font' => 'largerprint'],
 				['text' => "$full_name", 'align' => 'L', 'style' => 'fit'],
 				['text' => ""],
 				['text' => "$dns"]

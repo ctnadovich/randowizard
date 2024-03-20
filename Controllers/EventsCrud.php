@@ -97,12 +97,14 @@ class EventsCrud extends BaseController
             case 'future':
                 $crud->where('start_datetime >=', $now);
                 // $crud->orderBy('date','asc');
+                $crud->defaultOrdering('start_datetime','asc');
                 $title = "Future Events";
                 $crud->setSubject('Future Event', 'Future Events');
                 break;
             case 'past':
                 $crud->where('start_datetime <', $now);
                 // $crud->order_by('date','desc');
+                $crud->defaultOrdering('start_datetime','desc');
                 $title = "Past Events";
                 $crud->setSubject('Past Event', 'Past Events');
                 break;

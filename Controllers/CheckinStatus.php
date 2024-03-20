@@ -72,8 +72,8 @@ class CheckinStatus extends EventProcessor
 			$event_name_dist = $edata['event_name_dist'];
 
 			$gravel_distance = $edata['gravel_distance'];
-			$is_gravel=$gravel_distance > 0 ? true : false;
-	
+			$is_gravel = $gravel_distance > 0 ? true : false;
+
 
 			$website_url = $edata['website_url'];
 			$club_name = $edata['club_name'];
@@ -92,7 +92,7 @@ class CheckinStatus extends EventProcessor
 
 			$reclass = $this->unitsLibrary;
 
-			$is_untimed=[];
+			$is_untimed = [];
 			$headlist = [];
 			$controle_num = 0;
 			foreach ($controles as $c) {
@@ -111,9 +111,9 @@ class CheckinStatus extends EventProcessor
 				$close = $close_datetime->format('D-H:i');
 
 
-				$style=$c['style'];
-				$is_untimed['controle_num'] = $is_intermediate && ($is_gravel || ($style=='info' || $style=='photo'));
-	            $close= $is_untimed['controle_num'] ? 'Untimed' : $close_datetime->format('D-H:i');
+				$style = $c['style'];
+				$is_untimed['controle_num'] = $is_intermediate && ($is_gravel || ($style == 'info' || $style == 'photo'));
+				$close = $is_untimed['controle_num'] ? 'Untimed' : $close_datetime->format('D-H:i');
 
 				$controle_num++;
 				$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");
@@ -167,10 +167,18 @@ class CheckinStatus extends EventProcessor
 					$close = $controles[$i]['close'];
 					$open_datetime = (new \DateTime($open))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
 					$close_datetime = (new \DateTime($close))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
-	
+
+					$control_index = $i;
+					$d = compact('control_index', 'event_code', 'rider_id');
+					$checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
+
 					$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $edata['event_timezone_name']);
 					if (empty($c)) {
-						$checklist[] = '-';
+						if ($this->isAdmin($club_acp_code)) {
+							$checklist[] = "<span title='$checkin_code'>-</span>";
+						} else {
+							$checklist[] = '-';
+						}
 					} else {
 
 						$checkin_time = $c['checkin_time'];  // a DateTime object
@@ -178,9 +186,9 @@ class CheckinStatus extends EventProcessor
 						$el = "";
 						if ($c['preride']) {
 							$el = "<br><span class='green italic sans smaller'>Preride</span>";
-						}elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
+						} elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
 							$cit_str = $checkin_time->format('H:i');
-							$open_str = $close_datetime->format('H:i');							
+							$open_str = $close_datetime->format('H:i');
 							$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
 						} elseif ($checkin_time > $close_datetime && !$is_untimed[$i]) {
 							$cit_str = $checkin_time->format('H:i');
@@ -188,20 +196,26 @@ class CheckinStatus extends EventProcessor
 							$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";
 						}
 
-						$control_index = $i;
-						$d = compact('control_index', 'event_code', 'rider_id');
-						$checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
+						// $control_index = $i;
+						// $d = compact('control_index', 'event_code', 'rider_id');
+						// $checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
 
-						if ($this->isAdmin($club_acp_code)) {
-							$el .= "&nbsp; <i title='$checkin_code' class='fa fa-check-circle' style='color: #355681;'></i>";
-						}
+						// if ($this->isAdmin($club_acp_code)) {
+						// 	$el .= "&nbsp; <i title='$checkin_code' class='fa fa-check-circle' style='color: #355681;'></i>";
+						// }
 
 						// && false===strpos(strtolower($comment), 'automatic check in')
 						if (!empty($comment)) {
 							$el .= "&nbsp; <i title='$comment' class='fa fa-comment' style='color: #355681;'></i>";
 						}
 
-						$checklist[] = $checkin_time->format('H:i') . $el;
+						$checkin_time_str = $checkin_time->format('H:i');
+
+						if ($this->isAdmin($club_acp_code)) {
+							$checkin_time_str = "<span title='$checkin_code'>$checkin_time_str</span>";
+						}
+
+						$checklist[] = $checkin_time_str . $el;
 					}
 				}
 				$checkins = implode('</TD><TD>', $checklist);

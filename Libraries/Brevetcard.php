@@ -796,7 +796,7 @@ class Brevetcard extends Myfpdf
             case 'merchant':
             case 'open':
             case 'unspecified':
-                if(strtolower($ca['untimed']) == 'yes'){
+                if(array_key_exists('timed',$ca) && strtolower($ca['timed']) == 'no'){
                     $body = [
                         ['text' => ($ca['name'] ?? 'NO NAME'), 'row' => 1, 'col' => 3, 'style' => 'I'],
                         ['text' => $dzaddress, 'row' => 2, 'col' => 3, 'style' => 'I'],

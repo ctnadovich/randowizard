@@ -48,6 +48,8 @@ class EventLister extends EventProcessor
 		$event_errors = [];
 		$event_list = [];
 
+		$signature='XXXXXXXX';
+
 		// Must specify a valid club
 
 		if (empty($club_acp_code) || !is_numeric($club_acp_code)) {
@@ -90,7 +92,7 @@ class EventLister extends EventProcessor
 
 		$minimum_app_version = $this->minimum_app_version;
 
-		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors'));
+		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
 	}
 
 

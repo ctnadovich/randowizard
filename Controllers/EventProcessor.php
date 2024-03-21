@@ -230,6 +230,22 @@ class EventProcessor extends BaseController
 			$long = $cdata['x'];
 			$lat = $cdata['y'];
 
+			$control_style = $a['style'] ?? 'undefined';
+			switch($control_style){
+				case 'open':
+				case 'merchant':
+				case 'staffed':
+					if(array_key_exists('timed',$a) && strtolower($a['timed'])=='no'){
+						$timed='no';
+					}else{
+						$timed='yes';
+					}
+					break;
+				default:
+					$timed = 'no';
+					break;
+			}
+
 			$controls[] = [
 				'dist_mi' => $cd_mi,
 				'dist_km' => $cd_km,
@@ -238,6 +254,7 @@ class EventProcessor extends BaseController
 				'name' => $a['name'] ?? 'CONTROL NAME MISSING',
 				'style' => $a['style'] ?? 'undefined',
 				'address' => $a['address'] ?? 'CONTROL ADDRESS MISSING',
+				'timed' => $timed,
 				'open' => $openDatetime->format('c'),
 				'close' => $closeDatetime->format('c')
 				// 'question'=>$question,

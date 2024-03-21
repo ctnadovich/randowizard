@@ -227,6 +227,7 @@ ini_set('memory_limit', '1024M'); // or you could use 1G
 			'address',
 			'phone',
 			'style',
+			'timed',
 			'question',
 			'tzname',
 			'photo',

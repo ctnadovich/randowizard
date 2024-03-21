@@ -796,16 +796,27 @@ class Brevetcard extends Myfpdf
             case 'merchant':
             case 'open':
             case 'unspecified':
-                $body = [
-                    ['text' => ($ca['name'] ?? 'NO NAME'), 'row' => 1, 'col' => 3, 'style' => 'I'],
-                    ['text' => $dzaddress, 'row' => 2, 'col' => 3, 'style' => 'I'],
-                    ['text' => 'Open:', 'row' => 4, 'style' => 'B'],
-                    ['text' => $open_time_str, 'row' => 4, 'col' => 11],
-                    ['text' => 'Close:', 'row' => 5, 'style' => 'B'],
-                    ['text' => $close_time_str, 'row' => 5, 'col' => 11],
-                    ['text' => "Distance:",  'row' => 6, 'style' => 'B'],
-                    ['text' => $cd_km . ' km / ' . $cd_mi . ' mi', 'row' => 6, 'col' => 16]
-                ];
+                if(strtolower($ca['untimed']) == 'yes'){
+                    $body = [
+                        ['text' => ($ca['name'] ?? 'NO NAME'), 'row' => 1, 'col' => 3, 'style' => 'I'],
+                        ['text' => $dzaddress, 'row' => 2, 'col' => 3, 'style' => 'I'],
+                        ['text' => "Distance:",  'row' => 4, 'style' => 'B'],
+                        ['text' => $cd_km . ' km / ' . $cd_mi . ' mi', 'row' => 4, 'col' => 16]
+                    ];
+                }else{
+                    $body = [
+                        ['text' => ($ca['name'] ?? 'NO NAME'), 'row' => 1, 'col' => 3, 'style' => 'I'],
+                        ['text' => $dzaddress, 'row' => 2, 'col' => 3, 'style' => 'I'],
+                        ['text' => 'Open:', 'row' => 4, 'style' => 'B'],
+                        ['text' => $open_time_str, 'row' => 4, 'col' => 11],
+                        ['text' => 'Close:', 'row' => 5, 'style' => 'B'],
+                        ['text' => $close_time_str, 'row' => 5, 'col' => 11],
+                        ['text' => "Distance:",  'row' => 6, 'style' => 'B'],
+                        ['text' => $cd_km . ' km / ' . $cd_mi . ' mi', 'row' => 6, 'col' => 16]
+                    ];
+                }
+                
+                
                 break;
             case 'info':
                 $body = [

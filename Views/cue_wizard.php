@@ -39,6 +39,7 @@
     <li>All route data can be entered and maintained in RWGPS or other compatible system.
     <li>Local cache of route data, independent of any third party.
     <li>Automatic RUSA/ACP controle time calculations based on verified algorithms.
+      <li>Support for untimed controls.
     <li>Mass start event date/time, or free start
     <li>Worldwide time-zone and "daylight savings time" support
     <li>Download links for GPX, and JSON route files
@@ -88,7 +89,8 @@
       <tt>#name=value</tt> pairs typed in the cue 'notes'. At a
       minimum the <tt>#name</tt>, <tt>#address</tt>, and <tt>#style</tt> of the cue must be specified. For <tt>#style=info</tt> cues, the control
       <tt>#question</tt> must be specified. For <tt>#style=photo</tt>
-      controls, the <tt>#photo</tt> must be specified.
+      controls, the <tt>#photo</tt> must be specified.  If you would like this 
+      control to be un-timed per the new liberal ACP rule, add the <tt>#timed=no</tt> attribute.
     </li>
   </ul>
   <p>Once you add those
@@ -185,6 +187,7 @@
     <tt>#address</tt>=Full address with street, city, state, zip<br>
     <tt>#style</tt>=Valid styles are: <i>staffed, overnight,
       merchant, open, info, photo, or postcard</i><br>
+    <tt>#timed</tt>=no/yes (default is yes)<br>
     <tt>#question</tt>=Question to answer? (Required for info styles)<br>
     <tt>#photo</tt>=What to photograph. (Required for photo styles)<br>
     <tt>#tzname</tt>=Time Zone Name, required only if different than overall TZ<br>
@@ -204,6 +207,10 @@
     to answer at the controle. If the controle <tt>#style=photo</tt>, then you must include a <tt>#photo</tt> tag
     defining what
     the rider needs to photograph.
+
+  <p>The <tt>#timed=no</tt> tag will remove the timing requirement for the control, per the new liberal ACP rule. 
+  The default is <tt>yes</tt>, which only applies the traditional randonneuring timing to open, overnight, merchant or staffed controls. 
+  This tag has no effect on photo, info, or postcard controls -- these are always untimed. 
 
   <h4>Automatic Search/Replace</h4>
   <p>The automatically generated cue note from RWGPS is a lot more verbose than

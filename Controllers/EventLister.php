@@ -42,19 +42,25 @@ class EventLister extends EventProcessor
 	// FUTURE EVENTS (for eBrevet JSON)
 	//
 
-	public function json_future_events($club_acp_code = null)
+	public function json_future_events($club_acp_code = null,$nonce=null)
 	{
 
 		$event_errors = [];
 		$event_list = [];
-
-		$signature='XXXXXXXX';
 
 		// Must specify a valid club
 
 		if (empty($club_acp_code) || !is_numeric($club_acp_code)) {
 			$this->die_message('Error', 'Invalid parameter.');
 		}
+
+		$club = $this->regionModel->getClub($club_acp_code);
+		if (empty($club)) {
+			$this->die_message('Error', 'No such region.');
+		}
+
+		$secret = $club['epp_secret'];
+
 
 		// Process events for club
 
@@ -91,6 +97,13 @@ class EventLister extends EventProcessor
 		}
 
 		$minimum_app_version = $this->minimum_app_version;
+
+		if($nonce===null){
+			$nonce='nonoce';
+		}
+		$event_list_hash = hash('sha256', json_encode($event_list));
+		$plaintext = "$club_acp_code-$nonce-$minimum_app_version-$event_list_hash-$secret";
+		$signature = hash('sha256', $plaintext);
 
 		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
 	}

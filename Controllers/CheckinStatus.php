@@ -132,16 +132,17 @@ class CheckinStatus extends EventProcessor
 						$row[$i] .= "<br><A HREF='https://maps.google.com/?q=" .
 							$headlist['lat'][$i] . ',' . $headlist['long'][$i] . "'><i style='font-size: 1.4em;' class='fa-solid fa-map-location-dot'></i></A>";
 				}
+				
 				if ($key == 'open_datetime' || $key == 'close_datetime') {
 					$head_row[$key] = $row;
 				} else {
 					$head_row[$key] = '<TH></TH><TH>' . implode('</TH><TH>', $row) . '</TH>';
 				}
 			}
-			$checkin_table .= "<TR class='w3-dark-gray'>" . $head_row['number'] . "<TH ROWSPAN=4>Final</TH></TR>";
-			$checkin_table .= "<TR class='w3-light-gray' style='font-size: 0.7em;'>" . $head_row['name'] . "</TR>";
-			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['cd_mi'] . "</TR>";
-			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['close'] . "</TR>";
+			$checkin_table .= "<TR class='w3-dark-gray'>" . $head_row['number'] . "<TH>Final</TH></TR>";
+			$checkin_table .= "<TR class='w3-light-gray' style='font-size: 0.7em;'>" . $head_row['name'] . "<TH></TH></TR>";
+			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['cd_mi'] . "<TH></TH></TR>";
+			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['close'] . "<TH></TH></TR>";
 
 
 			$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
@@ -161,7 +162,42 @@ class CheckinStatus extends EventProcessor
 				$rider = "$first_last ($rider_id)";
 
 
+				$r = $this->rosterModel->get_record($local_event_id, $rider_id);
+
+				if (empty($r)) { // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
+					$r['result'] = 'NOT IN ROSTER';
+				}
+
+				$rider_highlight = "";
+
+				switch ($r['result']) {
+					case 'finish':
+						$elapsed_array = explode(':', $r['elapsed_time'], 3);
+						if (count($elapsed_array) == 3) {
+							list($hh, $mm, $ss) = $elapsed_array;
+							$elapsed_hhmm =  "$hh$mm";
+							$global_event_id = $event_code;
+							$d = compact('elapsed_hhmm', 'global_event_id', 'rider_id');
+							$finish_code = $this->cryptoLibrary->make_finish_code($d, $epp_secret);
+
+							$finish_text = $hh .  "h&nbsp;" . $mm . "m";
+
+							if ($this->isAdmin($club_acp_code)) {
+								$finish_text .= "<br>($finish_code)";
+							}
+						}else{
+							$finish_text = "RBA Review";
+						}
+						break;
+					default:
+						$finish_text=strtoupper($r['result']);
+						break;
+				}
+
+
+
 				$checklist = [];
+				$has_no_checkins = true;
 				for ($i = 0; $i < $ncontroles; $i++) {
 					$open = $controles[$i]['open'];
 					$close = $controles[$i]['close'];
@@ -182,6 +218,7 @@ class CheckinStatus extends EventProcessor
 					} else {
 
 						$checkin_time = $c['checkin_time'];  // a DateTime object
+						$has_no_checkins = false;
 
 						$el = "";
 						if ($c['preride']) {
@@ -218,30 +255,13 @@ class CheckinStatus extends EventProcessor
 						$checklist[] = $checkin_time_str . $el;
 					}
 				}
+
+				if($has_no_checkins) continue;
+
+
 				$checkins = implode('</TD><TD>', $checklist);
 
-				$finish_text = "";
-				$r = $this->rosterModel->get_record($local_event_id, $rider_id);
 
-				if (empty($r)) { // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
-					$r['result'] = 'NOT IN ROSTER';
-				}
-				if ($r['result'] == "finish") {
-					$elapsed_array = explode(':', $r['elapsed_time'], 3);
-					if (count($elapsed_array) == 3) {
-						list($hh, $mm, $ss) = $elapsed_array;
-						$elapsed_hhmm =  "$hh$mm";
-						$global_event_id = $event_code;
-						$d = compact('elapsed_hhmm', 'global_event_id', 'rider_id');
-						$finish_code = $this->cryptoLibrary->make_finish_code($d, $epp_secret);
-
-						$finish_text = $hh .  "h&nbsp;" . $mm . "m";
-
-						if ($this->isAdmin($club_acp_code)) {
-							$finish_text .= "<br>($finish_code)";
-						}
-					}
-				}
 
 				$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
 			}

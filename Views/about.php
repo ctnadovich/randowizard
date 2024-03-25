@@ -69,6 +69,9 @@
 
     <p>Want to know what to tell riders about eBrevet? Send them to the <A HREF=<?= site_url('about/ebrevet_faq') ?>>eBrevet FAQ</A></p>
 
+    <p>Visit the <A HREF='https://github.com/ctnadovich/randowizard/discussions'>randowizard discussion community</A> to hear the latests 
+    news about these tools and participate in discussions.
+
     <p>Find a bug or want to suggest an improvement?
         You can <A HREF='https://github.com/ctnadovich/randowizard/issues'>open
             an issue or suggestion on github</a></p>

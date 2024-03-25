@@ -64,6 +64,10 @@ class CheckinCrud extends BaseController
         $crud->setPrimaryKey('rusa_id','rusa');
         $crud->setRelation('rider_id', 'rusa', '{last_name}, {first_name}  #{rusa_id}');
         $crud->columns(['rider_id','control_number','time','created','preride','comment']);
+
+        $crud->displayAs('time','Time (UTC)');
+        $crud->displayAs('created','Created (UTC)');
+
         $crud->where('event_id', $local_event_id);
 
         $crud->setRead();
@@ -78,7 +82,16 @@ class CheckinCrud extends BaseController
         });
 
         $crud->displayAs('rider_id','Rider');
-
+        $checkin_status_url = site_url("checkin_status/$event_code");
+        $this->viewData['navbar_suffix'] =<<<EOT
+    <div class="w3-panel w3-pale-yellow">
+    <p><i>
+    NB: If you want to view/display rider checkins, please use the 
+    public <A HREF='$checkin_status_url'>checkin_status page</a>, which
+    may be linked on your club web page for general use. This 
+    private page here is only for RBA editing/inspection of the raw checkin database. 
+    </i></p></div>
+EOT;
         $output = $crud->render();
 
         $this->viewData = array_merge((array)$output, $this->viewData);

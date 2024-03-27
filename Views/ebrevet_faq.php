@@ -58,6 +58,19 @@
 
 <p>If you used eBrevet and these three things are not on your brevet card at the finish, you can be disqualified. </p>
 
+<h3>Do I get the same start time as everyone else?</h3>
+<p>For a normal massed-start event, yes. It doesn't matter when you enter your start code and auto-check in to the first 
+    control. So long as you enter the start code within an hour, before or after, the official time, your 
+    event clock will start at the official start time like everyone else. So there's no need to wait till 
+    the official time to enter your start code. Doing it early, say a half-hour before you start, this is OK.</p>
+
+<h3>Can I use eBrevet for a Pre-Ride?</h3>
+<p>Yes. eBrevet understands pre-rides. Within two weeks prior to the official event date, a 'PreRide' button will appear 
+    next to the event. Press the Pre-Ride button if you want to do a preride. You then need to check into the first control.
+    Do this when you are about to start riding. Checking into the first control on a pre-ride starts your 
+    clock for the ride. <i>Don't forget to check in to the first control!</i> If you forget, you're pretty much screwed as 
+    your clock never started and none of the other controls will be available. </p>
+
 <h2>Troubleshooting</h2>
 
 <h3>Will eBrevet drain my battery?</h3>

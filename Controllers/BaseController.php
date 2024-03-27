@@ -66,6 +66,24 @@ abstract class BaseController extends Controller
         $this->regionModel = model('Region');
     }
 
+    // This function has some arcane behaviors. 
+
+    // If a Club ACP code is NOT specified, then the usual 'head' and 'navbar' views
+    // are prepended. On the other hand if the ACP code IS specified, then
+    // the club is looked up and its syle_html is injected into the head view, 
+    // and header_html (or default_region_header) replace the usual navbar 
+    // UNLESS the user happens to be logged in as region administrator. 
+    // 
+    // but that's not all!
+    // 
+    // If the $view_list is an array of view name strings, then all those 
+    // views are appended, each with $this->viewData context.
+    // 
+    // OTOH, if $view_list is an array of arrays, then each of 
+    // those arrays are used as parameters the view function (name, context) and
+    // saveData is set to false in each view call. That way a different
+    // view data context can be set for each view in the list. 
+
     protected function load_view($view_list, $club_acp_code = null)
     {
 
@@ -89,6 +107,7 @@ abstract class BaseController extends Controller
                 $views .= view('echo_output', $this->viewData);
             } else {
                 $this->viewData = array_merge($this->viewData, $region);
+                if($this->isAdmin($club_acp_code)) $views .= view('navbar', $this->viewData);
                 $views .= view('default_region_header', $this->viewData);
             }
         }
@@ -114,6 +133,8 @@ abstract class BaseController extends Controller
                 $views .= view('echo_output', $this->viewData);
             } else {
                 $views .= view('default_region_footer', $region);
+                if($this->isAdmin($club_acp_code)) $views .= view('footbar', $this->viewData);
+
             }
         }
 

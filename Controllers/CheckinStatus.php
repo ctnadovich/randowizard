@@ -222,7 +222,9 @@ class CheckinStatus extends EventProcessor
 						$has_no_checkins = false;
 
 						$checkin_time = $c['checkin_time'];  // a DateTime object
-						$comment = $c['comment'];
+						$comment = $c['comment'] ?? '';
+						if(false!==strpos(strtolower($comment), 'automatic check in')) $comment='';
+
 
 						$el = "";
 						if ($c['preride']) {
@@ -247,7 +249,13 @@ class CheckinStatus extends EventProcessor
 
 						// && false===strpos(strtolower($comment), 'automatic check in')
 						if (!empty($comment)) {
-							$el .= "&nbsp; <i title='$comment' class='fa fa-comment' style='color: #355681;'></i>";
+
+							// $el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='speech-bubble''>". wordwrap($comment, 20, '<br>', true) . "</div>";
+							$el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='w3-container w3-border w3-light-grey w3-round-large'>". wordwrap($comment, 20, '<br>', true) . "</div>";
+
+							// $el .= "<br><div style='width: 70%; margin: auto; font-size: .62em; font-weight: bold; font-style: italic; background-color: #E0E0FF; border-radius: .66em; font-family: Arial, Helvetica, sans-serif;'>". wordwrap($comment, 20, '<br>', true) . "</div>";
+
+							// $el .= "&nbsp; <i title='$comment' class='fa fa-comment' style='color: #355681;'></i>";
 						}
 
 						$checkin_time_str = $checkin_time->format('H:i');

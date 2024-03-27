@@ -131,6 +131,18 @@ class EventInfo extends EventProcessor
                 'panel_data' => $this->make_controles_table((false) ? 'wizard' : 'info')
             ], ['saveData' => false]];
 
+            $view_list[] = ['event_info_tab', [
+                'tab_id' => 'Roster-Info',
+                'panel_title' => 'Roster',
+                'panel_data' => $this->make_roster_table($edata)
+            ], ['saveData' => false]];
+
+            // $view_list[] = ['event_info_tab', [
+            //     'tab_id' => 'Checkin-Info',
+            //     'panel_title' => 'Check Ins',
+            //     'panel_data' => $this->make_checkin_table($edata)
+            // ], ['saveData' => false]];
+
 
             return $this->load_view($view_list, $edata['club_acp_code']);
         } catch (\Exception $e) {

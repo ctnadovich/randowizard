@@ -112,7 +112,9 @@ class CheckinStatus extends EventProcessor
 
 
 				$style = $c['style'];
-				$is_untimed['controle_num'] = $is_intermediate && ($is_gravel || ($style == 'info' || $style == 'photo'));
+				$really_timed = strtolower($c['timed'] ?? 'yes');
+				$is_untimed['controle_num'] = $is_intermediate && 
+				  ($is_gravel || ($style == 'info' || $style == 'photo' || $style == 'postcard') || ($really_timed=='no'));
 				$close = $is_untimed['controle_num'] ? 'Untimed' : $close_datetime->format('D-H:i');
 
 				$controle_num++;
@@ -217,8 +219,10 @@ class CheckinStatus extends EventProcessor
 						}
 					} else {
 
-						$checkin_time = $c['checkin_time'];  // a DateTime object
 						$has_no_checkins = false;
+
+						$checkin_time = $c['checkin_time'];  // a DateTime object
+						$comment = $c['comment'];
 
 						$el = "";
 						if ($c['preride']) {

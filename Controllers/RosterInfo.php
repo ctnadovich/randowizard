@@ -26,7 +26,7 @@ use Psr\Log\LoggerInterface;
 
 class RosterInfo extends EventProcessor
 {
-	public $rusaModel;
+	// public $rusaModel;
 	public $cryptoLibrary;
 
 
@@ -37,7 +37,7 @@ class RosterInfo extends EventProcessor
 	) {
 		parent::initController($request, $response, $logger);
 
-		$this->rusaModel = model('Rusa');
+		// $this->rusaModel = model('Rusa');
 		$this->cryptoLibrary = new \App\Libraries\Crypto();
 	}
 

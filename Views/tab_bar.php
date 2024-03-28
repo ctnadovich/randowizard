@@ -8,6 +8,7 @@
   <button class="w3-bar-item w3-button" onclick="openTab('GPS-Info')">Navigation</button>
   <button class="w3-bar-item w3-button" onclick="openTab('Control-Info')">Controls</button>
   <button class="w3-bar-item w3-button" onclick="openTab('Roster-Info')">Roster</button>
+  <button class="w3-bar-item w3-button" onclick="openTab('Checkin-Info')">Check Ins</button>
 </div>
 
 <script>

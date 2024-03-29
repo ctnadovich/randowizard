@@ -27,7 +27,7 @@ use Psr\Log\LoggerInterface;
 
 class PostCheckin extends EventProcessor
 {
-	
+
 
 	public function initController(
 		RequestInterface $request,
@@ -35,8 +35,6 @@ class PostCheckin extends EventProcessor
 		LoggerInterface $logger
 	) {
 		parent::initController($request, $response, $logger);
-
-		
 	}
 
 
@@ -82,10 +80,8 @@ class PostCheckin extends EventProcessor
 			$signature = $d['signature'];
 			$start_style = $d['start_style'];
 
-			list($a, $b, $c) = explode('.', $app_version);
-			list($ar, $br, $cr) = explode('.', $this->minimum_app_version);
 
-			if ($a + 0 < $ar + 0 || $b + 0 < $br + 0 || $c + 0 < $cr + 0)
+			if (false == $this->is_acceptable_version($app_version))
 				throw new \Exception("UPDATE APP. SERVER NEEDS v{$this->minimum_app_version}");
 
 			$correct_signature = $this->make_signature($d, $club['epp_secret']);
@@ -146,15 +142,15 @@ class PostCheckin extends EventProcessor
 
 				$result = $this->rosterModel->get_result($local_event_id, $rider_id);
 
-				if ($result != 'finish' ) {  // roster finish is immutable
+				if ($result != 'finish') {  // roster finish is immutable
 
 					if ($overall_outcome == 'finish') {
 						if (array_key_exists('finish_elapsed_time', $d))
-								$this->rosterModel->record_finish($local_event_id, $rider_id, $d['finish_elapsed_time']);
-					}else{
+							$this->rosterModel->record_finish($local_event_id, $rider_id, $d['finish_elapsed_time']);
+					} else {
 
 
-							$this->rosterModel->upsert_result($local_event_id, $rider_id, $overall_outcome);
+						$this->rosterModel->upsert_result($local_event_id, $rider_id, $overall_outcome);
 					}
 				}
 			} else {
@@ -176,4 +172,17 @@ class PostCheckin extends EventProcessor
 		return strtoupper(substr($ciphertext, 0, 8));
 	}
 
+	private function is_acceptable_version($ver)
+	{
+		list($a, $b, $c) = explode('.', $ver);
+		list($ar, $br, $cr) = explode('.', $this->minimum_app_version);
+
+		if ((int)$a > (int)$ar) return true;
+		if ((int)$a < (int)$ar) return false;
+		if ((int)$b > (int)$br) return true;
+		if ((int)$b < (int)$br) return false;
+		if ((int)$c >= (int)$cr) return true;
+
+		return false;
+	}
 }

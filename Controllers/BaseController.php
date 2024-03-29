@@ -296,4 +296,12 @@ abstract class BaseController extends Controller
         $this->session->remove('authorized_regions');
         $this->session->remove('is_superuser');
     }
+
+    protected function emit_json($data)
+	{
+		$j = json_encode($data);
+		header("Content-Type: application/json; charset=UTF-8");
+		echo $j;
+		exit();
+	}
 }

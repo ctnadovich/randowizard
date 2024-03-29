@@ -63,14 +63,6 @@ class EventProcessor extends BaseController
 
 
 
-	protected function emit_json($data)
-	{
-		$j = json_encode($data);
-		header("Content-Type: application/json; charset=UTF-8");
-		echo $j;
-		exit();
-	}
-
 	public function get_event_by_code($event_code)
 	{
 

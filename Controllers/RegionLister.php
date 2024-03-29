@@ -48,7 +48,7 @@ class RegionLister extends BaseController
 
 	public function json_region_list()
 	{
-		$region_list = $this->regionModel->getRegions();
+		$region_list = $this->regionModel->getRegionsEbrevet();
 
 		$region_list_hash = hash('sha256', json_encode($region_list));
         $secret = Secrets::region_list_secret;

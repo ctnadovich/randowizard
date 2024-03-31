@@ -42,7 +42,7 @@ class EventLister extends EventProcessor
 	// FUTURE EVENTS (for eBrevet JSON)
 	//
 
-	public function json_future_events($club_acp_code = null,$nonce=null)
+	public function json_future_events($club_acp_code = null, $nonce = null)
 	{
 
 		$event_errors = [];
@@ -94,12 +94,24 @@ class EventLister extends EventProcessor
 			}
 
 			$event_list[] = $this->published_edata($event_data);
+			$event_id_code = $event_data['event_code'];
+
+			$control_warnings = $event_data['controle_warnings'] ?? [];
+			$cue_warnings = $event_data['cue_warnings'] ?? [];
+			$other_warnings = $event_data['other_warnings'] ?? [];
+
+			$nWarnings = sizeof($control_warnings) + sizeof($cue_warnings) + sizeof($other_warnings);
+			$s = $nWarnings > 1 ? 's' : '';
+
+			if ($nWarnings > 0) {
+				$event_errors[] = "$nWarnings warning$s in Event ID=$event_id_code";
+			}
 		}
 
 		$minimum_app_version = $this->minimum_app_version;
 
-		if($nonce===null){
-			$nonce='nonoce';
+		if ($nonce === null) {
+			$nonce = 'nonoce';
 		}
 		$event_list_hash = hash('sha256', json_encode($event_list));
 		$plaintext = "$club_acp_code-$nonce-$minimum_app_version-$event_list_hash-$secret";
@@ -143,10 +155,10 @@ class EventLister extends EventProcessor
 	{
 
 		try {
-			 $er_array = $this->regionModel->hasEvents();
-			
+			$er_array = $this->regionModel->hasEvents();
+
 			$this->viewData['eventful_regions'] = $er_array;
-			
+
 			return $this->load_view('eventful_regions');
 		} catch (\Exception $e) {
 			$this->die_exception($e);
@@ -166,7 +178,7 @@ class EventLister extends EventProcessor
 			''
 		];
 
-		$year = null; 
+		$year = null;
 		$rows = [];
 		foreach ($all_events as $event) {
 
@@ -196,7 +208,7 @@ class EventLister extends EventProcessor
 
 			$start_year = $startDatetime->format('Y');
 
-			if($start_year != $year){
+			if ($start_year != $year) {
 				$rows[] = "<TR class='w3-gray'><TH COLSPAN=6>$start_year</TH></TR>";
 				$rows[] = "<TR><TH>" . implode('</TH><TH>', $headings) . "</TH></TR>";
 
@@ -204,13 +216,13 @@ class EventLister extends EventProcessor
 			}
 
 			$no_route = empty($route_url);
-			
+
 			$sdtxt = $startDatetime->format("M j @ H:i T");
 			$event_code = $this->eventModel->getEventCode($event);
-			$infolink = $no_route?"<i class='fa fa-circle-info' style='color: lightgray;'></i>":
-			"<A class='w3-button' TITLE='Info' HREF='" . site_url("event_info/$event_code") . "'><i class='fa fa-circle-info'></i></a>";
-			$resultslink = $no_route?"<i class='fa fa-users' style='color: lightgray;'></i>":
-			"<A class='w3-button' TITLE='Riders/Results' HREF='" . site_url("roster_info/$event_code") . "'><i class='fa fa-users'></a>";
+			$infolink = $no_route ? "<i class='fa fa-circle-info' style='color: lightgray;'></i>" :
+				"<A class='w3-button' TITLE='Info' HREF='" . site_url("event_info/$event_code") . "'><i class='fa fa-circle-info'></i></a>";
+			$resultslink = $no_route ? "<i class='fa fa-users' style='color: lightgray;'></i>" :
+				"<A class='w3-button' TITLE='Riders/Results' HREF='" . site_url("roster_info/$event_code") . "'><i class='fa fa-users'></a>";
 			$row = [$sdtxt,  "$sanction", "$name $distance K", $infolink,  $resultslink, $status];
 
 			$rows[] = "<TR class='$status_style'><TD>" . implode('</TD><TD>', $row) . "</TD></TR>";

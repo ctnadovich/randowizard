@@ -108,7 +108,7 @@ class EventProcessor extends BaseController
 
 		$club = $this->regionModel->getClub($club_acp_code);
 		if (empty($club)) {
-			throw new \Exception("UNKNOWN CLUB");
+			throw new \Exception("Fatal Error in Event ID=$event_code: UNKNOWN CLUB");
 		}
 
 		// Try to get route data
@@ -116,7 +116,7 @@ class EventProcessor extends BaseController
 		$route_id = $this->rwgpsLibrary->extract_route_id($route_url);
 
 		if ($route_id == null) {
-			throw new \Exception("INVALID ROUTE URL: $route_url");
+			throw new \Exception("Fatal Error in Event ID=$event_code: INVALID ROUTE URL: $route_url");
 		} else {
 			$route = $this->rwgpsLibrary->get_route($route_id);
 			$has_rwgps_route = true;
@@ -128,13 +128,13 @@ class EventProcessor extends BaseController
 		list($route_controles, $controle_warnings) = $this->rwgpsLibrary->extract_controles($route);
 
 		if (sizeof($route_controles) == 0) {
-			throw new \Exception("NO CONTROLS. Please mark all the controls with the cue-type 'CONTROL'.");
+			throw new \Exception("Fatal Error in Event ID=$event_code: NO CONTROLS. Please mark all the controls with the cue-type 'CONTROL'.");
 		}
 
 		list($cues, $cue_warnings) = $this->rwgpsLibrary->extract_cues($route);
 
 		if (sizeof($cues) == 0) {
-			throw new \Exception("NO CUES");
+			throw new \Exception("Fatal Error in Event ID=$event_code: NO CUES");
 		}
 
 

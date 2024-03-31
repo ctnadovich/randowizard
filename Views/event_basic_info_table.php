@@ -27,8 +27,8 @@
          <TD><A HREF='<?= $club_event_info_url ?>'><?= $club_event_info_url ?></A></TD>
      </TR>
      <TR>
-         <TD>Event Type</TD>
-         <TD><?= $event_type_uc ?></TD>
+         <TD>Event Sanction</TD>
+         <TD><?= strtoupper($event_sanction) ?></TD>
      </TR>
      <TR>
          <TD>Official Distance</TD>

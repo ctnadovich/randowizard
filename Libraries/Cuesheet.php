@@ -879,9 +879,9 @@ class Cuesheet extends Myfpdf
 			["Event:", "$event_name_dist"],
 			["Event Start Date/Time:", " $event_datetime_str"],
 			["Official Distance:", " $event_distance km"],
-			["Event Type:", strtoupper($event_type)],
 			["Distance:", " $distance_mi mi / $distance_km km"],
-			["Climbing:", " $climbing_ft ft"]
+			["Climbing:", " $climbing_ft ft"],
+			["Event Sanction:", strtoupper($event_sanction)]
 		];
 
 		if (!empty($pavement_type)) $lines[] = ["Pavement:", " $pavement_type"];

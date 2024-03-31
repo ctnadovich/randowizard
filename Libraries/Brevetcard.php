@@ -555,7 +555,7 @@ class Brevetcard extends Myfpdf
     {
         extract($route_event);
 
-        $type_string = $event_type;
+        $type_string = $event_sanction;
         $type_string_size = ($this->n_folds > 2) ? 0.9 : 1;
 
         if (empty($event_date_str)) {
@@ -564,7 +564,7 @@ class Brevetcard extends Myfpdf
             $event_date = $event_date_str;
         }
 
-        switch ($event_type) {
+        switch ($event_sanction) {
             case 'acp':
                 $type_string = "Brevet de Randonneurs Mondiaux";
                 $distance_string = "Randonnée of {$event_distance}km";
@@ -637,7 +637,7 @@ class Brevetcard extends Myfpdf
                 ];
                 break;
             default:
-                throw new \Exception("Unknown event type '$event_type'. Can't render.");
+                throw new \Exception("Unknown event sanction '$event_sanction'. Can't render.");
                 break;
         }
         return $body;
@@ -649,7 +649,7 @@ class Brevetcard extends Myfpdf
 
         $ebox_width = ($this->n_folds > 2) ? 95 : 95;
 
-        $type_string = $event_type;
+        $type_string = $event_sanction;
         $rusa_id = (!empty($rider['rusa_id'])) ? $rider['rusa_id'] : '';
         $last_name = (isset($rider['last_name'])) ? ($rider['last_name'] . ', ') : 'Name: ';
         $first_name = (isset($rider['first_name'])) ? ($rider['first_name']) : '';
@@ -685,7 +685,7 @@ class Brevetcard extends Myfpdf
             trigger_error("Emergency contact not set (organizer_name and organizer_phone), can't render brevet card.", E_USER_ERROR);
         }
 
-        switch ($event_type) {
+        switch ($event_sanction) {
             case 'acp':
                 $cert = 'Homologation';
                 break;

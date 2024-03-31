@@ -24,7 +24,7 @@ namespace App\Libraries;
 
 class Controletimes {
 
-    public $valid_event_types = ['acp'=>true, 'rusa'=>true, 'permanent'=>true];
+    public $valid_event_sanctions = ['acp'=>true, 'rusa'=>true, 'permanent'=>true];
     
     public $gravel_allowance = 1; // minute per KM
 
@@ -89,7 +89,7 @@ class Controletimes {
 
 	
 // 	public function open_close(DateTime $start_datetime, $distance_km, $event_type, $final_controle_cutoff=0, $tz=null){
-	private function open_close(\DateTime $start_datetime, $distance_km, $event_type, $tz=null){
+	private function open_close(\DateTime $start_datetime, $distance_km, $event_sanction, $tz=null){
 	
 // 		switch($event_type){
 // 			case 'permanent':
@@ -101,10 +101,10 @@ class Controletimes {
 // 			
 // 		}
 	
-		if(!isset($this->controle_speed_limits[$event_type]) )
-			trigger_error("Unknown event type '$event_type'; cannot compute controle times.");
+		if(!isset($this->controle_speed_limits[$event_sanction]) )
+			trigger_error("Unknown event sanction '$event_sanction'; cannot compute controle times.");
 		
-		$limits=$this->controle_speed_limits[$event_type];
+		$limits=$this->controle_speed_limits[$event_sanction];
 		
 		if($this->floor_km) $distance_km = floor($distance_km);
 		
@@ -198,14 +198,14 @@ class Controletimes {
 			
 			$tz=(isset($controle[$i]['tz']))?$controle[$i]['tz']:$route_event['event_tz'];
 
-			$oc=$this->open_close($event_datetime, $cd_km, $event_type, $tz);
+			$oc=$this->open_close($event_datetime, $cd_km, $event_sanction, $tz);
 			$controles[$i]['open']=$oc[0];
 			
 			
 			if(isset($controles[$i]['finish']) &&
-			   isset($this->standard_closing_interval[$event_type][$event_distance])){
+			   isset($this->standard_closing_interval[$event_sanction][$event_distance])){
 
-				$interval = $this->standard_closing_interval[$event_type][$event_distance];
+				$interval = $this->standard_closing_interval[$event_sanction][$event_distance];
 				$close_interval = new \DateInterval($interval);		
 				$close_datetime=clone($event_datetime);
 				$close_datetime->add($close_interval); 

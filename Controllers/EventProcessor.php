@@ -191,9 +191,10 @@ class EventProcessor extends BaseController
 
 		$event_distance = $event['distance'];
 		$event_gravel_distance = $event['gravel_distance'];
-		$event_type = strtolower($event['sanction']);
+		$event_type = strtolower($event['type']);
+		$event_sanction = strtolower($event['sanction']);
 		$event_type_uc = strtoupper($event_type);
-		$route_event = compact('route', 'event', 'event_datetime', 'event_datetime_str', 'event_type', 'event_distance', 'event_gravel_distance', 'event_tz');
+		$route_event = compact('route', 'event', 'event_datetime', 'event_datetime_str', 'event_type', 'event_sanction','event_distance', 'event_gravel_distance', 'event_tz');
 
 		// With the controls and route_event, now we can compute control times
 

@@ -64,6 +64,7 @@ class EventInfo extends EventProcessor
             $this->die_data_exception($e);
         }
 
+
         try {
             $this->viewData = array_merge($this->viewData, $edata);
 
@@ -86,6 +87,8 @@ class EventInfo extends EventProcessor
             $fcdt_copy->setTimezone($edata['event_tz']);
             $cutoff_datetime_str = $fcdt_copy->format('m-d, g:i A T');
 
+
+
             $cutoff_interval = $start_open_datetime->diff($finish_close_datetime);
             $dhm = [];
             $tothours = $cutoff_interval->h + $cutoff_interval->d * 24;
@@ -107,6 +110,7 @@ class EventInfo extends EventProcessor
             );
 
             $this->viewData = array_merge($this->viewData,  compact('cutoff_interval_str', 'cutoff_datetime_str'));
+
 
             $view_list = [];
             $view_list[] = 'event_head';
@@ -137,11 +141,13 @@ class EventInfo extends EventProcessor
                 'panel_data' => $this->make_roster_table($edata)
             ], ['saveData' => false]];
 
+
             $view_list[] = ['event_info_tab', [
                 'tab_id' => 'Checkin-Info',
                 'panel_title' => 'Check Ins',
                 'panel_data' => $this->make_checkin_table($edata)
             ], ['saveData' => false]];
+
 
 
             return $this->load_view($view_list, $edata['club_acp_code']);

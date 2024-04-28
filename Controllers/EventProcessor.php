@@ -56,7 +56,6 @@ class EventProcessor extends BaseController
 		$this->cuesheetLibrary = new \App\Libraries\Cuesheet();
 		$this->controletimesLibrary = new \App\Libraries\Controletimes();
 		$this->cryptoLibrary = new \App\Libraries\Crypto();
-
 	}
 
 	public $minimum_app_version = '1.2.4';
@@ -100,8 +99,10 @@ class EventProcessor extends BaseController
 		$club_acp_code = $event['region_id'];
 		$event_code = $this->eventModel->getEventCode($event);
 
-		if (empty($event['route_url'])) $this->die_info('No Route Map URL',  
-		   'Sorry, but you can not use any Route Manager (CueWizard) functions until you add a route URL to your event.');
+		if (empty($event['route_url'])) $this->die_info(
+			'No Route Map URL',
+			'Sorry, but you can not use any Route Manager (CueWizard) functions until you add a route URL to your event.'
+		);
 
 		// if (empty($event['route_url']))
 		// 	throw new \Exception('NO ROUTE FOR EVENT. You must specify a URL for the event route map.');
@@ -194,7 +195,7 @@ class EventProcessor extends BaseController
 		$event_type = strtolower($event['type']);
 		$event_sanction = strtolower($event['sanction']);
 		$event_type_uc = strtoupper($event_type);
-		$route_event = compact('route', 'event', 'event_datetime', 'event_datetime_str', 'event_type', 'event_sanction','event_distance', 'event_gravel_distance', 'event_tz');
+		$route_event = compact('route', 'event', 'event_datetime', 'event_datetime_str', 'event_type', 'event_sanction', 'event_distance', 'event_gravel_distance', 'event_tz');
 
 		// With the controls and route_event, now we can compute control times
 
@@ -229,14 +230,14 @@ class EventProcessor extends BaseController
 			$lat = $cdata['y'];
 
 			$control_style = $a['style'] ?? 'undefined';
-			switch($control_style){
+			switch ($control_style) {
 				case 'open':
 				case 'merchant':
 				case 'staffed':
-					if(array_key_exists('timed',$a) && strtolower($a['timed'])=='no'){
-						$timed='no';
-					}else{
-						$timed='yes';
+					if (array_key_exists('timed', $a) && strtolower($a['timed']) == 'no') {
+						$timed = 'no';
+					} else {
+						$timed = 'yes';
 					}
 					break;
 				default:
@@ -259,8 +260,9 @@ class EventProcessor extends BaseController
 				// 'sif'=>$sif
 
 			];
-			$open_datetime = $openDatetime; $close_datetime=$closeDatetime;
-			$controls_extra[] = compact('open_datetime','close_datetime','lat','long');
+			$open_datetime = $openDatetime;
+			$close_datetime = $closeDatetime;
+			$controls_extra[] = compact('open_datetime', 'close_datetime', 'lat', 'long');
 		}
 
 		// More Event Data
@@ -354,9 +356,9 @@ class EventProcessor extends BaseController
 		$last_download = $last_download_datetime->format("Y-m-j H:i:s T");
 
 		$download_note = $route['download_note'];
-		$publish_is_stale = ($has_cuesheet && 
-			($published_at_datetime < $last_update_datetime || 
-		$published_at_datetime < $last_event_change_datetime));
+		$publish_is_stale = ($has_cuesheet &&
+			($published_at_datetime < $last_update_datetime ||
+				$published_at_datetime < $last_event_change_datetime));
 
 
 		if (!empty($route['description']))
@@ -382,12 +384,12 @@ class EventProcessor extends BaseController
 		$unpaved_pct = (isset($route['unpaved_pct'])) ? $route['unpaved_pct'] . "%" : '-';
 
 		// Only one route_tag supported 
-		if(empty($route_tags['pavement_type'])) {
+		if (empty($route_tags['pavement_type'])) {
 			$pavement_type = ''; // $route['unpaved_pct'] < 1 ? "Less than 1% gravel" : "$unpaved_pct gravel";
-		}else{
+		} else {
 			$pavement_type = $route_tags['pavement_type'];
 		}
-		
+
 		$units = $this->unitsLibrary;
 		$distance_km = round($route['distance'] / $units::m_per_km, 1);
 		$distance_mi = round($distance_km / $units::km_per_mi, 1);
@@ -398,7 +400,7 @@ class EventProcessor extends BaseController
 
 		$route_has_warnings = (sizeof($controle_warnings) > 0 ||
 			sizeof($cue_warnings) > 0 ||
-			sizeof($other_warnings) > 0 );
+			sizeof($other_warnings) > 0);
 
 		$edata = compact(
 			'checkin_post_url',
@@ -515,7 +517,8 @@ class EventProcessor extends BaseController
 	}
 
 
-	protected function make_roster_table($edata){
+	protected function make_roster_table($edata)
+	{
 
 		$local_event_id = $edata['local_event_id'];
 
@@ -539,31 +542,31 @@ class EventProcessor extends BaseController
 				$first_last = $m['first_name']  . ' ' . $m['last_name'];
 			}
 
-			$city=$m['city'] ?? '';
-			$state=$m['state'] ?? '';
+			$city = $m['city'] ?? '';
+			$state = $m['state'] ?? '';
 			$city_state = (!empty($city) && !empty($state)) ? "$city, $state" : "$city$state";
 			$country = $m['country'] ?? '';
-			$address = (!empty($country) && $country != 'US') ? "$city_state ($country)" : $city_state; 
+			$address = (!empty($country) && $country != 'US') ? "$city_state ($country)" : $city_state;
 
 			$r = $this->rosterModel->get_record($local_event_id, $rider_id);
 
 			if (empty($r)) { // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
 				$r['result'] = 'NOT IN ROSTER';
-			} 
+			}
 
 			$rider_result = strtoupper($r['result'] ?? '');
 			$rider_elapsed = $r['elapsed_time'] ?? '';
 
-			if(!empty($rider_elapsed)){
-				$parts = explode(':',$rider_elapsed);
-				$hhmm = implode(':',array_slice($parts,0,2));
+			if (!empty($rider_elapsed)) {
+				$parts = explode(':', $rider_elapsed);
+				$hhmm = implode(':', array_slice($parts, 0, 2));
 				$rider_elapsed = "[$hhmm]";
 			}
 
-			if($rider_result=='FINISH')
-			  $rider_status="$rider_result $rider_elapsed";
+			if ($rider_result == 'FINISH')
+				$rider_status = "$rider_result $rider_elapsed";
 			else
-			  $rider_status=$rider_result;
+				$rider_status = $rider_result;
 
 
 			$rider_highlight = "";
@@ -573,11 +576,12 @@ class EventProcessor extends BaseController
 		}
 		$roster_table .= "</TABLE>";
 		return $roster_table;
-
 	}
 
 
-	protected function make_checkin_table($edata){
+	protected function make_checkin_table($edata)
+	{
+
 
 		$checkin_table = "<TABLE CLASS='w3-table-all w3-centered'>";
 
@@ -595,6 +599,8 @@ class EventProcessor extends BaseController
 
 
 		$reclass = $this->unitsLibrary;
+
+
 
 		$is_untimed = [];
 		$headlist = [];
@@ -617,9 +623,9 @@ class EventProcessor extends BaseController
 
 			$style = $c['style'];
 			$really_timed = strtolower($c['timed'] ?? 'yes');
-			$is_untimed['controle_num'] = $is_intermediate && 
-			  ($is_gravel || ($style == 'info' || $style == 'photo' || $style == 'postcard') || ($really_timed=='no'));
-			$close = $is_untimed['controle_num'] ? 'Untimed' : $close_datetime->format('D-H:i');
+			$is_untimed[$controle_num] = $is_intermediate &&
+				($is_gravel || ($style == 'info' || $style == 'photo' || $style == 'postcard') || ($really_timed == 'no'));
+			$close = $is_untimed[$controle_num] ? 'Untimed' : $close_datetime->format('D-H:i');
 
 			$controle_num++;
 			$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");
@@ -638,7 +644,7 @@ class EventProcessor extends BaseController
 					$row[$i] .= "<br><A HREF='https://maps.google.com/?q=" .
 						$headlist['lat'][$i] . ',' . $headlist['long'][$i] . "'><i style='font-size: 1.4em;' class='fa-solid fa-map-location-dot'></i></A>";
 			}
-			
+
 			if ($key == 'open_datetime' || $key == 'close_datetime') {
 				$head_row[$key] = $row;
 			} else {
@@ -653,138 +659,148 @@ class EventProcessor extends BaseController
 
 		$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
 
-		foreach ($registeredRiders as $rider) {
 
-			$rider_id = $rider['rider_id'];
-			// Assume $rider_id = $rusa_id; // assumption
+			foreach ($registeredRiders as $rider) {
 
 
-			$m = $this->rusaModel->get_member($rider_id);
-			if (empty($m)) {
-				$first_last = "NON RUSA";
-			} else {
-				$first_last = $m['first_name']  . ' ' . $m['last_name'];
-			}
-			$rider = "$first_last ($rider_id)";
 
 
-			$r = $this->rosterModel->get_record($local_event_id, $rider_id);
+				$rider_id = $rider['rider_id'];
+				// Assume $rider_id = $rusa_id; // assumption
 
-			if (empty($r)) { // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
-				$r['result'] = 'NOT IN ROSTER';
-			}
 
-			$rider_highlight = "";
+				$m = $this->rusaModel->get_member($rider_id);
+				if (empty($m)) {
+					$first_last = "NON RUSA";
+				} else {
+					$first_last = $m['first_name']  . ' ' . $m['last_name'];
+				}
+				$rider = "$first_last ($rider_id)";
 
-			switch ($r['result']) {
-				case 'finish':
-					$elapsed_array = explode(':', $r['elapsed_time'], 3);
-					if (count($elapsed_array) == 3) {
-						list($hh, $mm, $ss) = $elapsed_array;
-						$elapsed_hhmm =  "$hh$mm";
-						$global_event_id = $event_code;
-						$d = compact('elapsed_hhmm', 'global_event_id', 'rider_id');
-						$finish_code = $this->cryptoLibrary->make_finish_code($d, $epp_secret);
 
-						$finish_text = $hh .  "h&nbsp;" . $mm . "m";
+				$r = $this->rosterModel->get_record($local_event_id, $rider_id);
+
+				if (empty($r)) { // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
+					$r['result'] = 'NOT IN ROSTER';
+				}
+
+				$rider_highlight = "";
+
+				switch ($r['result']) {
+					case 'finish':
+						$elapsed_array = explode(':', $r['elapsed_time'], 3);
+						if (count($elapsed_array) == 3) {
+							list($hh, $mm, $ss) = $elapsed_array;
+							$elapsed_hhmm =  "$hh$mm";
+							$global_event_id = $event_code;
+							$d = compact('elapsed_hhmm', 'global_event_id', 'rider_id');
+							$finish_code = $this->cryptoLibrary->make_finish_code($d, $epp_secret);
+
+							$finish_text = $hh .  "h&nbsp;" . $mm . "m";
+
+							if ($this->isAdmin($club_acp_code)) {
+								$finish_text .= "<br>($finish_code)";
+							}
+						} else {
+							$finish_text = "RBA Review";
+						}
+						break;
+					default:
+						$finish_text = strtoupper($r['result']);
+						break;
+				}
+
+
+
+				$checklist = [];
+				$has_no_checkins = true;
+				for ($i = 0; $i < $ncontroles; $i++) {
+					$open = $controles[$i]['open'];
+					$close = $controles[$i]['close'];
+					$open_datetime = (new \DateTime($open))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+					$close_datetime = (new \DateTime($close))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+
+					$control_index = $i;
+					$d = compact('control_index', 'event_code', 'rider_id');
+					$checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
+
+
+					$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $edata['event_timezone_name']);
+					if (empty($c)) {
+						if ($this->isAdmin($club_acp_code)) {
+							$checklist[] = "<span title='$checkin_code'>-</span>";
+						} else {
+							$checklist[] = '-';
+						}
+					} else {
+
+						$has_no_checkins = false;
+
+						$checkin_time = $c['checkin_time'];  // a DateTime object
+						$comment = $c['comment'] ?? '';
+						if (false !== strpos(strtolower($comment), 'automatic check in')) $comment = '';
+
+
+						$el = "";
+						if ($c['preride']) {
+							$el = "<br><span class='green italic sans smaller'>Preride</span>";
+						} elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
+							$cit_str = $checkin_time->format('H:i');
+							$open_str = $close_datetime->format('H:i');
+							$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
+						} elseif ($checkin_time > $close_datetime && !$is_untimed[$i]) {
+							$cit_str = $checkin_time->format('H:i');
+							$close_str = $close_datetime->format('H:i');
+							$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";
+						}
+		
+						// $control_index = $i;
+						// $d = compact('control_index', 'event_code', 'rider_id');
+						// $checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
+
+						// if ($this->isAdmin($club_acp_code)) {
+						// 	$el .= "&nbsp; <i title='$checkin_code' class='fa fa-check-circle' style='color: #355681;'></i>";
+						// }
+
+						// && false===strpos(strtolower($comment), 'automatic check in')
+						if (!empty($comment)) {
+
+							// $el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='speech-bubble''>". wordwrap($comment, 20, '<br>', true) . "</div>";
+							$el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='w3-container w3-border w3-light-grey w3-round-large'>" . wordwrap($comment, 20, '<br>', true) . "</div>";
+
+							// $el .= "<br><div style='width: 70%; margin: auto; font-size: .62em; font-weight: bold; font-style: italic; background-color: #E0E0FF; border-radius: .66em; font-family: Arial, Helvetica, sans-serif;'>". wordwrap($comment, 20, '<br>', true) . "</div>";
+
+							// $el .= "&nbsp; <i title='$comment' class='fa fa-comment' style='color: #355681;'></i>";
+						}
+
+						$checkin_time_str = $checkin_time->format('H:i');
 
 						if ($this->isAdmin($club_acp_code)) {
-							$finish_text .= "<br>($finish_code)";
+							$checkin_time_str = "<span title='$checkin_code'>$checkin_time_str</span>";
 						}
-					}else{
-						$finish_text = "RBA Review";
+
+						$checklist[] = $checkin_time_str . $el;
 					}
-					break;
-				default:
-					$finish_text=strtoupper($r['result']);
-					break;
-			}
-
-
-
-			$checklist = [];
-			$has_no_checkins = true;
-			for ($i = 0; $i < $ncontroles; $i++) {
-				$open = $controles[$i]['open'];
-				$close = $controles[$i]['close'];
-				$open_datetime = (new \DateTime($open))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
-				$close_datetime = (new \DateTime($close))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
-
-				$control_index = $i;
-				$d = compact('control_index', 'event_code', 'rider_id');
-				$checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
-
-				$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $edata['event_timezone_name']);
-				if (empty($c)) {
-					if ($this->isAdmin($club_acp_code)) {
-						$checklist[] = "<span title='$checkin_code'>-</span>";
-					} else {
-						$checklist[] = '-';
-					}
-				} else {
-
-					$has_no_checkins = false;
-
-					$checkin_time = $c['checkin_time'];  // a DateTime object
-					$comment = $c['comment'] ?? '';
-					if(false!==strpos(strtolower($comment), 'automatic check in')) $comment='';
-
-
-					$el = "";
-					if ($c['preride']) {
-						$el = "<br><span class='green italic sans smaller'>Preride</span>";
-					} elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
-						$cit_str = $checkin_time->format('H:i');
-						$open_str = $close_datetime->format('H:i');
-						$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
-					} elseif ($checkin_time > $close_datetime && !$is_untimed[$i]) {
-						$cit_str = $checkin_time->format('H:i');
-						$close_str = $close_datetime->format('H:i');
-						$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";
-					}
-
-					// $control_index = $i;
-					// $d = compact('control_index', 'event_code', 'rider_id');
-					// $checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
-
-					// if ($this->isAdmin($club_acp_code)) {
-					// 	$el .= "&nbsp; <i title='$checkin_code' class='fa fa-check-circle' style='color: #355681;'></i>";
-					// }
-
-					// && false===strpos(strtolower($comment), 'automatic check in')
-					if (!empty($comment)) {
-
-						// $el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='speech-bubble''>". wordwrap($comment, 20, '<br>', true) . "</div>";
-						$el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='w3-container w3-border w3-light-grey w3-round-large'>". wordwrap($comment, 20, '<br>', true) . "</div>";
-
-						// $el .= "<br><div style='width: 70%; margin: auto; font-size: .62em; font-weight: bold; font-style: italic; background-color: #E0E0FF; border-radius: .66em; font-family: Arial, Helvetica, sans-serif;'>". wordwrap($comment, 20, '<br>', true) . "</div>";
-
-						// $el .= "&nbsp; <i title='$comment' class='fa fa-comment' style='color: #355681;'></i>";
-					}
-
-					$checkin_time_str = $checkin_time->format('H:i');
-
-					if ($this->isAdmin($club_acp_code)) {
-						$checkin_time_str = "<span title='$checkin_code'>$checkin_time_str</span>";
-					}
-
-					$checklist[] = $checkin_time_str . $el;
 				}
+
+	
+
+
+				if ($has_no_checkins) continue;
+
+
+				$checkins = implode('</TD><TD>', $checklist);
+
+
+
+				$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
 			}
 
-			if($has_no_checkins) continue;
-
-
-			$checkins = implode('</TD><TD>', $checklist);
+			$checkin_table .= "</TABLE>";
 
 
 
-			$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
-		}
 
-		$checkin_table .= "</TABLE>";
-
-		
 		return $checkin_table;
 	}
 
@@ -828,9 +844,10 @@ class EventProcessor extends BaseController
 		fclose($output) or die("Can't close output.");
 	}
 
-	protected function die_data_exception($e){
+	protected function die_data_exception($e)
+	{
 		$error_text = $e->getMessage();
-		
+
 		$msg = <<<EOT
 <p>At this time complete information
 for this event cannot be displayed.</p>
@@ -838,7 +855,5 @@ for this event cannot be displayed.</p>
 EOT;
 
 		$this->die_message('Event Information Unavailable', $msg, ['backtrace' => false]);
-
 	}
-
 }

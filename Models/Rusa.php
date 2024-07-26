@@ -117,7 +117,6 @@ class Rusa extends Model
 
     private function check_member_api($rusa_id)
     {
-
         $api_key = Secrets::rusa_member_api_key;
         $url = self::rusa_check_members_url . "?mid_list=$rusa_id";
         $data = @file_get_contents("$url" . "&apikey=$api_key");

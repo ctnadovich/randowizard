@@ -63,14 +63,23 @@ class Checkin extends Model
 	public function record(
 		$local_event_id,
 		$rider_id,
+		$checkin_control_index,
 		$check_in_times,
+		$check_in_comments,
 		$preride,
-		$comment = '',
+		$current_comment = '',
 		$notes = []
 	) {
 		if (!is_array($check_in_times)) throw new \Error('CHECK_IN_TIMES NOT ARRAY');
 
 		foreach ($check_in_times as $control_index => $checkin_time) {
+
+			$comment='';
+			if($checkin_control_index == $control_index)
+			  $comment = $current_comment;
+			if(!empty($check_in_comments[$control_index])) 
+			  $comment=$check_in_comments[$control_index];
+  
 
 			$this->where([
 				'rider_id' => $rider_id,

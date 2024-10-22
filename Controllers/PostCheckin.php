@@ -107,6 +107,12 @@ class PostCheckin extends EventProcessor
 				throw new \Exception("NO SUCH EVENT");
 			}
 
+			if(key_exists('control_index', $d)) 
+			  $checkin_control_index=$d['control_index'];
+			else
+			  $checkin_control_index=-1;  // result upload, not at controletimes
+
+
 			//  Maybe someday have checkins at places other than controls
 			//
 			// 			if(empty($d['control_index'])){
@@ -131,10 +137,17 @@ class PostCheckin extends EventProcessor
 				$overall_outcome = $outcome['overall_outcome'];
 				$check_in_times = $outcome['check_in_times'];
 
+				if(array_key_exists('check_in_comments', $outcome))
+				  $check_in_comments = $outcome['check_in_comments'];
+				else
+				  $check_in_comments = [];
+
 				$this->checkinModel->record(
 					$local_event_id,
 					$rider_id,
+					$checkin_control_index,
 					$check_in_times,
+					$check_in_comments,
 					($preride) ? 1 : 0,
 					$comment,
 					$d

@@ -58,7 +58,7 @@ class EventProcessor extends BaseController
 		$this->cryptoLibrary = new \App\Libraries\Crypto();
 	}
 
-	public $minimum_app_version = '1.3.2';
+	public $minimum_app_version = '1.3.3';
 
 
 

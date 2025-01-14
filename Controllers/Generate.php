@@ -344,7 +344,7 @@ EOT;
 
 			$full_name =  $row['last_name'] . ', ' . $row['first_name'];
 
-			$rusa_id = $row['rusa_id'];
+			$rusa_id = $row['rider_id'];
 
 			$cryptoLibrary =  new \App\Libraries\Crypto();
 			$start_code = $cryptoLibrary->make_start_code($event, $rusa_id, $epp_secret);
@@ -354,7 +354,7 @@ EOT;
 			$header_row = [
 				['font' => 'bold', 'text' => '#', 'align' => 'C', 'width' => 4],
 				['font' => 'bold', 'text' => 'Start Code', 'align' => 'C', 'style' => 'fit', 'width' => 7],
-				['font' => 'bold', 'text' => 'RUSA', 'align' => 'C', 'width' => 9],
+				['font' => 'bold', 'text' => 'RIDER ID', 'align' => 'C', 'width' => 9],
 				['font' => 'bold', 'text' => 'Name', 'align' => 'C', 'width' => 30],
 				['font' => 'bold', 'text' => 'Sign', 'align' => 'C', 'width' => 25],
 				['font' => 'bold', 'text' => 'Time In', 'align' => 'C', 'width' => 25],

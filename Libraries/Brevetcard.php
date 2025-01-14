@@ -55,6 +55,8 @@ class Brevetcard extends Myfpdf
     // and the final FINISH
     // public $parando_logo_url="https://parando.org/images/parando3D.png";
     public $rusa_logo_url = "https://randonneuring.org/assets/local/images/rusa-logo.png";
+    public $rm_logo_url =  "https://randonneuring.org/assets/local/images/logo-LRM.png";
+    public $acp_logo_url =  "https://randonneuring.org/assets/local/images/LogoAudax-2022-300x170.png";
     public $logo_width = 0.75; // fraction of frame width
     public $logo_height = 0.31; // fraction of frame height
     public $logo_center_y = 0.27; // fraction of overall card height
@@ -345,8 +347,24 @@ class Brevetcard extends Myfpdf
         $this->draw_cut_lines();
         $this->draw_frames($this->thin_width, self::LIGHT_GRAY);
         $nc = $this->n_cards;
-        $logo_url = $this->rusa_logo_url;
-        if (!empty($route_event['icon_url']))    $logo_url = $route_event['icon_url'];
+
+        if (!empty($route_event['icon_url'])) {
+            $logo_url = $route_event['icon_url'];
+        } else {
+            switch (strtoupper($route_event['sanction'])) {
+                case 'RUSA':
+                    $logo_url = $this->rusa_logo_url;
+                    break;
+
+                case 'RM':
+                    $logo_url = $this->rm_logo_url;
+                    break;
+
+                default:
+                    $logo_url = $this->acp_logo_url;
+                    break;
+            }
+        }
         switch ($this->n_folds) {
             case 2:
                 $this->em_points = 14;
@@ -582,6 +600,23 @@ class Brevetcard extends Myfpdf
                     ['text' => $sanctioned_by, 'align' => 'C', 'font' => 'italic', 'fontsize' => $type_string_size]
                 ];
                 break;
+            case 'rm':
+                $type_string = "Brevet de Randonneurs Mondiaux";
+                $distance_string = "Randonnée of {$event_distance}km";
+                $sanctioned_by = "Les Randonneurs Mondiaux";
+                $event_date = $event_datetime->format('j F Y');
+                $body = [
+                    ['text' => $type_string, 'font' => 'normal,bold', 'fontsize' => $type_string_size, 'align' => 'C', 'row' => 1],
+                    ['text' => $event_name, 'align' => 'C', 'row' => 8],
+                    ['text' => $distance_string, 'align' => 'C', 'font' => 'resize'],
+                    ['text' => "Starting from " . $event_location, 'align' => 'C', 'font' => 'plain', 'row' => 10.25],
+                    ['text' => "On " . $event_date, 'align' => 'C'],
+                    ['text' => 'Organized By', 'align' => 'C', 'font' => 'plain', 'row' => 12.5, 'fontsize' => $type_string_size * 0.8],
+                    ['text' => $this_organization, 'align' => 'C', 'font' => 'italic', 'fontsize' => $type_string_size],
+                    ['text' => "Verified and Validated Exclusively by", 'align' => 'C', 'font' => 'plain', 'row' => 14.75, 'fontsize' => $type_string_size * 0.8],
+                    ['text' => $sanctioned_by, 'align' => 'C', 'font' => 'italic', 'fontsize' => $type_string_size]
+                ];
+                break;
             case 'rusa':
                 if ($event_distance < 200) {
                     $type_string = "RUSA Populaire";
@@ -650,7 +685,7 @@ class Brevetcard extends Myfpdf
         $ebox_width = ($this->n_folds > 2) ? 95 : 95;
 
         $type_string = $event_sanction;
-        $rusa_id = (!empty($rider['rusa_id'])) ? $rider['rusa_id'] : '';
+        $rusa_id = (!empty($rider['rider_id'])) ? $rider['rider_id'] : '';
         $last_name = (isset($rider['last_name'])) ? ($rider['last_name'] . ', ') : 'Name: ';
         $first_name = (isset($rider['first_name'])) ? ($rider['first_name']) : '';
         $street = ''; // $street=(isset($rider['m_street']))?($rider['m_street']):'';
@@ -659,7 +694,7 @@ class Brevetcard extends Myfpdf
         $zip = ''; // $zip=(isset($rider['m_zip']))?$rider['m_zip']:'';
         $country = (isset($rider['country'])) ? $rider['country'] : '';
 
-        $start_code = (!empty($rider['rusa_id'])) ?
+        $start_code = (!empty($rider['rider_id'])) ?
             $this->cryptoLibrary->make_start_code($route_event, $rusa_id, $epp_secret) : '';
 
 
@@ -704,7 +739,7 @@ class Brevetcard extends Myfpdf
             ['text' => "$first_name", 'font' => 'normal,plain', 'align' => 'F'],
             ['text' => $address1, 'col' => $ai],
             ['text' => $address2, 'col' => $ai],
-            ['text' => "RUSA Num: $rusa_id", 'font' => 'plain', 'col' => $ai],
+            ['text' => "Rider ID: $rusa_id", 'font' => 'plain', 'col' => $ai],
 
             ['text' => "START CODE: ", 'font' => 'plain', 'col' => $ai, 'tmargin' => 0.25],
             ['text' => "$start_code", 'font' => 'bold', 'align' => 'F'],
@@ -720,8 +755,10 @@ class Brevetcard extends Myfpdf
             ['text' => 'Rider Signature at Finish:', 'font' => 'plain,resize', 'tmargin' => 0.25],
             ['width' => 90, 'style' => 'border', 'align' => 'C', 'height' => 2],
             ['text' => 'Ride Completed in ', 'tmargin' => 0.75],
-            ['width' => 15, 'style' => 'border', 'align' => 'F'], ['text' => 'Hrs', 'align' => 'F'],
-            ['width' => 15, 'style' => 'border', 'align' => 'F'], ['text' => 'Mins', 'align' => 'F'],
+            ['width' => 15, 'style' => 'border', 'align' => 'F'],
+            ['text' => 'Hrs', 'align' => 'F'],
+            ['width' => 15, 'style' => 'border', 'align' => 'F'],
+            ['text' => 'Mins', 'align' => 'F'],
             ['text' => 'Organizer Signature:', 'tmargin' => 0.5],
             ['width' => 90, 'style' => 'border', 'align' => 'C', 'height' => 2],
             ['style' => 'border,rect', 'width' => 90, 'tmargin' => 0.5, 'height' => 2.5, 'align' => 'C', 'fill' => '255,255,224'],
@@ -796,14 +833,14 @@ class Brevetcard extends Myfpdf
             case 'merchant':
             case 'open':
             case 'unspecified':
-                if(array_key_exists('timed',$ca) && strtolower($ca['timed']) == 'no'){
+                if (array_key_exists('timed', $ca) && strtolower($ca['timed']) == 'no') {
                     $body = [
                         ['text' => ($ca['name'] ?? 'NO NAME'), 'row' => 1, 'col' => 3, 'style' => 'I'],
                         ['text' => $dzaddress, 'row' => 2, 'col' => 3, 'style' => 'I'],
                         ['text' => "Distance:",  'row' => 4, 'style' => 'B'],
                         ['text' => $cd_km . ' km / ' . $cd_mi . ' mi', 'row' => 4, 'col' => 16]
                     ];
-                }else{
+                } else {
                     $body = [
                         ['text' => ($ca['name'] ?? 'NO NAME'), 'row' => 1, 'col' => 3, 'style' => 'I'],
                         ['text' => $dzaddress, 'row' => 2, 'col' => 3, 'style' => 'I'],
@@ -815,8 +852,8 @@ class Brevetcard extends Myfpdf
                         ['text' => $cd_km . ' km / ' . $cd_mi . ' mi', 'row' => 6, 'col' => 16]
                     ];
                 }
-                
-                
+
+
                 break;
             case 'info':
                 $body = [

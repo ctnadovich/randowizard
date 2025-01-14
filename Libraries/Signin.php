@@ -35,7 +35,9 @@ class Signin extends Myfpdf
     private $size = 'letter'; // A3, A4, A5, letter, legal
 
     // Configuration variables
-    public $rusa_logo_url = "https://randonneuring.org/assets/local/images/rusa-logo.png";
+    public $rusa_logo_url =  "https://randonneuring.org/assets/local/images/rusa-logo.png";
+    public $rm_logo_url =  "https://randonneuring.org/assets/local/images/logo-LRM.png";
+    public $acp_logo_url =  "https://randonneuring.org/assets/local/images/LogoAudax-2022-300x170.png";
 
     public $logo_width = 0.12; // fraction of frame width
     public $logo_height = 0.06; // fraction of frame height
@@ -65,7 +67,7 @@ class Signin extends Myfpdf
     {
         if (empty($params)) trigger_error("Must specify parameters.", E_USER_ERROR);
 
-        if (!isset($params['edata']) || !isset($params['roster_table'])|| !isset($params['header_row']))
+        if (!isset($params['edata']) || !isset($params['roster_table']) || !isset($params['header_row']))
             throw new \Exception('Missing parameters.');
 
         $this->edata = $params['edata'];
@@ -147,7 +149,31 @@ class Signin extends Myfpdf
         $pw = $this->page_width;
         $ph = $this->page_height;
 
-        $this->Image($this->edata['icon_url'] ?: $this->rusa_logo_url, $pw * $this->logo_center_x, $ph * $this->logo_center_y, $pw * $this->logo_width, $ph * $this->logo_height);
+        if (empty($this->edata['icon_url'])) {
+            switch (strtoupper($this->edata['sanction'])) {
+                case 'RUSA':
+                    $icon_url = $this->rusa_logo_url;
+                    break;
+
+                case 'RM':
+                    $icon_url = $this->rm_logo_url;
+                    break;
+
+                default:
+                    $icon_url = $this->acp_logo_url;
+                    break;
+            }
+        } else {
+            $icon_url = $this->edata['icon_url'];
+        }
+
+        $this->Image(
+            $icon_url,
+            $pw * $this->logo_center_x,
+            $ph * $this->logo_center_y,
+            $pw * $this->logo_width,
+            $ph * $this->logo_height
+        );
 
         $event_name_dist = $this->my_utf8_decode($this->edata['event_name_dist']);
         $cue_version = $this->edata['cue_version_str'];

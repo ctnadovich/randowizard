@@ -42,8 +42,17 @@ class EventLister extends EventProcessor
 	// FUTURE EVENTS (for eBrevet JSON)
 	//
 
+	private $secret;
+	private $club_acp_code;
+	private $nonce;
+
 	public function json_future_events($club_acp_code = null, $nonce = null)
 	{
+
+		$this->club_acp_code = $club_acp_code;
+		if ($nonce === null) {
+			$this->nonce = $nonce = 'nonoce';
+		}
 
 		$event_errors = [];
 		$event_list = [];
@@ -51,15 +60,15 @@ class EventLister extends EventProcessor
 		// Must specify a valid club
 
 		if (empty($club_acp_code) || !is_numeric($club_acp_code)) {
-			$this->die_message('Error', 'Invalid parameter.');
+			$this->die_json('Invalid parameter.');
 		}
 
 		$club = $this->regionModel->getClub($club_acp_code);
 		if (empty($club)) {
-			$this->die_message('Error', 'No such region.');
+			$this->die_json("No such region: $club_acp_code");
 		}
 
-		$secret = $club['epp_secret'];
+		$this->secret = $secret = $club['epp_secret'];
 
 
 		// Process events for club
@@ -110,17 +119,28 @@ class EventLister extends EventProcessor
 
 		$minimum_app_version = $this->minimum_app_version;
 
-		if ($nonce === null) {
-			$nonce = 'nonoce';
-		}
-		$event_list_hash = hash('sha256', json_encode($event_list));
-		$plaintext = "$club_acp_code-$nonce-$minimum_app_version-$event_list_hash-$secret";
-		$signature = hash('sha256', $plaintext);
+		$signature = $this->make_signature($event_list,$club_acp_code,$nonce,$secret);
 
 		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
 	}
 
+	private function die_json($message){
+		$event_errors = [$message];
+		$event_list = [];
+		$minimum_app_version = $this->minimum_app_version;
 
+		$signature = $this->make_signature($event_list);
+		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
+
+	}
+
+	private function make_signature($event_list){
+		$event_list_hash = hash('sha256', json_encode($event_list));
+		$minimum_app_version = $this->minimum_app_version;
+		$plaintext = $this->club_acp_code .'-' . $this->nonce . '-' . $this->minimum_app_version . '-' .
+			$event_list_hash . '-' . $this->secret;
+		return hash('sha256', $plaintext);
+	}
 
 	////////////////////////////////////////////////////////////
 	// 

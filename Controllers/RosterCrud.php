@@ -48,7 +48,7 @@ class RosterCrud extends BaseController
 
         $this->login_check();
 
-        extract ($this->eventModel->parseEventCode($event_code));
+        extract($this->eventModel->parseEventCode($event_code));
 
         $this->die_not_admin($club_acp_code);
 
@@ -58,27 +58,31 @@ class RosterCrud extends BaseController
         }
 
         $name_dist = $this->eventModel->nameDist($event);
+        $is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
 
         $crud = new GroceryCrud();
         $crud->setSubject("$name_dist Rider", "$name_dist Riders");
         $crud->setTable('roster');
         $crud->where('event_id', $local_event_id);
-        $crud->setPrimaryKey('rusa_id','rusa');
-        $crud->setRelation('rider_id', 'rusa', '{last_name}, {first_name}  #{rusa_id}');
 
-        // $crud->setRelation('event_id','event','{name} {distance}',null,'start_datetime');
-
-        $crud->columns(['rider_id','result','elapsed_time','comment']);
-        $crud->unsetEditFields(['rider_id','event_id','created','last_change']); 
-        $crud->unsetAddFields(['created','last_change']); 
+        if ($is_rusa) {
+            $crud->setPrimaryKey('rusa_id', 'rusa');
+            $crud->setRelation('rider_id', 'rusa', '{last_name}, {first_name}  #{rusa_id}');
+            $crud->columns(['rider_id', 'result', 'elapsed_time', 'comment']);
+        } else {
+            $crud->columns(['rider_id', 'first_name', 'last_name', 'result', 'elapsed_time', 'comment']);
+        }
+            
+        $crud->unsetEditFields(['rider_id','event_id', 'created', 'last_change']);
+        $crud->unsetAddFields(['created', 'last_change']);
         $crud->callbackAddField('event_id', function ($fieldType, $fieldName) use ($event) {
             $local_event_id = $event['id'];
             $name_dist = $event['name'] . ' ' . $event['distance'];
             return "$name_dist<input name='$fieldName' type='hidden' value='$local_event_id'>";
         });
 
-        $crud->displayAs('rider_id','Rider');
-        $crud->displayAs('elapsed_time','Elapsed Time (HH:MM:SS)');
+        // $crud->displayAs('rider_id', 'Rider');
+        $crud->displayAs('elapsed_time', 'Elapsed Time (HH:MM:SS)');
 
         $crud->setRule('elapsed_time', 'ElapsedTime', 'permit_empty|regex_match[/\d{1,2}:\d{2}(|:\d{2})/]');
 
@@ -92,17 +96,11 @@ class RosterCrud extends BaseController
 
         $crud->setAdd();
         $crud->setRead();
- 
+
         $output = $crud->render();
 
         $this->viewData = array_merge((array)$output, $this->viewData);
 
         return $this->load_view(['echo_output']);
     }
-
-
-
-
-
-
 }

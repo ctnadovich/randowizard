@@ -521,10 +521,16 @@ class EventProcessor extends BaseController
 	{
 
 		$local_event_id = $edata['local_event_id'];
+		$club_acp_code = $edata['club_acp_code'];
+
+		$is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
 
 		$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
 		$roster_table = "<TABLE CLASS='w3-table-all w3-centered'>";
-		$roster_table .= "<TR class='w3-dark-gray'><TH>Rider</TH><TH>Address</TH><TH>ID Number</TH><TH>Status</TH></TR>";
+
+		$roster_table .= "<TR class='w3-dark-gray'><TH>Rider</TH>";
+		$roster_table .= $is_rusa ? "<TH>Address</TH>" : ""; // <TH>ID Number</TH><TH>Status</TH></TR>";
+		$roster_table .= "<TH>ID Number</TH><TH>Status</TH></TR>";
 
 
 		foreach ($registeredRiders as $rider) {
@@ -532,21 +538,28 @@ class EventProcessor extends BaseController
 			$rider_id = $rider['rider_id'];
 			// Assume $rider_id = $rusa_id; // assumption
 
-			// lets hope rusa.org sanitizes rider id parameters
-			$rider_id_txt = "<A HREF='https://rusa.org/cgi-bin/membersearch_PF.pl?mid=$rider_id'>$rider_id</A>";
+			if ($is_rusa) {
+				// lets hope rusa.org sanitizes rider id parameters
+				$rider_id_txt = "<A HREF='https://rusa.org/cgi-bin/membersearch_PF.pl?mid=$rider_id'>$rider_id</A>";
 
-			$m = $this->rusaModel->get_member($rider_id);
-			if (empty($m)) {
-				$first_last = "NON RUSA";
+				$m = $this->rusaModel->get_member($rider_id);
+				if (empty($m)) {
+					$first_last = "NON RUSA";
+				} else {
+					$first_last = $m['first_name']  . ' ' . $m['last_name'];
+				}
 			} else {
-				$first_last = $m['first_name']  . ' ' . $m['last_name'];
+				$m = [];
+				$rider_id_txt = $rider_id;
+				$first_last = $rider['first_name'] . ' ' . $rider['last_name'];
 			}
 
 			$city = $m['city'] ?? '';
 			$state = $m['state'] ?? '';
 			$city_state = (!empty($city) && !empty($state)) ? "$city, $state" : "$city$state";
 			$country = $m['country'] ?? '';
-			$address = (!empty($country) && $country != 'US') ? "$city_state ($country)" : $city_state;
+			$address_rusa = (!empty($country) && $country != 'US') ? "$city_state ($country)" : $city_state;
+			$address = $is_rusa ? $address_rusa : "";
 
 			$r = $this->rosterModel->get_record($local_event_id, $rider_id);
 
@@ -572,7 +585,9 @@ class EventProcessor extends BaseController
 			$rider_highlight = "";
 
 
-			$roster_table .= "<TR><TD>$first_last</TD><TD>$address</TD><TD>$rider_id_txt</TD><TD>$rider_status</TD></TR>";
+			$roster_table .= "<TR><TD>$first_last</TD>";
+			$roster_table .= $is_rusa?"<TD>$address</TD>":"";
+			$roster_table .= "<TD>$rider_id_txt</TD><TD>$rider_status</TD></TR>";
 		}
 		$roster_table .= "</TABLE>";
 		return $roster_table;
@@ -581,8 +596,6 @@ class EventProcessor extends BaseController
 
 	protected function make_checkin_table($edata)
 	{
-
-
 		$checkin_table = "<TABLE CLASS='w3-table-all w3-centered'>";
 
 		$gravel_distance = $edata['gravel_distance'];
@@ -597,10 +610,9 @@ class EventProcessor extends BaseController
 		$event_code = $edata['event_code'];
 		$epp_secret = $edata['epp_secret'];
 
+		$is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
 
 		$reclass = $this->unitsLibrary;
-
-
 
 		$is_untimed = [];
 		$headlist = [];
@@ -637,7 +649,6 @@ class EventProcessor extends BaseController
 
 		$headlist = $this->flipDiagonally($headlist);
 
-
 		foreach ($headlist as $key => $row) {
 			if ($key == 'name') {
 				for ($i = 0; $i < $controle_num; $i++)
@@ -657,146 +668,152 @@ class EventProcessor extends BaseController
 		$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['close'] . "<TH></TH></TR>";
 
 
-		$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
+		if ($is_rusa) {
+			$registeredRiders = $this->rosterModel->registered_rusa_riders($local_event_id);
+		} else {
+			$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
+		}
 
 
-			foreach ($registeredRiders as $rider) {
+		foreach ($registeredRiders as $rider) {
 
+			$rider_id = $rider['rider_id'];
+			// Assume $rider_id = $rusa_id; // assumption
 
-
-
-				$rider_id = $rider['rider_id'];
-				// Assume $rider_id = $rusa_id; // assumption
-
-
+			if ($is_rusa) {
 				$m = $this->rusaModel->get_member($rider_id);
 				if (empty($m)) {
 					$first_last = "NON RUSA";
 				} else {
 					$first_last = $m['first_name']  . ' ' . $m['last_name'];
 				}
-				$rider = "$first_last ($rider_id)";
-
-
-				$r = $this->rosterModel->get_record($local_event_id, $rider_id);
-
-				if (empty($r)) { // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
-					$r['result'] = 'NOT IN ROSTER';
-				}
-
-				$rider_highlight = "";
-
-				switch ($r['result']) {
-					case 'finish':
-						$elapsed_array = explode(':', $r['elapsed_time'], 3);
-						if (count($elapsed_array) == 3) {
-							list($hh, $mm, $ss) = $elapsed_array;
-							$elapsed_hhmm =  "$hh$mm";
-							$global_event_id = $event_code;
-							$d = compact('elapsed_hhmm', 'global_event_id', 'rider_id');
-							$finish_code = $this->cryptoLibrary->make_finish_code($d, $epp_secret);
-
-							$finish_text = $hh .  "h&nbsp;" . $mm . "m";
-
-							if ($this->isAdmin($club_acp_code)) {
-								$finish_text .= "<br>($finish_code)";
-							}
-						} else {
-							$finish_text = "RBA Review";
-						}
-						break;
-					default:
-						$finish_text = strtoupper($r['result']);
-						break;
-				}
-
-
-
-				$checklist = [];
-				$has_no_checkins = true;
-				for ($i = 0; $i < $ncontroles; $i++) {
-					$open = $controles[$i]['open'];
-					$close = $controles[$i]['close'];
-					$open_datetime = (new \DateTime($open))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
-					$close_datetime = (new \DateTime($close))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
-
-					$control_index = $i;
-					$d = compact('control_index', 'event_code', 'rider_id');
-					$checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
-
-
-					$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $edata['event_timezone_name']);
-					if (empty($c)) {
-						if ($this->isAdmin($club_acp_code)) {
-							$checklist[] = "<span title='$checkin_code'>-</span>";
-						} else {
-							$checklist[] = '-';
-						}
-					} else {
-
-						$has_no_checkins = false;
-
-						$checkin_time = $c['checkin_time'];  // a DateTime object
-						$comment = $c['comment'] ?? '';
-						if (false !== strpos(strtolower($comment), 'automatic check in')) $comment = '';
-
-
-						$el = "";
-						if ($c['preride']) {
-							$el = "<br><span class='green italic sans smaller'>Preride</span>";
-						} elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
-							$cit_str = $checkin_time->format('H:i');
-							$open_str = $close_datetime->format('H:i');
-							$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
-						} elseif ($checkin_time > $close_datetime && !$is_untimed[$i]) {
-							$cit_str = $checkin_time->format('H:i');
-							$close_str = $close_datetime->format('H:i');
-							$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";
-						}
-		
-						// $control_index = $i;
-						// $d = compact('control_index', 'event_code', 'rider_id');
-						// $checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
-
-						// if ($this->isAdmin($club_acp_code)) {
-						// 	$el .= "&nbsp; <i title='$checkin_code' class='fa fa-check-circle' style='color: #355681;'></i>";
-						// }
-
-						// && false===strpos(strtolower($comment), 'automatic check in')
-						if (!empty($comment)) {
-
-							// $el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='speech-bubble''>". wordwrap($comment, 20, '<br>', true) . "</div>";
-							$el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='w3-container w3-border w3-light-grey w3-round-large'>" . wordwrap($comment, 20, '<br>', true) . "</div>";
-
-							// $el .= "<br><div style='width: 70%; margin: auto; font-size: .62em; font-weight: bold; font-style: italic; background-color: #E0E0FF; border-radius: .66em; font-family: Arial, Helvetica, sans-serif;'>". wordwrap($comment, 20, '<br>', true) . "</div>";
-
-							// $el .= "&nbsp; <i title='$comment' class='fa fa-comment' style='color: #355681;'></i>";
-						}
-
-						$checkin_time_str = $checkin_time->format('H:i');
-
-						if ($this->isAdmin($club_acp_code)) {
-							$checkin_time_str = "<span title='$checkin_code'>$checkin_time_str</span>";
-						}
-
-						$checklist[] = $checkin_time_str . $el;
-					}
-				}
-
-	
-
-
-				if ($has_no_checkins) continue;
-
-
-				$checkins = implode('</TD><TD>', $checklist);
-
-
-
-				$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
+			} else {
+				$first_last = $rider['first_name'] . ' ' . $rider['last_name'];
 			}
 
-			$checkin_table .= "</TABLE>";
+
+			$rider = "$first_last ($rider_id)";
+
+
+			$r = $this->rosterModel->get_record($local_event_id, $rider_id);
+
+			if (empty($r)) { // $this->die_message('ERROR', "Rider ID=$rider_id seen in event=$local_event_id but not found in roster.");
+				$r['result'] = 'NOT IN ROSTER';
+			}
+
+			$rider_highlight = "";
+
+			switch ($r['result']) {
+				case 'finish':
+					$elapsed_array = explode(':', $r['elapsed_time'], 3);
+					if (count($elapsed_array) == 3) {
+						list($hh, $mm, $ss) = $elapsed_array;
+						$elapsed_hhmm =  "$hh$mm";
+						$global_event_id = $event_code;
+						$d = compact('elapsed_hhmm', 'global_event_id', 'rider_id');
+						$finish_code = $this->cryptoLibrary->make_finish_code($d, $epp_secret);
+
+						$finish_text = $hh .  "h&nbsp;" . $mm . "m";
+
+						if ($this->isAdmin($club_acp_code)) {
+							$finish_text .= "<br>($finish_code)";
+						}
+					} else {
+						$finish_text = "RBA Review";
+					}
+					break;
+				default:
+					$finish_text = strtoupper($r['result']);
+					break;
+			}
+
+
+
+			$checklist = [];
+			$has_no_checkins = true;
+			for ($i = 0; $i < $ncontroles; $i++) {
+				$open = $controles[$i]['open'];
+				$close = $controles[$i]['close'];
+				$open_datetime = (new \DateTime($open))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+				$close_datetime = (new \DateTime($close))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+
+				$control_index = $i;
+				$d = compact('control_index', 'event_code', 'rider_id');
+				$checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
+
+
+				$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $edata['event_timezone_name']);
+				if (empty($c)) {
+					if ($this->isAdmin($club_acp_code)) {
+						$checklist[] = "<span title='$checkin_code'>-</span>";
+					} else {
+						$checklist[] = '-';
+					}
+				} else {
+
+					$has_no_checkins = false;
+
+					$checkin_time = $c['checkin_time'];  // a DateTime object
+					$comment = $c['comment'] ?? '';
+					if (false !== strpos(strtolower($comment), 'automatic check in')) $comment = '';
+
+
+					$el = "";
+					if ($c['preride']) {
+						$el = "<br><span class='green italic sans smaller'>Preride</span>";
+					} elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
+						$cit_str = $checkin_time->format('H:i');
+						$open_str = $close_datetime->format('H:i');
+						$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
+					} elseif ($checkin_time > $close_datetime && !$is_untimed[$i]) {
+						$cit_str = $checkin_time->format('H:i');
+						$close_str = $close_datetime->format('H:i');
+						$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";
+					}
+
+					// $control_index = $i;
+					// $d = compact('control_index', 'event_code', 'rider_id');
+					// $checkin_code = $this->cryptoLibrary->make_checkin_code($d, $epp_secret);
+
+					// if ($this->isAdmin($club_acp_code)) {
+					// 	$el .= "&nbsp; <i title='$checkin_code' class='fa fa-check-circle' style='color: #355681;'></i>";
+					// }
+
+					// && false===strpos(strtolower($comment), 'automatic check in')
+					if (!empty($comment)) {
+
+						// $el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='speech-bubble''>". wordwrap($comment, 20, '<br>', true) . "</div>";
+						$el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='w3-container w3-border w3-light-grey w3-round-large'>" . wordwrap($comment, 20, '<br>', true) . "</div>";
+
+						// $el .= "<br><div style='width: 70%; margin: auto; font-size: .62em; font-weight: bold; font-style: italic; background-color: #E0E0FF; border-radius: .66em; font-family: Arial, Helvetica, sans-serif;'>". wordwrap($comment, 20, '<br>', true) . "</div>";
+
+						// $el .= "&nbsp; <i title='$comment' class='fa fa-comment' style='color: #355681;'></i>";
+					}
+
+					$checkin_time_str = $checkin_time->format('H:i');
+
+					if ($this->isAdmin($club_acp_code)) {
+						$checkin_time_str = "<span title='$checkin_code'>$checkin_time_str</span>";
+					}
+
+					$checklist[] = $checkin_time_str . $el;
+				}
+			}
+
+
+
+
+			if ($has_no_checkins) continue;
+
+
+			$checkins = implode('</TD><TD>', $checklist);
+
+
+
+			$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
+		}
+
+		$checkin_table .= "</TABLE>";
 
 
 

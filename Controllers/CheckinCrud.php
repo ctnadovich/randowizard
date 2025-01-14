@@ -47,7 +47,7 @@ class CheckinCrud extends BaseController
 
         $this->login_check();
 
-        extract ($this->eventModel->parseEventCode($event_code));
+        extract($this->eventModel->parseEventCode($event_code));
 
         $this->die_not_admin($club_acp_code);
 
@@ -56,34 +56,40 @@ class CheckinCrud extends BaseController
             throw new \Exception("NO SUCH EVENT $event_code");
         }
 
+        $club_acp_code = $event['region_id'];
+        $is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
+
         $name_dist = $this->eventModel->nameDist($event);
 
         $crud = new GroceryCrud();
         $crud->setSubject("$name_dist Checkin", "$name_dist Checkins");
         $crud->setTable('checkin');
-        $crud->setPrimaryKey('rusa_id','rusa');
-        $crud->setRelation('rider_id', 'rusa', '{last_name}, {first_name}  #{rusa_id}');
-        $crud->columns(['rider_id','control_number','time','created','preride','comment']);
+        if ($is_rusa) {
+            $crud->setPrimaryKey('rusa_id', 'rusa');
+            $crud->setRelation('rider_id', 'rusa', '{last_name}, {first_name}  #{rusa_id}');
+        } 
+            
+        $crud->columns(['rider_id', 'control_number', 'time', 'created', 'preride', 'comment']);
 
-        $crud->displayAs('time','Time (UTC)');
-        $crud->displayAs('created','Created (UTC)');
+        $crud->displayAs('time', 'Time (UTC)');
+        $crud->displayAs('created', 'Created (UTC)');
 
         $crud->where('event_id', $local_event_id);
 
         $crud->setRead();
         $crud->setClone();
-        $crud->callbackColumn('preride',fn($val,$row)=>($val?'PRERIDE':''));
-        $crud->unsetEditFields(['rider_id','event_id','created']); 
-        $crud->unsetAddFields(['created']); 
+        $crud->callbackColumn('preride', fn($val, $row) => ($val ? 'PRERIDE' : ''));
+        $crud->unsetEditFields(['rider_id', 'event_id', 'created']);
+        $crud->unsetAddFields(['created']);
         $crud->callbackAddField('event_id', function ($fieldType, $fieldName) use ($event) {
-            $local_event_id = $event['id'];
-            $name_dist = $event['name'] . ' ' . $event['distance'];
-            return "$name_dist<input name='$fieldName' type='hidden' value='$local_event_id'>";
+            $local_event_id = $event['event_id'];
+            $name_dist = $this->eventModel->nameDist($event);
+            return "$name_dist<input name='event_id' type='hidden' value='$local_event_id'>";
         });
 
-        $crud->displayAs('rider_id','Rider');
+        // $crud->displayAs('rider_id', 'Rider');
         $checkin_status_url = site_url("checkin_status/$event_code");
-        $this->viewData['navbar_suffix'] =<<<EOT
+        $this->viewData['navbar_suffix'] = <<<EOT
     <div class="w3-panel w3-pale-yellow">
     <p><i>
     NB: If you want to view/display rider checkins, please use the 
@@ -97,7 +103,5 @@ EOT;
         $this->viewData = array_merge((array)$output, $this->viewData);
 
         return $this->load_view(['echo_output']);
-
     }
-
 }

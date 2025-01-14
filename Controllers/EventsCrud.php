@@ -71,10 +71,10 @@ class EventsCrud extends BaseController
             // If GroceryCrud had orWhere this wouldn't be needed
             // Not sure if both _id and .id are really needed, but this works
 
-            $where_list = array_map(fn ($r) => "region_id = $r", $authorized_regions);
+            $where_list = array_map(fn($r) => "region_id = $r", $authorized_regions);
             $region_underscore_where_clause = '(' . implode(' OR ', $where_list) . ')';
 
-            $where_list = array_map(fn ($r) => "region.id = $r", $authorized_regions);
+            $where_list = array_map(fn($r) => "region.id = $r", $authorized_regions);
             $region_dot_where_clause = '(' . implode(' OR ', $where_list) . ')';
         }
 
@@ -257,23 +257,21 @@ EOT;
 <div class="w3-dropdown-content w3-bar-block w3-border">
 EOT;
 
-$drop_items = [
-    ["event_info/$event_code", "<i class='fa-solid fa-info-circle' style='color: blue;'></i> Event Info"],
-    ["roster_info/$event_code", "<i class='fas fa-users' style='color: blue;'></i> Roster"],
-    ["checkin_status/$event_code", "<i class='fas fa-list-check' style='color: blue;'></i> Check-ins"],
-];
+        $drop_items = [
+            ["event_info/$event_code", "<i class='fa-solid fa-info-circle' style='color: blue;'></i> Event Info"],
+            ["roster_info/$event_code", "<i class='fas fa-users' style='color: blue;'></i> Roster"],
+            ["checkin_status/$event_code", "<i class='fas fa-list-check' style='color: blue;'></i> Check-ins"],
+        ];
 
-foreach ($drop_items as $i) {
-    list($url, $desc) = $i;
-    $url = site_url($url);
-    $dropdown .=  "<A class='w3-bar-item w3-button' HREF='$url'>$desc</A>";
-}
-$dropdown .= "</div></div>";
-
-
-return $dropdown;
+        foreach ($drop_items as $i) {
+            list($url, $desc) = $i;
+            $url = site_url($url);
+            $dropdown .=  "<A class='w3-bar-item w3-button' HREF='$url'>$desc</A>";
+        }
+        $dropdown .= "</div></div>";
 
 
+        return $dropdown;
     }
 
 
@@ -297,7 +295,7 @@ EOT;
 
         $drop_items = [
             ["roster/$event_code", "<i class='fas fa-users' style='color: blue;'></i> Manage Roster"],
-            ["vet_roster/$event_code", "<i class='fas fa-users' style='color: blue;'></i> Check RUSA Membership"],
+            ["vet_roster/$event_code", "<i class='fas fa-users' style='color: blue;'></i> Check Rider Membership"],
             ["roster_upload/$event_code", "<i class='fas fa-upload' style='color: blue;'></i> Upload Roster"],
             ["checkin_manage/$event_code", "<i class='fas fa-check' style='color: blue;'></i> Raw Checkin Data"],
 
@@ -380,19 +378,26 @@ EOT;
     public function vet_roster($event_code)
     {
         $event = $this->eventModel->eventByCode($event_code);
+
+        $club_acp_code = $event['region_id'];
+        $is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
+
+        if (!$is_rusa) $this->die_message_notrace(__METHOD__, 
+           "I don't know how to check the membership of riders in region ACP $club_acp_code");
+
         $cutoff_datetime = $this->eventModel->getCutoffDatetime($event);
 
         extract($this->eventModel->parseEventCode($event_code));
-        $roster_in = $this->rosterModel->registered_riders($local_event_id);
+        $roster_in = $this->rosterModel->registered_rusa_riders($local_event_id);
         $n_riders = count($roster_in);
         $rusaModel = model('Rusa');
         $bad_riders = 0;
 
         $table_body = '';
         foreach ($roster_in as $r) {
-            $rusa_id = $r['rusa_id'];
-            $first_name = $r['first_name'];
-            $last_name = $r['last_name'];
+            $rusa_id = $r['rider_id'];
+            $first_name = $r['rusa_first_name'];
+            $last_name = $r['rusa_last_name'];
             $status = $rusaModel->rusa_status_at_date($rusa_id, $last_name, $cutoff_datetime);
             if (is_string($status)) { // Vetting failed
                 $table_body .= "<TR class='w3-red'><TD style='width: 25%'>$first_name $last_name</TD>";
@@ -475,6 +480,9 @@ EOT;
         $event_cutoff_datetime = $this->eventModel->getCutoffDatetime($event);
         $local_event_id = $event['event_id'];
 
+        $club_acp_code = $event['region_id'];
+        $is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
+
         try {
             $f = $uploadedFile->openFile();
             $roster_data = [];
@@ -496,7 +504,7 @@ EOT;
             // "ZIP" 
 
             $fnp = [
-                'rider_id' => '/.*(RUSA|rider[_ ]?id).*/i',
+                'rider_id' => '/.*(ID|RUSA|RIDER|MEMBER|NUMBER|ACP).*/i',
                 'first' => '/.*first.*/i',
                 'last' => '/.*last.*/i',
                 'address' => '/.*(address|street).*/i',
@@ -515,13 +523,18 @@ EOT;
 
 
             // Verify that required columns are present
-            if (false == array_key_exists('rider_id', $field_j)) $errors[] = "No Rider ID (RUSA) column.";
-            if (false == array_key_exists('last', $field_j)) $errors[] = "No Last Name (LAST) column.";
+            if (false == array_key_exists('rider_id', $field_j)) $errors[] = "No Rider ID (RIDERID) column.";
+            if ($is_rusa) {
+                if (false == array_key_exists('last', $field_j)) $errors[] = "No Last Name (LAST) column.";
+            }
             if (!empty($errors)) throw new \Exception("Can't continue.");
 
-            // RUSA Vetting will add the expiration field
-            $header[] = 'expires';
-            $header[] = 'checked_by';
+
+            if ($is_rusa) {
+                // RUSA Vetting will add the expiration field
+                $header[] = 'expires';
+                $header[] = 'checked_by';
+            }
 
 
             // Process each data row
@@ -553,17 +566,21 @@ EOT;
                     continue;
                 }
 
-                $rusa_result = $rusaModel->rusa_status_at_date($rider_id, $last, $event_cutoff_datetime);
+                if ($is_rusa) {
 
-                if (is_string($rusa_result)) {
-                    $errors[] = "Rider ID '$rider_id' (record: $line_number): $rusa_result";
-                    continue;
+                    $rusa_result = $rusaModel->rusa_status_at_date($rider_id, $last, $event_cutoff_datetime);
+
+                    if (is_string($rusa_result)) {
+                        $errors[] = "Rider ID '$rider_id' (record: $line_number): $rusa_result";
+                        continue;
+                    }
+
+                    // Rider is known good, add expires date, and save to roster
+
+                    $rider['expires'] = $rusa_result['rusa_expires_datetime']->format('Y-m-d');
+                    $rider['checked_by'] = $rusa_result['checked_by'];
                 }
 
-                // Rider is known good, add expires date, and save to roster
-
-                $rider['expires'] = $rusa_result['rusa_expires_datetime']->format('Y-m-d');
-                $rider['checked_by'] = $rusa_result['checked_by'];
                 $roster[$rider_id] = $rider;
             }
 
@@ -573,6 +590,8 @@ EOT;
             $errors[] = "Roster CSV Processing Exception: $message";
         }
 
+        // $errors[]= "Rider data: " . print_r($roster, true);
+
         if (empty($errors)) {
 
             // clear old roster
@@ -580,7 +599,12 @@ EOT;
 
             // write new roster
             foreach ($roster as $rider_id => $rider_data) {
-                $rc = $this->rosterModel->insert(['rider_id' => $rider_id, 'event_id' => $local_event_id], false);
+                $rc = $this->rosterModel->insert([
+                    'rider_id' => $rider_id,
+                    'event_id' => $local_event_id,
+                    'first_name' => $rider_data['first'],
+                    'last_name' => $rider_data['last']
+                ], false);
                 if ($rc === false) {
                     $errors[] = "Failed to save rider_id = $rider_id to roster. File upload incomplete.";
                     break;

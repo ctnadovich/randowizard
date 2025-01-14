@@ -1,10 +1,15 @@
 <h1>Event Roster Upload</h1>
 <h2><?= $event_name_dist ?></h2>
 
-<p>Please upload a CSV roster file for your event. An uploaded CSV clears any riders previously listed. The format is compatible with <a href=https://jkassen.org/cards>Card-O-Matic</a> and other systems. The CSV file must have a first-row header giving column names. Columns RUSA and LAST are required. Valid Columns (may be in any order) are:</p>
+<p>Please upload a CSV roster file for your event. An uploaded CSV clears any riders 
+    previously listed. The format is compatible 
+    with <a href=https://jkassen.org/cards>Card-O-Matic</a> and other systems. The 
+    CSV file must have a first-row header giving column names. Column RIDERID is required. Coulumn LAST 
+    is required if your region has membership vetting (eg Randonneurs USA / RUSA).  
+    Valid Columns (may be in any order) are:</p>
 <div class='w3-card w3-small w3-padding-small w3-light-gray' style="width: 50%;">
     <ul>
-        <li>"RUSA" or variations ("rusa number", etc)</li>
+        <li>"RIDERID" or variations ("rider id", "rusa", "rusa number", "member", "acp", etc)</li>
         <li>"FIRST" or variations ("firstname", "first name", etc)</li>
         <li>"LAST" or variations</li>
         <li>"ADDRESS" or "STREET" (multiples combined, eg address1, address2...)</li>

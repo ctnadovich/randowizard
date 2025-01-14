@@ -28,7 +28,7 @@ class Roster extends Model
     protected $table      = 'roster';
     protected $primaryKey = 'id';
     protected $returnType     = 'array';
-    protected $allowedFields = ['event_id','rider_id','result','elapsed_time','comment'];
+    protected $allowedFields = ['event_id','rider_id','first_name','last_name','result','elapsed_time','comment'];
 
     public function n_riders($local_event_id){
         $this->where([
@@ -41,9 +41,23 @@ class Roster extends Model
         $this->where([
             'event_id' => $local_event_id
         ]);
-        $this->join('rusa','rusa.rusa_id = roster.rider_id');
+        // $this->join('rusa','rusa.rusa_id = roster.rider_id');
         $this->orderBy('last_name');
         $this->orderBy('first_name');
+        return $this->findAll();
+    }
+
+    public function registered_rusa_riders($local_event_id){
+        $this->select('roster.*,
+        roster.first_name as roster_first_name, roster.last_name as roster_last_name,
+        rusa.first_name as rusa_first_name, rusa.last_name as rusa_last_name
+        ');
+        $this->where([
+            'event_id' => $local_event_id
+        ]);
+        $this->join('rusa','rusa.rusa_id = roster.rider_id');
+        $this->orderBy('rusa.last_name');
+        $this->orderBy('rusa.first_name');
         return $this->findAll();
     }
 
@@ -86,14 +100,14 @@ class Roster extends Model
     }
 
     public function get_rusa_results($local_event_id){
-		$sql="SELECT IF(rusa.rusa_id>0,rusa.rusa_id,'') as '#RUSA#',first_name as 'FirstName',last_name as 'LastName',
+		$sql="SELECT IF(rusa.rusa_id>0,rusa.rusa_id,'') as '#RUSA#',rusa.first_name as 'FirstName',rusa.last_name as 'LastName',
         HOUR(elapsed_time) as 'Hours', MINUTE(elapsed_time) as 'Minutes', 
         IF(result='FINISH',0,1) as 'DNF', 
         IF(country<>'US',1,0) as 'Foreign' FROM roster,rusa where 
         roster.rider_id=rusa.rusa_id AND
         roster.event_id='$local_event_id' AND 
         (result IS NULL OR (result<>'DNS' AND result<>'VOL'))
-        ORDER BY last_name,first_name";
+        ORDER BY rusa.last_name,rusa.first_name";
 		$q=$this->query($sql);
 		return $q->getResultArray();
 	}

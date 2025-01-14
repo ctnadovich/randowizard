@@ -69,6 +69,7 @@ class RosterInfo extends EventProcessor
 			$club_event_info_url = $edata['club_event_info_url'];
 			$title = "$event_name_dist";
 			$subject = $title;
+
 			
 			$roster_table = $this->make_roster_table($edata);
 

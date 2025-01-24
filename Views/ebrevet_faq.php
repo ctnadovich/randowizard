@@ -65,7 +65,7 @@
     the official time to enter your start code. Doing it early, say a half-hour before you start, this is OK.</p>
 
 <h3>Can I use eBrevet for a Pre-Ride?</h3>
-<p>Yes. eBrevet understands pre-rides. Within two weeks prior to the official event date, a 'PreRide' button will appear 
+<p>Yes. eBrevet understands pre-rides. Within two weeks prior to the official event date (but not in the last 24 hours), a 'PreRide' button will appear 
     next to the event. Press the Pre-Ride button if you want to do a preride. You then need to check into the first control.
     Do this when you are about to start riding. Checking into the first control on a pre-ride starts your 
     clock for the ride. <i>Don't forget to check in to the first control!</i> If you forget, you're pretty much screwed as 
@@ -74,7 +74,15 @@
 <h2>Troubleshooting</h2>
 
 <h3>Will eBrevet drain my battery?</h3>
-    No. eBrevet only needs to be activated at controls. It does not run in the background. eBrevet works even if your phone is in "Airplane" mode. You can turn your phone off or reboot it.
+   <p> No. eBrevet only needs to be activated at controls. It does not "track" you. 
+    It does not run in the background. eBrevet works even if your phone is in "Airplane" mode. 
+    You can turn your phone off or reboot it. </p>
+
+    <h3>Does eBrevet continuously use the GPS draining the battery</h3>
+    <p>No. Really. No. The GPS is only checked periodically, and only when you are looking at the control list page. 
+        It's updated every 30 seconds by default, but if you want faster or slower updates, there is a configuration
+        setting you can adjust.</p>
+    </p>
 
     <h3>Does eBrevet need cell service or Internet access?</h3>
     <p>The only time you absolutely need Internet access is before the event to allow the phone to download event details. After you have the latest version of the route/cues downloaded to the phone, internet access is optional. It's good to occasionally turn on
@@ -84,7 +92,15 @@
 
 <h3>The App says INVALID CODE when I enter my Start Code</h3>
 
-<p>Make sure you have the latest version of the app and the latest version of the events downloaded into the app. The most common reason a start-code isn't accepted by the app is because either the events cue sheet has changed recently and you need to download the latest event info. Either that, or the app is out of date. </p> 
+<p>There are three reasons for a start code to be incorrect. If you are getting an incorrect start code
+    error, check these three things:</p>
+    <ol><li>You have old event data in your phone. Hit the button to update the event data to the latest.</li>
+    <li>You mistyped the start code. Make sure you typed it correctly</li>
+    <li>You do not have your correct Rider ID (RUSA Nmuber or equiv) entered in your phone. Check settings and make 
+        sure your rider ID is correct.</li>
+    </ol>
+
+    </p> 
 
 <h3>My brevet card is for version 6 of the route, but my phone says version 7. Am I screwed?</h3>
 

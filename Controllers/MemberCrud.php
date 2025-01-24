@@ -101,7 +101,24 @@ class MemberCrud extends BaseController
 
         // Comma separated list of authorized regions to display in datagrid
         $crud->callbackColumn('Region', function ($value, $row) use ($authorized_regions) {
-            if ($this->isSuperuser()) return "All";
+            if ($this->isSuperuser()) 
+            { 
+                if($row->privilege == 'superuser') return 'All';
+                $uid = $row->id;
+                $rbaModel = model('Rba');
+
+                $authorized_regions = $rbaModel->getAuthorizedRegionObjects($uid);
+
+                // all the users authorized for all the regions THIS user is authorized for
+                $au_hash = [];
+                foreach ($authorized_regions as $r) {
+                    extract($r);
+                    $au = $rbaModel->getAuthorizedUsers($club_acp_code);
+                    foreach ($au as $u) {
+                        $au_hash[$u] = true;
+                    }
+                }
+            }
             if (empty($authorized_regions)) return "None";
             $ar_list = [];
             foreach ($authorized_regions as $r) {
@@ -113,6 +130,7 @@ class MemberCrud extends BaseController
 
 
         $crud->addFields(['first', 'last', 'email', 'password_hash', 'region']);
+        $crud->editFields(['first', 'last', 'password_hash']);
         $crud->fieldType('password_hash', 'password');
         $crud->displayAs('password_hash', 'Password');
 

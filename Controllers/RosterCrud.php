@@ -87,7 +87,13 @@ class RosterCrud extends BaseController
         $crud->setRule('elapsed_time', 'ElapsedTime', 'permit_empty|regex_match[/\d{1,2}:\d{2}(|:\d{2})/]');
 
 
-        $crud->callbackBeforeInsert(function ($stateParameters) use ($local_event_id) {
+        $crud->callbackBeforeInsert(function ($stateParameters) use ($local_event_id, $crud) {
+
+            $rider_id = $stateParameters->data['rider_id'];
+
+            if(empty($rider_id)){
+                return "false";
+            }
 
 
             $stateParameters->data['event_id'] = $local_event_id;

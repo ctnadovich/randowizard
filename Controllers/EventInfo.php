@@ -60,6 +60,9 @@ class EventInfo extends EventProcessor
             $route_url = $event['route_url'];
 
             $edata = $this->get_event_data($event);
+
+            $club_acp_code = $edata['club_acp_code'];
+            $is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
         } catch (\Exception $e) {
             $this->die_data_exception($e);
         }
@@ -98,18 +101,30 @@ class EventInfo extends EventProcessor
             if ($cutoff_interval->i == 1)  $dhm[] = $cutoff_interval->i . ' minute';
             $cutoff_interval_str = implode(', ', $dhm);
 
+            $start_lat = $start_control['lat'];
+            $start_long = $start_control['long'];
+
+
             $this->viewData = array_merge(
                 $this->viewData,
                 $this->sunrise_sunset(
                     $start_open_datetime,
                     $finish_close_datetime,
-                    $start_control['lat'],
-                    $start_control['long'],
+                    $start_lat,
+                    $start_long,
                     $eventTimezoneName
                 )
             );
 
-            $this->viewData = array_merge($this->viewData,  compact('cutoff_interval_str', 'cutoff_datetime_str'));
+            if ($is_rusa) {
+                $weather_url = 'https://forecast.weather.gov/MapClick.php?CityName=' .
+                    urlencode($edata['start_city']) . '&state=' . urlencode($edata['start_state']);
+            } else {
+                $weather_url = "https://www.metcheck.com/WEATHER/now_and_next.asp?location=$start_lat,$start_long&locationID=&lat=$start_lat&lon=$start_long";
+            }
+
+
+            $this->viewData = array_merge($this->viewData,  compact('weather_url', 'start_lat', 'start_long', 'cutoff_interval_str', 'cutoff_datetime_str'));
 
 
             $view_list = [];
@@ -190,21 +205,21 @@ class EventInfo extends EventProcessor
                 $controle_num = $i + 1;
 
 
-				$open_daytime_o = $route_controles[$i]['open'];
-				$open_daytime = clone $open_daytime_o;
-				$open_daytime->setTimezone($event_tz);
-				$open_str = $open_daytime->format('m-d H:i');
+                $open_daytime_o = $route_controles[$i]['open'];
+                $open_daytime = clone $open_daytime_o;
+                $open_daytime->setTimezone($event_tz);
+                $open_str = $open_daytime->format('m-d H:i');
 
-				$close_daytime_o = $route_controles[$i]['close'];
-				$close_daytime = clone $close_daytime_o;
-				$close_daytime->setTimezone($event_tz);
-				$close_str = $close_daytime->format('m-d H:i');
+                $close_daytime_o = $route_controles[$i]['close'];
+                $close_daytime = clone $close_daytime_o;
+                $close_daytime->setTimezone($event_tz);
+                $close_str = $close_daytime->format('m-d H:i');
 
 
                 //$open_str = $route_controles[$i]['open']->format('m-d H:i');
                 //$close_str = $route_controles[$i]['close']->format('m-d H:i');
                 $lat = $controls_extra[$i]['lat'] ?? 40;
-				$long = $controls_extra[$i]['long'] ?? -75;
+                $long = $controls_extra[$i]['long'] ?? -75;
                 $maplink = "<A HREF='https://maps.google.com/?q=$lat,$long'><i style='font-size: 1.4em;' class='fa-solid fa-map-location-dot'></i></A>";
 
 

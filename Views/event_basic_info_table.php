@@ -2,7 +2,8 @@
      <TR>
          <TD>Start Location</TD>
          <TD><?= $event_location ?> 
-         <A TITLE='Weather Info' HREF='https://forecast.weather.gov/MapClick.php?CityName=<?=urlencode($start_city)?>&state=<?=$start_state?>'><I class='fas fa-cloud-sun'></i></a>
+         <A TITLE='Weather Info'   
+           HREF='<?=$weather_url?>'><I class='fas fa-cloud-sun'></i></a>
         </TD>
      </TR>
      <TR>

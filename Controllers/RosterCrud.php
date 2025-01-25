@@ -43,8 +43,17 @@ class RosterCrud extends BaseController
         // $this->regionModel =  model('Event');
     }
 
+    private $no_rusa_check = false; 
+
+    public function roster_nocheck($event_code){
+       $this->no_rusa_check = true;
+       return $this->roster($event_code);
+    }
+
     public function roster($event_code)
     {
+
+        $no_rusa_check = false;
 
         $this->login_check();
 
@@ -58,7 +67,7 @@ class RosterCrud extends BaseController
         }
 
         $name_dist = $this->eventModel->nameDist($event);
-        $is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
+        $is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa') && !$this->no_rusa_check;
 
         $crud = new GroceryCrud();
         $crud->setSubject("$name_dist Rider", "$name_dist Riders");
@@ -72,8 +81,8 @@ class RosterCrud extends BaseController
         } else {
             $crud->columns(['rider_id', 'first_name', 'last_name', 'result', 'elapsed_time', 'comment']);
         }
-            
-        $crud->unsetEditFields(['rider_id','event_id', 'created', 'last_change']);
+
+        $crud->unsetEditFields(['rider_id', 'event_id', 'created', 'last_change']);
         $crud->unsetAddFields(['created', 'last_change']);
         $crud->callbackAddField('event_id', function ($fieldType, $fieldName) use ($event) {
             $local_event_id = $event['id'];
@@ -91,7 +100,7 @@ class RosterCrud extends BaseController
 
             $rider_id = $stateParameters->data['rider_id'];
 
-            if(empty($rider_id)){
+            if (empty($rider_id)) {
                 return "false";
             }
 
@@ -102,6 +111,21 @@ class RosterCrud extends BaseController
 
         $crud->setAdd();
         $crud->setRead();
+
+
+        if ($is_rusa) {
+
+            $nocheck_url = site_url("roster_nocheck/$event_code");
+
+            $this->viewData['navbar_suffix'] = <<<EOT
+        <div class="w3-panel w3-pale-yellow">
+        <p><i>
+        NB: Only riders picked from the RUSA membership may be selected. If you want to enter numeric
+        Rider ID numbers manually without the RUSA check, <A HREF='$nocheck_url'>click here</a>. 
+        </i></p></div>
+    EOT;
+        }
+
 
         $output = $crud->render();
 

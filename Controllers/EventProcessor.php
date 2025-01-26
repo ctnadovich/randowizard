@@ -111,6 +111,8 @@ class EventProcessor extends BaseController
 		if (empty($club)) {
 			throw new \Exception("Fatal Error in Event ID=$event_code: UNKNOWN CLUB");
 		}
+		$is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
+
 
 		// Try to get route data
 		$route_url = $event['route_url'];
@@ -368,9 +370,11 @@ class EventProcessor extends BaseController
 
 
 		$df_links = [];
+		$df_urls = [];
 		foreach ($route['route_datafile'] as $ext => $fn) {
 			$uc_ext = strtoupper($ext);
 			$base_fn = basename($fn);
+			$df_urls[] = $route['saved_route_url'][$ext];
 			$df_links[] = "<A TITLE='$uc_ext file download' HREF='" . $route['saved_route_url'][$ext] . "'>$uc_ext</A>";
 		}
 		$df_links_txt = implode(', ', $df_links);
@@ -417,6 +421,8 @@ class EventProcessor extends BaseController
 			'cue_version',
 			'cue_warnings',
 			'cues',
+			'df_links',
+			'df_urls',
 			'df_links_txt',
 			'difficulty',
 			'distance_km',
@@ -445,6 +451,7 @@ class EventProcessor extends BaseController
 			'gravel_distance',
 			'has_cuesheet',
 			'has_rwgps_route',
+			'is_rusa',
 			'last_download',
 			'last_event_change_datetime',
 			'last_event_change_str',
@@ -586,7 +593,7 @@ class EventProcessor extends BaseController
 
 
 			$roster_table .= "<TR><TD>$first_last</TD>";
-			$roster_table .= $is_rusa?"<TD>$address</TD>":"";
+			$roster_table .= $is_rusa ? "<TD>$address</TD>" : "";
 			$roster_table .= "<TD>$rider_id_txt</TD><TD>$rider_status</TD></TR>";
 		}
 		$roster_table .= "</TABLE>";
@@ -594,9 +601,13 @@ class EventProcessor extends BaseController
 	}
 
 
-	protected function make_checkin_table($edata)
+	protected function make_checkin_table($edata, $event_info_view = 'html')
 	{
-		$checkin_table = "<TABLE CLASS='w3-table-all w3-centered'>";
+		if ($event_info_view == 'json') {
+			$checkin_table = [];
+		} else {
+			$checkin_table = "<TABLE CLASS='w3-table-all w3-centered'>";
+		}
 
 		$gravel_distance = $edata['gravel_distance'];
 		$is_gravel = $gravel_distance > 0 ? true : false;
@@ -662,11 +673,14 @@ class EventProcessor extends BaseController
 				$head_row[$key] = '<TH></TH><TH>' . implode('</TH><TH>', $row) . '</TH>';
 			}
 		}
-		$checkin_table .= "<TR class='w3-dark-gray'>" . $head_row['number'] . "<TH>Final</TH></TR>";
-		$checkin_table .= "<TR class='w3-light-gray' style='font-size: 0.7em;'>" . $head_row['name'] . "<TH></TH></TR>";
-		$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['cd_mi'] . "<TH></TH></TR>";
-		$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['close'] . "<TH></TH></TR>";
 
+		if ($event_info_view != 'json') {
+
+			$checkin_table .= "<TR class='w3-dark-gray'>" . $head_row['number'] . "<TH>Final</TH></TR>";
+			$checkin_table .= "<TR class='w3-light-gray' style='font-size: 0.7em;'>" . $head_row['name'] . "<TH></TH></TR>";
+			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['cd_mi'] . "<TH></TH></TR>";
+			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['close'] . "<TH></TH></TR>";
+		}
 
 		if ($is_rusa) {
 			$registeredRiders = $this->rosterModel->registered_rusa_riders($local_event_id);
@@ -683,16 +697,16 @@ class EventProcessor extends BaseController
 			if ($is_rusa) {
 				$m = $this->rusaModel->get_member($rider_id);
 				if (empty($m)) {
-					$first_last = "NON RUSA";
+					$rider_name = "NON RUSA";
 				} else {
-					$first_last = $m['first_name']  . ' ' . $m['last_name'];
+					$rider_name = $m['first_name']  . ' ' . $m['last_name'];
 				}
 			} else {
-				$first_last = $rider['first_name'] . ' ' . $rider['last_name'];
+				$rider_name = $rider['first_name'] . ' ' . $rider['last_name'];
 			}
 
 
-			$rider = "$first_last ($rider_id)";
+			$rider = "$rider_name ($rider_id)";
 
 
 			$r = $this->rosterModel->get_record($local_event_id, $rider_id);
@@ -703,9 +717,12 @@ class EventProcessor extends BaseController
 
 			$rider_highlight = "";
 
-			switch ($r['result']) {
+			$result = $r['result'];
+			$elapsed_time = $r['elapsed_time'];
+
+			switch ($result) {
 				case 'finish':
-					$elapsed_array = explode(':', $r['elapsed_time'], 3);
+					$elapsed_array = explode(':', $elapsed_time, 3);
 					if (count($elapsed_array) == 3) {
 						list($hh, $mm, $ss) = $elapsed_array;
 						$elapsed_hhmm =  "$hh$mm";
@@ -745,9 +762,9 @@ class EventProcessor extends BaseController
 				$c = $this->checkinModel->get_checkin($local_event_id, $rider_id, $i, $edata['event_timezone_name']);
 				if (empty($c)) {
 					if ($this->isAdmin($club_acp_code)) {
-						$checklist[] = "<span title='$checkin_code'>-</span>";
+						$checklist[] = ($event_info_view == 'json') ? null : "<span title='$checkin_code'>-</span>";
 					} else {
-						$checklist[] = '-';
+						$checklist[] = ($event_info_view == 'json') ? null : '-';
 					}
 				} else {
 
@@ -759,16 +776,21 @@ class EventProcessor extends BaseController
 
 
 					$el = "";
-					if ($c['preride']) {
+					$is_prerideq = $c['preride'] == true;
+					$is_earlyq = false;
+					$is_lateq = false;
+					if ($is_prerideq) {
 						$el = "<br><span class='green italic sans smaller'>Preride</span>";
 					} elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
 						$cit_str = $checkin_time->format('H:i');
 						$open_str = $close_datetime->format('H:i');
 						$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
+						$is_earlyq = true;
 					} elseif ($checkin_time > $close_datetime && !$is_untimed[$i]) {
 						$cit_str = $checkin_time->format('H:i');
 						$close_str = $close_datetime->format('H:i');
 						$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";
+						$is_lateq = true;
 					}
 
 					// $control_index = $i;
@@ -796,27 +818,30 @@ class EventProcessor extends BaseController
 						$checkin_time_str = "<span title='$checkin_code'>$checkin_time_str</span>";
 					}
 
-					$checklist[] = $checkin_time_str . $el;
+					if ($event_info_view == 'json') {
+						$checkin_datetime = $checkin_time->format('c');
+						$checklist[] = compact('checkin_datetime', 'is_earlyq', 'is_lateq', 'is_prerideq');
+					} else {
+						$checklist[] = $checkin_time_str . $el;
+					}
 				}
 			}
 
 
 
 
-			if ($has_no_checkins) continue;
+			if ($event_info_view != 'json' && $has_no_checkins) continue;
 
 
-			$checkins = implode('</TD><TD>', $checklist);
-
-
-
-			$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
+			if ($event_info_view == 'json') {
+				$checkin_table[] = compact('rider_name', 'rider_id', 'checklist', 'result', 'elapsed_time');
+			} else {			
+				$checkins = implode('</TD><TD>', $checklist);
+				$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
+			}
 		}
 
-		$checkin_table .= "</TABLE>";
-
-
-
+		if ($event_info_view != 'json') $checkin_table .= "</TABLE>";
 
 		return $checkin_table;
 	}

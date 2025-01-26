@@ -79,7 +79,7 @@
             If you don't like the style of these pages, you can use the advanced 'style_html', 'header_html', and 'footer_html' fields
             in the region settings to tune the styling of the pages to match your home website. Or, alternatively, fetch 
             the <b>JSON Complete Info</b> for your event and 
-            construct your page from this data.  The complete JSON info includes event info, roster, and checkins all in one JSON object. 
+            construct your page from this data.  The complete JSON info includes event info, roster, control details, and checkins all in one JSON object. 
         </li>
         <li><B>CONGRATULATIONS: </B>You've published your event and route data with randonneuring.org and you may
             now offer eBrevet EPP for your events.

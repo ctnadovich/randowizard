@@ -46,7 +46,7 @@ class CheckinStatus extends EventProcessor
 	// EVENT CHECKIN STATUS
 	//
 
-	public function checkin_status($event_code = null)
+	public function checkin_status($event_code = null, $view = 'html')
 	{
 
 		try {
@@ -78,20 +78,26 @@ class CheckinStatus extends EventProcessor
 			$title = "$event_name_dist";
 			$subject = $title;
 
-			$checkin_table = $this->make_checkin_table($edata);
 
-			$view_data = compact(
-				'title',
-				'subject',
-				'checkin_table',
-				'icon_url',
-				'club_name',
-				'event_code',
-				'website_url'
-			);
+			if ($view == 'json') {
+				$checkin_table = $this->make_checkin_table($edata,'json');
+                $this->emit_json($checkin_table);
+				return "";
+			} else {
+				$checkin_table = $this->make_checkin_table($edata);
+				$view_data = compact(
+					'title',
+					'subject',
+					'checkin_table',
+					'icon_url',
+					'club_name',
+					'event_code',
+					'website_url'
+				);
 
-			$this->viewData = array_merge($this->viewData, $view_data);
-			return $this->load_view(['checkin_status'], $club_acp_code);
+				$this->viewData = array_merge($this->viewData, $view_data);
+				return $this->load_view(['checkin_status'], $club_acp_code);
+			}
 		} catch (\Exception $e) {
 			$this->die_exception($e);
 		}

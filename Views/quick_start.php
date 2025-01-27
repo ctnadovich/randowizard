@@ -66,20 +66,20 @@
             <ul>
                 <li><b>Past and Future Events for your region: </b> https://randonneuring.org/regional_events/<code>&LT;ACP CLUB CODE&GT;</code></li>
                 <li><b>Future Events JSON format: </b> https://randonneuring.org/ebrevet/future_events/<code>&LT;ACP CLUB CODE&GT;</code></li>
-                <li><b><i class="fa-solid fa-circle-info"></i> Info about a specific event: </b> https://randonneuring.org/event_info/<code>&LT;EVENT CODE&GT;</code></li>
+                <li><b><i class="fa-solid fa-circle-info"></i> All info about a specific event: </b> https://randonneuring.org/event_info/<code>&LT;EVENT CODE&GT;</code></li>
+                <li><b><i class="fa-solid fa-circle-info"></i> All info about a specific event (JSON): </b> https://randonneuring.org/event_info/<code>&LT;EVENT CODE&GT;</code>/json</li>
                 <li><b><i class="fa-solid fa-users"></i> Rider roster and results: </b> https://randonneuring.org/roster_info/<code>&LT;EVENT CODE&GT;</code>
                 <li><b><i class="fa-solid fa-list-check"></i> Control check ins: </b> https://randonneuring.org/checkin_status/<code>&LT;EVENT CODE&GT;</code>
-                <li><b>JSON Complete Info: </b> https://randonneuring.org/event_info/<code>&LT;EVENT CODE&GT;</code>/json</li>
-
-                </li>
-            </ul>
-            where the <code>&LT;EVENT CODE&GT;</code> is the unique identifying code for the event that combines
-            your ACP Club Code with an event ID number (eg 905106-123). These event codes
-            can be seen listed in the event manager and elsewhere on randonneuring.org.
-            If you don't like the style of these pages, you can use the advanced 'style_html', 'header_html', and 'footer_html' fields
-            in the region settings to tune the styling of the pages to match your home website. Or, alternatively, fetch 
-            the <b>JSON Complete Info</b> for your event and 
-            construct your page from this data.  The complete JSON info includes event info, roster, control details, and checkins all in one JSON object. 
+                <li><b><i class="fa-solid fa-list-check"></i> Control check ins (JSON): </b> https://randonneuring.org/checkin_status/<code>&LT;EVENT CODE&GT;</code>/json</li>
+        </li>
+        </ul>
+        where the <code>&LT;EVENT CODE&GT;</code> is the unique identifying code for the event that combines
+        your ACP Club Code with an event ID number (eg 905106-123). These event codes
+        can be seen listed in the event manager and elsewhere on randonneuring.org.
+        If you don't like the style of these pages, you can use the advanced 'style_html', 'header_html', and 'footer_html' fields
+        in the region settings to tune the styling of the pages to match your home website. Or, alternatively, fetch
+        the <code>event_info/&LT;EVENT CODE&GT;/json</code> for your event and
+        construct your page from this data. The complete JSON info includes event info, roster, control details, and checkins all in one JSON object.
         </li>
         <li><B>CONGRATULATIONS: </B>You've published your event and route data with randonneuring.org and you may
             now offer eBrevet EPP for your events.

@@ -49,9 +49,11 @@ class EventInfo extends EventProcessor
     //
 
 
+    public function checkin_data($event_code = null){
+        return $this->event_info($event_code, 'json', 'checkins');
+    }
 
-
-    public function event_info($event_code = null, $event_info_view = 'html')
+    public function event_info($event_code = null, $event_info_view = 'html', $filter = 'all')
     {
 
         try {
@@ -177,12 +179,22 @@ class EventInfo extends EventProcessor
 
             if ($event_info_view == 'json') {
 
+
+                switch($filter){
+                    case 'checkins': 
+                        $info_list = ['checkin_info'];
+                        break;
+
+                    default: 
+                        $info_list = ['event_info', 'route_info', 'control_info','checkin_info'];
+                        break;
+                }
                 $event_info = $event_basic_info_data;
                 $route_info = $event_gps_nav_data;
                 $control_info = $this->make_controles_table('json');
                 $checkin_info = $this->make_checkin_table($edata,'json');
 
-                $this->emit_json(compact('event_info', 'route_info', 'control_info','checkin_info'));
+                $this->emit_json(compact($info_list));
 
                 return null;
 

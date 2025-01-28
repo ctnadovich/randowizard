@@ -717,11 +717,11 @@ class EventProcessor extends BaseController
 
 			$rider_highlight = "";
 
-			$result = $r['result'];
+			$result = strtoupper($r['result']);
 			$elapsed_time = $r['elapsed_time'];
 
 			switch ($result) {
-				case 'finish':
+				case 'FINISH':
 					$elapsed_array = explode(':', $elapsed_time, 3);
 					if (count($elapsed_array) == 3) {
 						list($hh, $mm, $ss) = $elapsed_array;
@@ -740,7 +740,7 @@ class EventProcessor extends BaseController
 					}
 					break;
 				default:
-					$finish_text = strtoupper($r['result']);
+					$finish_text = $result;
 					break;
 			}
 

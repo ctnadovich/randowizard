@@ -52,6 +52,8 @@ class EventLister extends EventProcessor
 		$this->club_acp_code = $club_acp_code;
 		if ($nonce === null) {
 			$this->nonce = $nonce = 'nonoce';
+		}else{
+			$this->nonce = $nonce;
 		}
 
 		$event_errors = [];
@@ -119,7 +121,7 @@ class EventLister extends EventProcessor
 
 		$minimum_app_version = $this->minimum_app_version;
 
-		$signature = $this->make_signature($event_list,$club_acp_code,$nonce,$secret);  // are these parms ignored?
+		$signature = $this->make_signature($event_list); // ,$club_acp_code,$nonce,$secret);  // are these parms ignored?
 
 		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
 	}

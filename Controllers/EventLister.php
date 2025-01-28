@@ -119,7 +119,7 @@ class EventLister extends EventProcessor
 
 		$minimum_app_version = $this->minimum_app_version;
 
-		$signature = $this->make_signature($event_list,$club_acp_code,$nonce,$secret);
+		$signature = $this->make_signature($event_list,$club_acp_code,$nonce,$secret);  // are these parms ignored?
 
 		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
 	}
@@ -134,7 +134,7 @@ class EventLister extends EventProcessor
 
 	}
 
-	private function make_signature($event_list){
+	private function make_signature($event_list){  // missing parms?
 		$event_list_hash = hash('sha256', json_encode($event_list));
 		$minimum_app_version = $this->minimum_app_version;
 		$plaintext = $this->club_acp_code .'-' . $this->nonce . '-' . $this->minimum_app_version . '-' .

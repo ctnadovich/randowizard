@@ -339,15 +339,27 @@ EOT;
 			throw new \Exception("UNKNOWN CLUB");
 		}
 		$epp_secret = $club['epp_secret'];
+		$is_rusa = $event['is_rusa'];
 
 		foreach ($event['roster'] as $row) {
 
-			$full_name =  $row['last_name'] . ', ' . $row['first_name'];
+			$rider_id = $row['rider_id'];
 
-			$rusa_id = $row['rider_id'];
+			if ($is_rusa) {
+				$m = $this->rusaModel->get_member($rider_id);
+				if (empty($m)) {
+					$full_name = "NON RUSA";
+				} else {
+					$full_name = $m['first_name']  . ' ' . $m['last_name'];
+				}
+			} else {
+				$m = [];
+				$rider_id_txt = $rider_id;
+				$full_name = $row['first_name'] . ' ' . $row['last_name'];
+			}
 
 			$cryptoLibrary =  new \App\Libraries\Crypto();
-			$start_code = $cryptoLibrary->make_start_code($event, $rusa_id, $epp_secret);
+			$start_code = $cryptoLibrary->make_start_code($event, $rider_id, $epp_secret);
 			$dns = (!empty($row['result'])) ? $row['result'] : "";
 			if ($dns == "FINISH") $dns = "FINISH: " . $row['elapsed_time'];
 
@@ -363,7 +375,7 @@ EOT;
 			$roster_table_array[] = [
 				['text' => "$i"],
 				['text' => "$start_code", 'font' => 'largerprint'],
-				['text' => "$rusa_id", 'font' => 'largerprint'],
+				['text' => "$rider_id", 'font' => 'largerprint'],
 				['text' => "$full_name", 'align' => 'L', 'style' => 'fit'],
 				['text' => ""],
 				['text' => "$dns"]

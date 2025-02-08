@@ -284,7 +284,7 @@ class EventProcessor extends BaseController
 		$club_event_info_url = $event['info_url'];
 		$event_description = $event['description'] ?? '';
 
-		$roster = $this->rosterModel->registered_riders($local_event_id);
+		$roster = $this->rosterModel->registered_riders($local_event_id, $is_rusa);
 
 		if (empty($event['emergency_contact']) || empty($event['emergency_phone'])) {
 			$other_warnings[] = 'Missing emergency contact or emergency phone number.';
@@ -532,7 +532,7 @@ class EventProcessor extends BaseController
 
 		$is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
 
-		$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
+		$registeredRiders = $this->rosterModel->registered_riders($local_event_id, $is_rusa);
 		$roster_table = "<TABLE CLASS='w3-table-all w3-centered'>";
 
 		$roster_table .= "<TR class='w3-dark-gray'><TH>Rider</TH>";
@@ -544,6 +544,8 @@ class EventProcessor extends BaseController
 
 			$rider_id = $rider['rider_id'];
 			// Assume $rider_id = $rusa_id; // assumption
+
+			// Rider name comes from RUSA member table when $is_rusa true, otherwise from the roster table
 
 			if ($is_rusa) {
 				// lets hope rusa.org sanitizes rider id parameters
@@ -682,11 +684,9 @@ class EventProcessor extends BaseController
 			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['close'] . "<TH></TH></TR>";
 		}
 
-		if ($is_rusa) {
-			$registeredRiders = $this->rosterModel->registered_rusa_riders($local_event_id);
-		} else {
-			$registeredRiders = $this->rosterModel->registered_riders($local_event_id);
-		}
+		
+			$registeredRiders = $this->rosterModel->registered_riders($local_event_id, $is_rusa);
+	
 
 
 		foreach ($registeredRiders as $rider) {
@@ -694,16 +694,16 @@ class EventProcessor extends BaseController
 			$rider_id = $rider['rider_id'];
 			// Assume $rider_id = $rusa_id; // assumption
 
-			if ($is_rusa) {
-				$m = $this->rusaModel->get_member($rider_id);
-				if (empty($m)) {
-					$rider_name = "NON RUSA";
-				} else {
-					$rider_name = $m['first_name']  . ' ' . $m['last_name'];
-				}
-			} else {
+			// if ($is_rusa) {
+			// 	$m = $this->rusaModel->get_member($rider_id);
+			// 	if (empty($m)) {
+			// 		$rider_name = "NON RUSA";
+			// 	} else {
+			// 		$rider_name = $m['first_name']  . ' ' . $m['last_name'];
+			// 	}
+			// } else {
 				$rider_name = $rider['first_name'] . ' ' . $rider['last_name'];
-			}
+			// }
 
 
 			$rider = "$rider_name ($rider_id)";

@@ -37,20 +37,23 @@ class Roster extends Model
         return count($this->findAll());// $this->countAllResults();
     }
 
-    public function registered_riders($local_event_id){
+    public function registered_riders($local_event_id, $is_rusa = false){
+        
+        if($is_rusa) return $this->registered_rusa_riders($local_event_id);
+
         $this->where([
             'event_id' => $local_event_id
         ]);
-        // $this->join('rusa','rusa.rusa_id = roster.rider_id');
+
         $this->orderBy('last_name');
         $this->orderBy('first_name');
         return $this->findAll();
     }
 
-    public function registered_rusa_riders($local_event_id){
-        $this->select('roster.*,
+    private function registered_rusa_riders($local_event_id){
+        $this->select('roster.id, roster.event_id, roster.rider_id, roster.result, roster.elapsed_time, roster.comment, roster.created, roster.last_change,
         roster.first_name as roster_first_name, roster.last_name as roster_last_name,
-        rusa.first_name as rusa_first_name, rusa.last_name as rusa_last_name
+        rusa.first_name as first_name, rusa.last_name as last_name
         ');
         $this->where([
             'event_id' => $local_event_id

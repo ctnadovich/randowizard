@@ -388,7 +388,7 @@ EOT;
         $cutoff_datetime = $this->eventModel->getCutoffDatetime($event);
 
         extract($this->eventModel->parseEventCode($event_code));
-        $roster_in = $this->rosterModel->registered_rusa_riders($local_event_id);
+        $roster_in = $this->rosterModel->registered_riders($local_event_id, true);
         $n_riders = count($roster_in);
         $rusaModel = model('Rusa');
         $bad_riders = 0;
@@ -396,8 +396,8 @@ EOT;
         $table_body = '';
         foreach ($roster_in as $r) {
             $rusa_id = $r['rider_id'];
-            $first_name = $r['rusa_first_name'];
-            $last_name = $r['rusa_last_name'];
+            $first_name = $r['first_name'];
+            $last_name = $r['last_name'];
             $status = $rusaModel->rusa_status_at_date($rusa_id, $last_name, $cutoff_datetime);
             if (is_string($status)) { // Vetting failed
                 $table_body .= "<TR class='w3-red'><TD style='width: 25%'>$first_name $last_name</TD>";

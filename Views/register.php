@@ -1,10 +1,10 @@
 <!-- Register Prompt -->
 <div class="w3-container">
 
-    <div class="w3-panel w3-center w3-border w3-margin" >
+    <div class="w3-panel w3-center w3-border w3-margin">
         <h3>RBAs and Organizers</h3>
-        <p><em>Read the <A HREF='https://randonneuring.org/about/quick_start'>Quick Start Guide</a> or 
-        the <A HREF='https://randonneuring.org/about'>documentation</a>, then register to get started.</em></p>
+        <p><em>Read the <A HREF='https://randonneuring.org/about/quick_start'>Quick Start Guide</a> or
+                the <A HREF='https://randonneuring.org/about'>documentation</a>, then register to get started.</em></p>
         <p><button onclick="document.getElementById('register-card').style.display='block'" class="w3-button w3-black">Register
                 &raquo;</button></p>
     </div>
@@ -33,13 +33,39 @@
 
                     <h3>Region</h3>
 
+                    <h4>US Regions</h4>
+
                     <select required class="w3-select w3-padding" name="region" style="width:90%">
-                        <option value="">Choose your region</option>
+                        <option value="">Choose a US region</option>
+                        <?php
+
+                        usort($region_notz, function ($a, $b) {
+                            return $a['country_code'] <=> $b['country_code'] // First by country_code
+                                ?: $a['state_code'] <=> $b['state_code'] // Then by state_code
+                                ?: $a['region_name'] <=> $b['region_name']; // Finally by region_name
+                        });
+
+
+                        foreach ($region_notz as $r) {
+                            extract($r);
+                            if ($state_code == 'XX') continue;
+                            $selected = (empty($errors['region']) && $id == set_value('region')) ? 'selected' : '';
+                            echo "<option $selected value=$id>$state_code:$region_name</option>";
+                        }
+                        ?>
+                    </select>
+
+                    <h4>International Regions</h4>
+
+                    <select required class="w3-select w3-padding" name="intl_region" style="width:90%">
+                        <option value="">Choose a International region</option>
                         <?php
                         foreach ($region_notz as $r) {
                             extract($r);
+                            if ($state_code != 'XX') continue;
+
                             $selected = (empty($errors['region']) && $id == set_value('region')) ? 'selected' : '';
-                            echo "<option $selected value=$id>$state_code:$region_name</option>";
+                            echo "<option $selected value=$id>$country_code:$region_name</option>";
                         }
                         ?>
                     </select>
@@ -55,13 +81,13 @@
 
                     <div class='w3-container w3-center'>
                         <?php foreach ($vehicle_icon as $i => $v) : $vt = $vehicle_title[$i]; ?>
-                            <div title = '<?=$vt?>' class='w3-button w3-white w3-margin'>
+                            <div title='<?= $vt ?>' class='w3-button w3-white w3-margin'>
                                 <input type='checkbox' name='v[]' value='v<?= $i ?>'><span style='margin-left: 8px;'><i class='<?= $v ?> w3-purple w3-padding'></span></i>
-                        </div>
+                            </div>
                         <?php endforeach; ?>
-                             <div>Select all bicycles</div>
-                             <input type='hidden' name='is_bike' value='<?=implode(',',$is_bike)?>'>
-           </div>
+                        <div>Select all bicycles</div>
+                        <input type='hidden' name='is_bike' value='<?= implode(',', $is_bike) ?>'>
+                    </div>
 
                     <hr>
 

@@ -33,10 +33,8 @@
 
                     <h3>Region</h3>
 
-                    <h4>US Regions</h4>
-
-                    <select class="w3-select w3-padding" name="region" style="width:90%">
-                        <option value="">Choose a US region</option>
+                    <select required class="w3-select w3-padding" name="region" style="width:90%">
+                        <option value="">Choose your region</option>
                         <?php
 
                         usort($region_notz, function ($a, $b) {
@@ -48,24 +46,11 @@
 
                         foreach ($region_notz as $r) {
                             extract($r);
-                            if ($state_code == 'XX') continue;
                             $selected = (empty($errors['region']) && $id == set_value('region')) ? 'selected' : '';
-                            echo "<option $selected value=$id>$state_code:$region_name</option>";
-                        }
-                        ?>
-                    </select>
-
-                    <h4>International Regions</h4>
-
-                    <select class="w3-select w3-padding" name="intl_region" style="width:90%">
-                        <option value="">Choose a International region</option>
-                        <?php
-                        foreach ($region_notz as $r) {
-                            extract($r);
-                            if ($state_code != 'XX') continue;
-
-                            $selected = (empty($errors['region']) && $id == set_value('region')) ? 'selected' : '';
-                            echo "<option $selected value=$id>$country_code:$region_name</option>";
+                            if ($state_code != 'XX')  // US Regions
+                                echo "<option $selected value=$id>($country_code) $state_code:$region_name</option>";
+                            else
+                                echo "<option $selected value=$id>($country_code) $region_name</option>";
                         }
                         ?>
                     </select>

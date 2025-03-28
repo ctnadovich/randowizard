@@ -74,6 +74,21 @@ class Region extends Model
         }
     }
 
+    public function getClubNoTZ($club_acp_code)
+    {
+        $this->select('region.*, state.code as region_state_code, country.code as region_country_code');
+        $this->join('state', 'region.state_id=state.id');
+        $this->join('country', 'region.country_id=country.id');
+        $this->where('region.id', $club_acp_code);
+        $result = $this->first();
+
+        if (empty($result)) {
+            return null;
+        } else {
+            return $result;
+        }
+    }
+
     public function hasOption($club_acp_code,$option){
         $this->select('region.options');
         $this->where('region.id', $club_acp_code);

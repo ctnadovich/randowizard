@@ -36,7 +36,7 @@
                     <select required class="w3-select w3-padding" name="region" style="width:90%">
                         <option value="">Choose your region</option>
                         <?php
-                        foreach ($region as $r) {
+                        foreach ($region_notz as $r) {
                             extract($r);
                             $selected = (empty($errors['region']) && $id == set_value('region')) ? 'selected' : '';
                             echo "<option $selected value=$id>$state_code:$region_name</option>";

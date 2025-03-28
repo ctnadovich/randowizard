@@ -39,6 +39,14 @@ class Region extends Model
         return $this->findAll();
     }
 
+    public function getRegionsNoTZ()
+    {
+        $this->select('region.*, region.id as club_acp_code, state.code as state_code, country.code as country_code');
+        $this->join('state', 'region.state_id=state.id');
+        $this->join('country', 'region.country_id=country.id');
+        return $this->findAll();
+    }
+
     public function getRegionsEbrevet()
     {
         $this->select('region.id as club_acp_code, region_name, state.fullname as state_name, club_name, website_url, icon_url, tz.name as event_timezone_name, 

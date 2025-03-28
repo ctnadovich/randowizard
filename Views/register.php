@@ -37,14 +37,14 @@
                         <option value="">Choose your region</option>
                         <?php
 
-                        usort($region_notz, function ($a, $b) {
+                        usort($region, function ($a, $b) {
                             return $a['country_code'] <=> $b['country_code'] // First by country_code
                                 ?: $a['state_code'] <=> $b['state_code'] // Then by state_code
                                 ?: $a['region_name'] <=> $b['region_name']; // Finally by region_name
                         });
 
 
-                        foreach ($region_notz as $r) {
+                        foreach ($region as $r) {
                             extract($r);
                             $selected = (empty($errors['region']) && $id == set_value('region')) ? 'selected' : '';
                             if ($state_code != 'XX')  // US Regions

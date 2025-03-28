@@ -44,7 +44,7 @@ class Home extends BaseController
         $this->eventModel = model('Event');
         $this->viewData['errors'] = [];
         $this->viewData['region'] = $this->regionModel->getRegions();
-        $this->viewData['region_notz'] = $this->regionModel->getRegionsNoTZ();
+        // $this->viewData['region_notz'] = $this->regionModel->getRegionsNoTZ();
     }
 
     public function home()

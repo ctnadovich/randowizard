@@ -51,14 +51,13 @@ class Event extends Model
         $sql =
             "SELECT event.id as event_id, event.*, region.*, 
             s1.code as start_state, s2.code as region_state,
-            tz.name as timezone_name
-            from event, region, state as s1, state as s2, tz
+            event_timezone_name as timezone_name
+            from event, region, state as s1, state as s2
             WHERE event.id = '$local_event_id' and
             region.id = '$club_acp_code' and 
             event.region_id=region.id and 
             s1.id=event.start_state_id and 
-            s2.id=region.state_id  and
-            tz.id=region.event_timezone_id
+            s2.id=region.state_id 
             order by region_state, region_name, start_datetime";
         $q = $this->query($sql);
         return $q->getRowArray();
@@ -70,12 +69,11 @@ class Event extends Model
         $sql =
             "SELECT event.id as event_id, event.*, region.*, 
             s1.code as start_state, s2.code as region_state,
-            tz.name as timezone_name
-            from event, region, state as s1, state as s2, tz
+            event_timezone_name as timezone_name
+            from event, region, state as s1, state as s2
             WHERE event.region_id=region.id and 
             s1.id=event.start_state_id and 
             s2.id=region.state_id  and
-            tz.id=region.event_timezone_id and
             event.region_id = " . $this->escape($club_acp_code) . "
             order by start_datetime";
         $q = $this->query($sql);

@@ -30,7 +30,7 @@ class Region extends Model
     protected $returnType     = 'array';
     protected $allowedFields = ['rba_user_id'];
 
-    public function getRegions()
+    public function getRegionsOld()
     {
         $this->select('region.*, region.id as club_acp_code, tz.name as event_timezone_name, state.code as state_code, country.code as country_code');
         $this->join('tz', 'region.event_timezone_id=tz.id');
@@ -39,14 +39,15 @@ class Region extends Model
         return $this->findAll();
     }
 
-/*     public function getRegionsNoTZ()
+    public function getRegions()
     {
         $this->select('region.*, region.id as club_acp_code, state.code as state_code, country.code as country_code');
         $this->join('state', 'region.state_id=state.id');
         $this->join('country', 'region.country_id=country.id');
         return $this->findAll();
     }
- */
+
+
     public function getRegionsEbrevet()
     {
         $this->select('region.id as club_acp_code, region_name, state.fullname as state_name, club_name, website_url, icon_url, tz.name as event_timezone_name, 
@@ -57,7 +58,7 @@ class Region extends Model
         return $this->findAll();
     }
 
-    public function getClub($club_acp_code)
+    public function getClubOld($club_acp_code)
     {
         $this->select('region.*, tz.name as event_timezone_name, state.code as region_state_code, country.code as region_country_code');
         $this->join('tz', 'region.event_timezone_id=tz.id');
@@ -74,7 +75,7 @@ class Region extends Model
         }
     }
 
-/*     public function getClubNoTZ($club_acp_code)
+    public function getClub($club_acp_code)
     {
         $this->select('region.*, state.code as region_state_code, country.code as region_country_code');
         $this->join('state', 'region.state_id=state.id');
@@ -85,9 +86,11 @@ class Region extends Model
         if (empty($result)) {
             return null;
         } else {
+            $result['event_timezone'] = new \DateTimeZone($result['event_timezone_name']);
             return $result;
         }
-    } */
+    }
+
 
     public function hasOption($club_acp_code,$option){
         $this->select('region.options');

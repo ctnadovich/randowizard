@@ -82,7 +82,7 @@
         construct your page from this data. The complete JSON info includes event info, roster, control details, and checkins all in one JSON object.
         </li>
         <li><B>CONGRATULATIONS: </B>You've published your event and route data with randonneuring.org and you may
-            now offer eBrevet EPP for your events.
+            now offer eBrevet at your events.
     </ol>
 
 </div>

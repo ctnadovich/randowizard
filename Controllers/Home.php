@@ -76,9 +76,9 @@ class Home extends BaseController
             }
 
 
+
             $rules = [
                 'region' => [
-                    "required",
                     "is_not_unique[region.id]",  // the region exists (redundant test below)
                     static function ($club_acp_code, $data, &$error, $field) {
                         $regionModel = model('Region');
@@ -98,6 +98,30 @@ class Home extends BaseController
                         return false;
                     },
                 ],
+
+
+                'intl_region' => [
+                    "is_not_unique[intl_region.id]",  // the region exists (redundant test below)
+                    static function ($club_acp_code, $data, &$error, $field) {
+                        $regionModel = model('Region');
+                        $rbaModel = model('Rba');
+                        $r = $regionModel->getClub($club_acp_code);
+                        if (empty($r))
+                            throw new \Exception("Unknown region ID ($club_acp_code). Registration failed.");
+                        // Only the first person to sign up to manage a region can do so unauthenticated. 
+                        if (false == $rbaModel->hasRBA($club_acp_code)) return true;
+                        // if (empty($r['rba_user_id'])) {
+                        //     return true;
+                        // }
+                        $region_text = $r['region_state_code'] . ':' . $r['region_name'];
+                        $error = "The region selected ($region_text) already has an organizer/rba 
+                        assigned. Please ask this previous organizer/rba to give you an invitation link so
+                        you can be added as an additional organizer for this region";
+                        return false;
+                    },
+                ],
+
+
                 'first'  => 'trim|required|alpha_space',
                 'last'  => 'trim|required|alpha_space',
                 'password'  => 'trim|required|min_length[8]',
@@ -121,6 +145,14 @@ class Home extends BaseController
                 array_keys($rules),
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             );
+
+            $rgn = $requestData['region'];
+            $irgn = $requestData['intl_region'];
+
+            if (empty($rgn) && empty($irgn) || !empty($rgn) && !empty($irgn) )
+            throw new \Exception("Please choose just a US or an International region.");
+
+
 
             if (!$validation->run($requestData)) {
                 $this->viewData['errors'] = $validation->getErrors();

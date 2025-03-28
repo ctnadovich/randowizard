@@ -35,7 +35,7 @@
 
                     <h4>US Regions</h4>
 
-                    <select required class="w3-select w3-padding" name="region" style="width:90%">
+                    <select class="w3-select w3-padding" name="region" style="width:90%">
                         <option value="">Choose a US region</option>
                         <?php
 
@@ -57,7 +57,7 @@
 
                     <h4>International Regions</h4>
 
-                    <select required class="w3-select w3-padding" name="intl_region" style="width:90%">
+                    <select class="w3-select w3-padding" name="intl_region" style="width:90%">
                         <option value="">Choose a International region</option>
                         <?php
                         foreach ($region_notz as $r) {

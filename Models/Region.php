@@ -46,9 +46,17 @@ class Region extends Model
         $this->join('country', 'region.country_id=country.id');
         return $this->findAll();
     }
-
-
     public function getRegionsEbrevet()
+    {
+        $this->select('region.id as club_acp_code, region_name, state.fullname as state_name, club_name, website_url, icon_url, event_timezone_name, 
+        state.code as state_code, country.code as country_code, options as options');
+        $this->join('state', 'region.state_id=state.id');
+        $this->join('country', 'region.country_id=country.id');
+        return $this->findAll();
+    }
+
+
+    public function getRegionsEbrevetOld()
     {
         $this->select('region.id as club_acp_code, region_name, state.fullname as state_name, club_name, website_url, icon_url, tz.name as event_timezone_name, 
         state.code as state_code, country.code as country_code, options as options');

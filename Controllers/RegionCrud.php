@@ -56,7 +56,7 @@ class RegionCrud extends BaseController
         $crud->setRelation('state_id', 'state', '{fullname}');
         $crud->setRelation('country_id', 'country', '{fullname}');
 
-        $crud->unsetEditFields(['epp_secret', 'id', 'state_code', 'state_id', 'country_id', 'region_name', 'club_name']);
+        $crud->unsetEditFields(['epp_secret', 'id', 'state_code', 'state_id', 'country_id', 'region_name']);
 
         if (false == $this->isSuperuser()) {
             $crud->unsetAdd();

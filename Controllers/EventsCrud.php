@@ -530,6 +530,7 @@ EOT;
             if (!empty($errors)) throw new \Exception("Can't continue.");
 
 
+
             if ($is_rusa) {
                 // RUSA Vetting will add the expiration field
                 $header[] = 'expires';
@@ -555,6 +556,10 @@ EOT;
                 }
 
                 extract($rider);
+
+                // In case these were missing
+                if(empty($first)) $rider['first']="";
+                if(empty($last)) $rider['last']="";
 
                 if (empty($rider_id) || !is_numeric($rider_id)) {
                     $errors[] = "Rider ID '$rider_id' (record: $line_number) is invalid.";

@@ -521,6 +521,9 @@ EOT;
             // Find all unique column names
             $field_j = array_flip($header);
 
+           // Accumulate a roster 
+            $roster = [];
+            $line_number = 0;
 
             // Verify that required columns are present
             if (false == array_key_exists('rider_id', $field_j)) $errors[] = "No Rider ID (RIDERID) column.";
@@ -529,8 +532,6 @@ EOT;
             }
             if (!empty($errors)) throw new \Exception("Can't continue.");
 
-
-
             if ($is_rusa) {
                 // RUSA Vetting will add the expiration field
                 $header[] = 'expires';
@@ -538,10 +539,7 @@ EOT;
             }
 
 
-            // Process each data row
-            $roster = [];
-            $line_number = 0;
-
+ 
             foreach ($roster_data as $r) {
                 $rider = [];
                 $line_number++;

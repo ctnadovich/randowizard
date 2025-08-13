@@ -85,7 +85,10 @@ class PostCheckin extends EventProcessor
 				throw new \Exception("UPDATE APP. SERVER NEEDS v{$this->minimum_app_version}");
 
 			$correct_signature = $this->make_signature($d, $club['epp_secret']);
-			if ($signature != $correct_signature) throw new \Exception('INVALID DATA');
+			if ($signature != $correct_signature){
+				 // $pt = "$timestamp-$event_code-$rider_id-???????";
+				 throw new \Exception("INVALID DATA: ");
+			}
 
 			if (0 == preg_match('/^(\d+)-(\d+)$/', $event_code, $m)) {
 				throw new \Exception('INVALID EVENT ID');

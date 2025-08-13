@@ -52,7 +52,7 @@ class EventLister extends EventProcessor
 		$this->club_acp_code = $club_acp_code;
 		if ($nonce === null) {
 			$this->nonce = $nonce = 'nonoce';
-		}else{
+		} else {
 			$this->nonce = $nonce;
 		}
 
@@ -121,25 +121,46 @@ class EventLister extends EventProcessor
 
 		$minimum_app_version = $this->minimum_app_version;
 
+		$event_list['nonce']=$this->nonce;
+		$event_list['club_acp_code']=$this->club_acp_code;
+
 		$signature = $this->make_signature($event_list); // ,$club_acp_code,$nonce,$secret);  // are these parms ignored?
 
 		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
 	}
 
-	private function die_json($message){
+	private function die_json($message)
+	{
 		$event_errors = [$message];
 		$event_list = [];
 		$minimum_app_version = $this->minimum_app_version;
 
 		$signature = $this->make_signature($event_list);
 		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
-
 	}
 
-	private function make_signature($event_list){  // missing parms?
+	private function sign_json($data, $secret)
+	{
+		// Encode JSON with no spaces to ensure consistency
+		$json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+		// Generate HMAC using SHA-256
+		$hmac = hash_hmac('sha256', $json, $secret, true); // true = raw binary output
+
+		// Return base64-encoded signature
+		return base64_encode($hmac);
+	}
+
+	private function make_signature($event_list)
+	{
+		return $this->sign_json($event_list, $this->secret);
+	}
+
+	private function make_signature_old($event_list)
+	{  // missing parms?
 		$event_list_hash = hash('sha256', json_encode($event_list));
 		$minimum_app_version = $this->minimum_app_version;
-		$plaintext = $this->club_acp_code .'-' . $this->nonce . '-' . $this->minimum_app_version . '-' .
+		$plaintext = $this->club_acp_code . '-' . $this->nonce . '-' . $this->minimum_app_version . '-' .
 			$event_list_hash . '-' . $this->secret;
 		return hash('sha256', $plaintext);
 	}

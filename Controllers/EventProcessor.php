@@ -820,7 +820,7 @@ class EventProcessor extends BaseController
 
 					if ($event_info_view == 'json') {
 						$checkin_datetime = $checkin_time->format('c');
-						$checklist[] = compact('checkin_datetime', 'is_earlyq', 'is_lateq', 'is_prerideq');
+						$checklist[] = compact('checkin_datetime', 'is_earlyq', 'is_lateq', 'is_prerideq','comment');
 					} else {
 						$checklist[] = $checkin_time_str . $el;
 					}

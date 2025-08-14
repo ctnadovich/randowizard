@@ -121,12 +121,11 @@ class EventLister extends EventProcessor
 
 		$minimum_app_version = $this->minimum_app_version;
 
-		$event_list['nonce']=$this->nonce;
-		$event_list['club_acp_code']=$this->club_acp_code;
+		$payload = compact('club_acp_code', 'nonce', 'minimum_app_version', 'event_list', 'event_errors');
+		$signature = $this->sign_json($payload, $this->secret); 
+		$payload['signature']=$signature;
 
-		$signature = $this->make_signature($event_list); // ,$club_acp_code,$nonce,$secret);  // are these parms ignored?
-
-		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
+		$this->emit_json($payload);
 	}
 
 	private function die_json($message)
@@ -134,9 +133,14 @@ class EventLister extends EventProcessor
 		$event_errors = [$message];
 		$event_list = [];
 		$minimum_app_version = $this->minimum_app_version;
+		$nonce = $this->nonce;
+		$club_acp_code = $this->club_acp_code;
 
-		$signature = $this->make_signature($event_list);
-		$this->emit_json(compact('minimum_app_version', 'event_list', 'event_errors', 'signature'));
+		$payload = compact('club_acp_code', 'nonce', 'minimum_app_version', 'event_list', 'event_errors');
+		$signature = $this->sign_json($payload, $this->secret); 
+		$payload['signature']=$signature;
+
+		$this->emit_json($payload);
 	}
 
 	private function sign_json($data, $secret)

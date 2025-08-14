@@ -338,6 +338,7 @@ class EventProcessor extends BaseController
 
 		$route_manager_url = site_url("route_manager/$event_code");
 		$event_info_url = site_url("event_info/$event_code");
+		$checkin_status_url = site_url("checkin_status/$event_code");
 
 		$download_note = 'Download Note';
 		$this_organization = $club_name = $club['club_name'];
@@ -437,6 +438,7 @@ class EventProcessor extends BaseController
 			'event_datetime',
 			'event_description',
 			'event_info_url',
+			'checkin_status_url',
 			'event_location',
 			'event_name_dist',
 			'event_name',
@@ -515,6 +517,7 @@ class EventProcessor extends BaseController
 			// 'club_website_url',
 			'checkin_post_url',
 			'event_info_url',
+			'checkin_status_url',
 			// 'event_tzname',
 			'organizer_name',
 			'organizer_phone',
@@ -684,9 +687,9 @@ class EventProcessor extends BaseController
 			$checkin_table .= "<TR class='w3-light-gray'>" . $head_row['close'] . "<TH></TH></TR>";
 		}
 
-		
-			$registeredRiders = $this->rosterModel->registered_riders($local_event_id, $is_rusa);
-	
+
+		$registeredRiders = $this->rosterModel->registered_riders($local_event_id, $is_rusa);
+
 
 
 		foreach ($registeredRiders as $rider) {
@@ -702,7 +705,7 @@ class EventProcessor extends BaseController
 			// 		$rider_name = $m['first_name']  . ' ' . $m['last_name'];
 			// 	}
 			// } else {
-				$rider_name = $rider['first_name'] . ' ' . $rider['last_name'];
+			$rider_name = $rider['first_name'] . ' ' . $rider['last_name'];
 			// }
 
 
@@ -820,7 +823,7 @@ class EventProcessor extends BaseController
 
 					if ($event_info_view == 'json') {
 						$checkin_datetime = $checkin_time->format('c');
-						$checklist[] = compact('checkin_datetime', 'is_earlyq', 'is_lateq', 'is_prerideq','comment');
+						$checklist[] = compact('checkin_datetime', 'is_earlyq', 'is_lateq', 'is_prerideq', 'comment');
 					} else {
 						$checklist[] = $checkin_time_str . $el;
 					}
@@ -835,7 +838,7 @@ class EventProcessor extends BaseController
 
 			if ($event_info_view == 'json') {
 				$checkin_table[] = compact('rider_name', 'rider_id', 'checklist', 'result', 'elapsed_time');
-			} else {			
+			} else {
 				$checkins = implode('</TD><TD>', $checklist);
 				$checkin_table .= "<TR><TD>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
 			}

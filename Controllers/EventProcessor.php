@@ -208,6 +208,7 @@ class EventProcessor extends BaseController
 
 		$controls = [];
 		$controls_extra = [];
+		$cutoff_datetime = null;
 		foreach ($route_controles as $cdata) {
 
 			$a = $cdata['attributes'];
@@ -263,8 +264,9 @@ class EventProcessor extends BaseController
 
 			];
 			$open_datetime = $openDatetime;
-			$close_datetime = $closeDatetime;
+			$cutoff_datetime = $close_datetime = $closeDatetime;  // final control close time
 			$controls_extra[] = compact('open_datetime', 'close_datetime', 'lat', 'long');
+
 		}
 
 		// More Event Data
@@ -422,6 +424,7 @@ class EventProcessor extends BaseController
 			'cue_version',
 			'cue_warnings',
 			'cues',
+			'cutoff_datetime',
 			'df_links',
 			'df_urls',
 			'df_links_txt',

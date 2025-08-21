@@ -48,6 +48,22 @@ class EventLister extends EventProcessor
 
 	public function json_future_events($club_acp_code = null, $nonce = null)
 	{
+		$this->json_list_events('future', $club_acp_code, $nonce);
+	}
+
+	public function json_past_events($club_acp_code = null, $nonce = null)
+	{
+		$this->json_list_events('past', $club_acp_code, $nonce);
+	}
+
+	public function json_all_events($club_acp_code = null, $nonce = null)
+	{
+		$this->json_list_events('all', $club_acp_code, $nonce);
+	}
+
+
+	public function json_list_events($filter = 'future', $club_acp_code = null, $nonce = null)
+	{
 
 		$this->club_acp_code = $club_acp_code;
 		if ($nonce === null) {
@@ -104,6 +120,26 @@ class EventLister extends EventProcessor
 				continue;
 			}
 
+
+			if($filter == 'future'){
+					$cutoff_datetime = $event_data['cutoff_datetime'];
+					$grace_duration_hours = 12; // future is defined as events closing no more than this many hours ago
+					$grace_duration = new \DateInterval("PT{$grace_duration_hours}H"); // 12 hour grace time
+					$cutoff_datetime->add($grace_duration);
+					$now = new \DateTime('now');
+					if ($now >= $cutoff_datetime) continue;  // this was a past event
+
+			}elseif($filter=='past'){
+					$cutoff_datetime = $event_data['cutoff_datetime'];
+					$grace_duration_hours = 12; // future is defined as events closing no more than this many hours ago
+					$grace_duration = new \DateInterval("PT{$grace_duration_hours}H"); // 12 hour grace time
+					$cutoff_datetime->add($grace_duration);
+					$now = new \DateTime('now');
+					if ($now <= $cutoff_datetime) continue;  // this was a future (or ongoing) event
+			}else{ /* include all events */ }
+			
+
+
 			$event_list[] = $this->published_edata($event_data);
 			$event_id_code = $event_data['event_code'];
 
@@ -122,8 +158,8 @@ class EventLister extends EventProcessor
 		$minimum_app_version = $this->minimum_app_version;
 
 		$payload = compact('club_acp_code', 'nonce', 'minimum_app_version', 'event_list', 'event_errors');
-		$signature = $this->sign_json($payload, $this->secret); 
-		$payload['signature']=$signature;
+		$signature = $this->sign_json($payload, $this->secret);
+		$payload['signature'] = $signature;
 
 		$this->emit_json($payload);
 	}
@@ -137,8 +173,8 @@ class EventLister extends EventProcessor
 		$club_acp_code = $this->club_acp_code;
 
 		$payload = compact('club_acp_code', 'nonce', 'minimum_app_version', 'event_list', 'event_errors');
-		$signature = $this->sign_json($payload, $this->secret); 
-		$payload['signature']=$signature;
+		$signature = $this->sign_json($payload, $this->secret);
+		$payload['signature'] = $signature;
 
 		$this->emit_json($payload);
 	}

@@ -652,11 +652,20 @@ class EventProcessor extends BaseController
 			$close = $close_datetime->format('D-H:i');
 
 
-			$style = $c['style'];
+			$style = strtolower($c['style']);
 			$really_timed = strtolower($c['timed'] ?? 'yes');
+
+			$untimed_reason = [];
+			if($really_timed == 'no') $untimed_reason[] = 'Default';
+			if($is_gravel) $untimed_reason[] = 'Gravel';
+			if($style == 'info' || $style == 'photo' || $style == 'postcard') $untimed_reason[] = ucwords($style);
+
+			$ur_string = implode(',',$untimed_reason);
+
+
 			$is_untimed[$controle_num] = $is_intermediate &&
 				($is_gravel || ($style == 'info' || $style == 'photo' || $style == 'postcard') || ($really_timed == 'no'));
-			$close = $is_untimed[$controle_num] ? 'Untimed' : $close_datetime->format('D-H:i');
+			$close = $is_untimed[$controle_num] ? "<span title='$ur_string'>Untimed</span>" : $close_datetime->format('D-H:i');
 
 			$controle_num++;
 			$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");

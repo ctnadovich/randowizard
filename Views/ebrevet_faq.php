@@ -110,7 +110,18 @@
 
 <h3>What if I "forget" to check in at a  control. </h3>
 
-<p>If you "forget" to check in at a control the app will always notice. You will NOT get a finish code. The app will give you a DNQ.  You must not skip any control. If you miss a control, you need to go back and check in (either with the app, or with traditional signature/receipt). If you skip controls you could be disqualified. </p>
+<p>If you "forget" to check in at a control the app will always notice. You will NOT get a finish code. The app will mark your 
+    ride "RBA Review".  You must not skip any control. If you miss a control, you need to go back and check in (either with the app, or with traditional signature/receipt). If you skip controls you could be disqualified. </p>
+
+<h3>When  I arrived at the overnight I checked in on eBrevet. 
+    But later I looked an saw I could check into that same control again. 
+    </h3>
+<p>If the overnight is used multiple times, like in a cloverleaf or an out-n-back course, 
+    then after you check in upon your arrival at the overnight -- by the current rules -- that same overnight control location is technically 
+    open again for another checkin. Of course if you check in again, you will have skipped all the 
+    intermediate controls between the first and second overnight. eBrevet will warn you that you are skipping 
+    controls. Listen to the warning. Don't skip controls. </p>
+
 
 <h3>What if I'm riding past the cutoff and I'm "late" to controls.</h3>
 <p>Don't give up! Keep riding. Keep checking in. If the app complains, ignore it. Keep riding. Whether you are DQed is up to your RBA -- as long and you DO keep riding.</p>

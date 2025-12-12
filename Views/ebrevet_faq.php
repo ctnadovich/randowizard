@@ -26,15 +26,39 @@
 
  
     <h3>Can a throw away my paper brevet card?</h3>
-    <p><b>NO!</b> This app does not eliminate your need for a paper brevet card!</p>
+    <p><b>NO!</b> This app does not eliminate your need for a paper brevet card!  Admittedly, eBrevet is an "electronic brevet card" 
+and does in fact duplicate the paper brevet card in many respects. For that reason some might think it's possible to run events without a paper 
+brevet card, using only eBrevet. But that's not exactly the case. eBrevet <em>complements</em> a paper brevet card. Used properly  together 
+they provide strong, reliable, robust proof of passage. </p>
 
     <h3>Why do I still need a paper brevet card?</h3>
 
-    <P>Three reasons:</p>
+    <P>Three reasons, at least:</p>
    <ol> 
 <li>You will still need a paper brevet card to START an event because the paper card has the <B>start code</B> required by eBrevet. </li>
 <li>You also still need a paper brevet card to FINISH an event. At the finish, you must write your time of arrival at the finish control, write the <b>finish code</b> from the app, and sign the paper card to assert that you completed the ride and return the card to the organizer.  </li>
 <li>If your phone dies, or you have other technical problems with the app, you can switch back to the paper card and still get credit for the ride.</li></ol>
+
+<h3>Can I use eBrevet to track riders at my event?</h3>
+
+<p>eBrevet is NOT a tracking app. 
+    It's intended to be an electronic brevet card. While there are some features that allow interested people to 
+    see when riders have checked in at controls, and this information can be used by organizers and others to monitor the progress 
+    of riders, it is not tracking anything. Rather, eBrevet is simply reporting check-ins at controls. </p>
+    
+<h3>I'm using Electronic Proof of Passage (EPP). Do I need eBrevet too?</h3>
+    <P>No, not really. Using both eBrevet and EPP is redundant for the same reason that using a paper brevet card and EPP are redundant. If 
+    an organizer accepts EPP for an event, there's no need for a brevet card for proof of passage, electronic or paper. Although some organizers 
+    have requested that riders use eBrevet along with EPP, and it doesn't really "hurt" anything, this duplicate 
+    proof of passage is extra work. </P>
+
+<h3>I'm using eBrevet. Do I need Electronic Proof of Passage (EPP) too?</h3>
+    <P>No, not really. Using both eBrevet and EPP is redundant for the same reason that using a paper brevet card and EPP are redundant. If 
+    an organizer accepts a brevet card for events (with or without eBrevet support), there's no need for EPP for proof of passage. Although some organizers 
+    have requested that riders use eBrevet along with EPP, and it doesn't really "hurt" anything, this duplicate 
+    proof of passage is extra work. </P>
+
+
 
 <h2>Using eBrevet</h2>
 
@@ -85,8 +109,15 @@
     </p>
 
     <h3>Does eBrevet need cell service or Internet access?</h3>
-    <p>The only time you absolutely need Internet access is before the event to allow the phone to download event details. After you have the latest version of the route/cues downloaded to the phone, internet access is optional. It's good to occasionally turn on
-    internet service and let the app "upload" your check-ins -- especially when you finish the event -- so that your check ins can be tracked by your friends and your final time can be communicated to the organizers. Still, Internet service not a requirement except at the very beginning.
+    <p>The only time you absolutely need Internet access is before the event to allow the phone to download event details. After you have the latest version of the route/cues downloaded to the phone, internet access is optional.</p> 
+        
+    <p>That said, there are some extra features when Internet is available. First of all, 
+        it's good to occasionally turn on
+    internet service and let the app "upload" your check-ins -- especially when you finish the event -- 
+    so that your check ins can be tracked by your friends and your final time can be 
+    communicated to the organizers.  In concert with that Internet upload of the check-ins, 
+    if you have internet service you can see the checkins of <em>other</em> riders. This is most useful 
+    to organizers, but sometimes its handy for riders to know when their comrades have checked in to other controls.
     </p>
 
 
@@ -129,15 +160,29 @@
 <h3>I didn't get a green checkmark. Is that OK? What do these orange dots mean?</h3>
 <p>When you check in at a control without live cellular Internet service the app will record your arrival internally and display orange dots indicating that the check-in has not been uploaded to the regional server. The next time you have Internet, if you check-in somewhere else or push the "Update Results" button your orange dots should turn into green checks indicating that your checkins have been communicated to the RBA. </p>
 
+<h3>I just HATE these orange marks. They make me worry I'll be disqualified.</h3>
+<p>The orange mark is PROOF that you checked in. The only reason it's orange rather than green is because 
+    your phone has not been able to contact the main webserver at randonneuring.org and report your checkin there. That really 
+    shouldn't concern you. Ride On!  Sometimes it helps to press the button to try again to report checkins -- that can 
+make all the orange marks into green ones if communication can be established. But please don't worry if some of your checks are orange. You will still get a finish code 
+if you properly check into all controls. You can write that finish code on your paper card. You'll still get a finish certificate. No worries. Seriously. Chill. </p>
+
 <h3>I'm at the control but there's no Check-In button?</h3>
-<p>If you are physically near (&LT;500 meters) a control at the correct time (after the control opens, before it closes) a "Check-In" button should appear next to the control on the app. Sometimes it takes the GPS in your phone  a few seconds to update your location. If you are impatient, press the "GPS UPDATE" button. If the "Check-In" button still doesn't appear, maybe you've disallowed Location Permissions for the eBrevet app. Check your phone Settings and make sure that eBrevet has LOCATION permission. </p>
+<p>If you are physically near (&LT;500 meters) a control at the correct time (after the control opens, before it closes) a "Check-In" 
+    button will appear next to the control on the app. Sometimes it takes the GPS in your 
+    phone  a few seconds to update your location. If you are impatient, press the "GPS UPDATE" button. 
+    If the "Check-In" button still doesn't appear, maybe you aren't at the right place? Read the cue sheet or brevet card carefully 
+    so you know where the control is. Another possibility is you've disallowed Location Permissions for the 
+    eBrevet app. Check your phone Settings and make sure that eBrevet has LOCATION permission. The Activity Log (available through the main menu) often 
+can give information about the app is thinking.</p>
 
 <h3>But what if the app breaks or a dog eats my phone?</h3>
 <p>Yes cell phones do sometimes fail, and software does sometimes have bugs. Prudent riders using eBrevet also write onto their paper brevet card their time of arrival and "control check in codes"  from the app at each intermediate control  as a paper backup.  Writing down your time and these codes isn't required -- it's simply prudent. If you think your phone is about to fail, battery die, or the app is acting wonky, record all check-in codes and be ready switch to old-school brevet card control check-in processes (get merchant initials, receipts, etc...) for the remainder of the event. The RBA will likely not accept 'my phone died' and a blank card as evidence you completed the event. </p>
 
 <h3>What if I find a bug or want to suggest an improvement?</h3>
 <p>You can <A HREF='https://github.com/ctnadovich/ebrevet/issues'>open 
-    an issue or suggestion on github</a></p>
+    an issue or suggestion on github</a>.  Even better, you can fix the bug or implement the improvement yourself. eBrevet is 
+open source software. Nothing prevents you from learning the system and making whatever changes you want. </p>
 
 <h2>Conclusion</h2>
 

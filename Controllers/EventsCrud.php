@@ -382,8 +382,10 @@ EOT;
         $club_acp_code = $event['region_id'];
         $is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
 
-        if (!$is_rusa) $this->die_message_notrace(__METHOD__, 
-           "I don't know how to check the membership of riders in region ACP $club_acp_code");
+        if (!$is_rusa) $this->die_message_notrace(
+            __METHOD__,
+            "I don't know how to check the membership of riders in region ACP $club_acp_code"
+        );
 
         $cutoff_datetime = $this->eventModel->getCutoffDatetime($event);
 
@@ -487,7 +489,11 @@ EOT;
             $f = $uploadedFile->openFile();
             $roster_data = [];
             while (!$f->eof()) {
-                $roster_data[] = $f->fgetcsv();
+                $row = $f->fgetcsv();
+                if ($row === [null]) {
+                    continue;
+                }
+                $roster_data[] = $row;
             }
             $header = array_shift($roster_data);
             if (empty($header)) throw new \Exception("No header.");
@@ -521,7 +527,7 @@ EOT;
             // Find all unique column names
             $field_j = array_flip($header);
 
-           // Accumulate a roster 
+            // Accumulate a roster 
             $roster = [];
             $line_number = 0;
 
@@ -539,7 +545,7 @@ EOT;
             }
 
 
- 
+
             foreach ($roster_data as $r) {
                 $rider = [];
                 $line_number++;
@@ -556,8 +562,8 @@ EOT;
                 extract($rider);
 
                 // In case these were missing
-                if(empty($first)) $rider['first']="";
-                if(empty($last)) $rider['last']="";
+                if (empty($first)) $rider['first'] = "";
+                if (empty($last)) $rider['last'] = "";
 
                 if (empty($rider_id) || !is_numeric($rider_id)) {
                     $errors[] = "Rider ID '$rider_id' (record: $line_number) is invalid.";

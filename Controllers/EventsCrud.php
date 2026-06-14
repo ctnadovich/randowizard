@@ -603,17 +603,36 @@ EOT;
 
         if (empty($errors)) {
 
-            // clear old roster
-            $this->rosterModel->where('event_id', $local_event_id)->delete();
+            // clear old roster (EXCEPT FOR ENTRIES WITH FINISH)
+            $this->rosterModel
+                ->where('event_id', $local_event_id)
+                ->groupStart()
+                ->where('result !=', 'FINISH')
+                ->orWhere('result IS NULL', null, false)
+                ->groupEnd()
+                ->delete();
 
             // write new roster
             foreach ($roster as $rider_id => $rider_data) {
+
+                // Skip if this rider is already in this event roster.
+                // These should be the preserved FINISH records.
+                $exists = $this->rosterModel
+                    ->where('event_id', $local_event_id)
+                    ->where('rider_id', $rider_id)
+                    ->first();
+
+                if ($exists) {
+                    continue;
+                }
+
                 $rc = $this->rosterModel->insert([
-                    'rider_id' => $rider_id,
-                    'event_id' => $local_event_id,
+                    'rider_id'   => $rider_id,
+                    'event_id'   => $local_event_id,
                     'first_name' => $rider_data['first'],
-                    'last_name' => $rider_data['last']
+                    'last_name'  => $rider_data['last'],
                 ], false);
+
                 if ($rc === false) {
                     $errors[] = "Failed to save rider_id = $rider_id to roster. File upload incomplete.";
                     break;

@@ -734,6 +734,12 @@ class Brevetcard extends Myfpdf
 
         $ai = 5;
 
+        // Really can't have a start code till the event is published. 
+        if($cue_version_str=='None') {
+            $cue_version_str='';
+            $start_code='';
+        }
+
         $body = [
             ['text' => "$last_name", 'style' => 'toupper', 'font' => 'resize,bold', 'row' => 1],
             ['text' => "$first_name", 'font' => 'normal,plain', 'align' => 'F'],

@@ -266,7 +266,6 @@ class EventProcessor extends BaseController
 			$open_datetime = $openDatetime;
 			$cutoff_datetime = $close_datetime = $closeDatetime;  // final control close time
 			$controls_extra[] = compact('open_datetime', 'close_datetime', 'lat', 'long');
-
 		}
 
 		// More Event Data
@@ -536,6 +535,11 @@ class EventProcessor extends BaseController
 		$local_event_id = $edata['local_event_id'];
 		$club_acp_code = $edata['club_acp_code'];
 
+		$now_datetime = (new \DateTime('now'))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+		// $now_str = $now_datetime->format($this->controletimesLibrary->event_datetime_format);
+		$cutoff_datetime = $edata['cutoff_datetime'];
+
+
 		$is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
 
 		$registeredRiders = $this->rosterModel->registered_riders($local_event_id, $is_rusa);
@@ -585,6 +589,8 @@ class EventProcessor extends BaseController
 			$rider_result = strtoupper($r['result'] ?? '');
 			$rider_elapsed = $r['elapsed_time'] ?? '';
 
+			if ($rider_result == "ACTIVE" && $now_datetime > $cutoff_datetime) $rider_result = "?";
+
 			if (!empty($rider_elapsed)) {
 				$parts = explode(':', $rider_elapsed);
 				$hhmm = implode(':', array_slice($parts, 0, 2));
@@ -630,6 +636,11 @@ class EventProcessor extends BaseController
 		$event_code = $edata['event_code'];
 		$epp_secret = $edata['epp_secret'];
 
+		$now_datetime = (new \DateTime('now'))->setTimezone(new \DateTimeZone($edata['event_timezone_name']));
+		// $now_str = $now_datetime->format($this->controletimesLibrary->event_datetime_format);
+		$cutoff_datetime = $edata['cutoff_datetime'];
+
+
 		$is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
 
 		$reclass = $this->unitsLibrary;
@@ -657,11 +668,11 @@ class EventProcessor extends BaseController
 			$really_timed = strtolower($c['timed'] ?? 'yes');
 
 			$untimed_reason = [];
-			if($really_timed == 'no') $untimed_reason[] = 'Default';
-			if($is_gravel) $untimed_reason[] = 'Gravel';
-			if($style == 'info' || $style == 'photo' || $style == 'postcard') $untimed_reason[] = ucwords($style);
+			if ($really_timed == 'no') $untimed_reason[] = 'Default';
+			if ($is_gravel) $untimed_reason[] = 'Gravel';
+			if ($style == 'info' || $style == 'photo' || $style == 'postcard') $untimed_reason[] = ucwords($style);
 
-			$ur_string = implode(',',$untimed_reason);
+			$ur_string = implode(',', $untimed_reason);
 
 
 			$is_untimed[$controle_num] = $is_intermediate &&
@@ -703,11 +714,10 @@ class EventProcessor extends BaseController
 
 		$registeredRiders = $this->rosterModel->registered_riders($local_event_id, $is_rusa);
 
-$rider_count = 0;
+		$rider_count = 0;
 
 		foreach ($registeredRiders as $rider) {
 
-			$rider_count++;
 
 			$rider_id = $rider['rider_id'];
 			// Assume $rider_id = $rusa_id; // assumption
@@ -736,7 +746,23 @@ $rider_count = 0;
 			$rider_highlight = "";
 
 			$result = strtoupper($r['result']);
+
+			if($result=="DNS" || $result=="VOL") continue;
+						$rider_count++;
+
+
 			$elapsed_time = $r['elapsed_time'];
+			$now_datetime = new \DateTime('now');
+
+			// $grayed=$grayed_style="";
+
+			if ($now_datetime > $cutoff_datetime) {
+				if ($result == "ACTIVE") $result = "?";
+				// if(empty($result) || $result == "?"){
+				// 					$grayed_style = 'color:#d0d0d0;';
+				// 					$grayed = "STYLE='color:#d0d0d0'";
+				// }
+			}
 
 			switch ($result) {
 				case 'FINISH':
@@ -823,7 +849,7 @@ $rider_count = 0;
 					if (!empty($comment)) {
 
 						// $el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='speech-bubble''>". wordwrap($comment, 20, '<br>', true) . "</div>";
-						$el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%' class='w3-container w3-border w3-light-grey w3-round-large'>" . wordwrap($comment, 20, '<br>', true) . "</div>";
+						$el .= "<br><div style='font-size: .5em; width: 70%; margin-left: 15%;' class='w3-container w3-border w3-light-gray w3-round-large'>" . wordwrap($comment, 20, '<br>', true) . "</div>";
 
 						// $el .= "<br><div style='width: 70%; margin: auto; font-size: .62em; font-weight: bold; font-style: italic; background-color: #E0E0FF; border-radius: .66em; font-family: Arial, Helvetica, sans-serif;'>". wordwrap($comment, 20, '<br>', true) . "</div>";
 
@@ -855,12 +881,12 @@ $rider_count = 0;
 				$checkin_table[] = compact('rider_name', 'rider_id', 'checklist', 'result', 'elapsed_time');
 			} else {
 				$checkins = implode('</TD><TD>', $checklist);
-				$bg_color = ($rider_count % 2 !== 0)?"#f1f1f1":"#ffffff";
+				$bg_color = ($rider_count % 2 !== 0) ? "#f1f1f1" : "#ffffff";
 				$checkin_table .= "<TR><TD style='position: sticky; left: 0; background: $bg_color; z-index: 2;'>$rider</TD><TD>$checkins</TD><TD>$finish_text</TD></TR>";
 			}
 		}
 
-		if ($event_info_view != 'json'){
+		if ($event_info_view != 'json') {
 			$checkin_table .= "</TABLE>";
 			$checkin_table .= "</DIV>";
 		}

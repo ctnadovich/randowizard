@@ -747,8 +747,8 @@ class EventProcessor extends BaseController
 
 			$result = strtoupper($r['result']);
 
-			if($result=="DNS" || $result=="VOL") continue;
-						$rider_count++;
+			if ($result == "DNS" || $result == "VOL") continue;
+			$rider_count++;
 
 
 			$elapsed_time = $r['elapsed_time'];
@@ -824,16 +824,28 @@ class EventProcessor extends BaseController
 					$is_earlyq = false;
 					$is_lateq = false;
 					if ($is_prerideq) {
-						$el = "<br><span class='green italic sans smaller'>Preride</span>";
+						$el = "<br><span class='w3-text-green' style='font-size: 0.7em; font-style: italic;'>Preride</span>";
 					} elseif ($checkin_time < $open_datetime && !$is_untimed[$i]) {
 						$cit_str = $checkin_time->format('H:i');
 						$open_str = $close_datetime->format('H:i');
-						$el = "<br><span class='red italic sans smaller'>EARLY!</span>";
+						$el = "<br><span class='w3-text-orange' style='font-size: 0.7em; font-style: italic;'>EARLY!</span>";
 						$is_earlyq = true;
 					} elseif ($checkin_time > $close_datetime && !$is_untimed[$i]) {
 						$cit_str = $checkin_time->format('H:i');
 						$close_str = $close_datetime->format('H:i');
-						$el = "<br><span class='red italic sans smaller'>LATE! $cit_str &gt; $close_str</span>";
+						$seconds_late =
+							$checkin_time->getTimestamp() - $close_datetime->getTimestamp();
+						$minutes_late = intdiv($seconds_late, 60);
+						if ($seconds_late < 60) {
+							$late_str = "{$seconds_late}s LATE!";
+						} else {
+							$late_str = "{$minutes_late}m LATE!";
+						}
+
+
+
+
+						$el = "<br><span class='w3-text-orange' style='font-size: 0.7em; font-style: italic;'><em>$late_str<em></span>";
 						$is_lateq = true;
 					}
 

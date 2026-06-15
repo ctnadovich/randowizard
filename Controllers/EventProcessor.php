@@ -680,10 +680,32 @@ class EventProcessor extends BaseController
 			$close = $is_untimed[$controle_num] ? "<span title='$ur_string'>Untimed</span>" : $close_datetime->format('D-H:i');
 
 			$controle_num++;
-			$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Control $controle_num");
+			$number = ($is_start) ? "START" : (($is_finish) ? "FINISH" : "Ctl $controle_num");
 
 			// $close = $c['close']; // ->format('D-H:i');
+			// $control_detail = '<table>';
+
+			// foreach ($c as $key => $value) {
+			// 	$control_detail .= '<tr class="w3-text-black">';
+			// 	$control_detail .= '<td><strong>' . htmlspecialchars((string)$key) . '</strong></td>';
+			// 	$control_detail .= '<td>' . htmlspecialchars((string)$value) . '</td>';
+			// 	$control_detail .= '</tr>';
+			// }
+
+			// $control_detail .= '</table>';
+
+			// $control_name = $c['name'];
 			$name = $c['name'];
+
+// 			$name = <<<EOF
+// <div class="w3-tooltip">
+//     $control_name
+//     <div class="w3-text w3-tag">
+//         $control_detail
+//     </div>
+// </div>
+// EOF;
+
 			$headlist[] = compact('number', 'cd_mi', 'cd_km', 'is_start', 'is_finish', 'open', 'close',  'name', 'lat', 'long');
 		}
 

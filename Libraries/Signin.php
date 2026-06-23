@@ -256,7 +256,7 @@ class Signin extends Myfpdf
             $justify = (isset($field['align'])) ? $field['align'] : 'C';
 
             if (isset($field['fill'])) $this->SetFillColor(...$fill);
-            if (isset($field['fontsize'])) $this->font_size($field['fontsize']);
+            if (isset($field['fontsize'])) $this->font_resize($field['fontsize']);
 
             $string_width = $this->GetStringWidth($indent . $text);
             $dash_width = $this->GetStringWidth('-');
@@ -273,7 +273,7 @@ class Signin extends Myfpdf
                 $save_size = $this->font_size;
                 $need_width = $string_width + 2 * $dash_width;
                 if ($need_width > $width) {
-                    $this->font_size($width / $need_width);
+                    $this->font_resize($width / $need_width);
                 }
             }
 
@@ -288,7 +288,7 @@ class Signin extends Myfpdf
             }
 
             if (isset($style['fit'])) {
-                $this->font_size($save_size);
+                $this->font_resize($save_size);
             }
         }
 

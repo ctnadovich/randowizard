@@ -456,7 +456,7 @@ class Cuesheet extends Myfpdf
 		$this->font_bold();
 		$this->MultiCell($w, 2 * $this->baseline_skip, $edata['event_name_dist'], 0, 'C');
 		$this->font_italic();
-		$this->font_size(1.2);
+		$this->font_resize(1.2);
 		$this->SetX($x);
 		$this->Cell($w, 2 * $this->baseline_skip, $edata['event_datetime_str_verbose'], 0, 2, 'C');
 
@@ -863,8 +863,15 @@ class Cuesheet extends Myfpdf
 					$ca['name'], $ca['address'], ((isset($ca['phone'])) ? $ca['phone'] : ''), ((isset($ca['photo'])) ? $ca['photo'] : ''), ((isset($ca['comment'])) ? $ca['comment'] : '')
 				];
 			} else {
+
+			if(!key_exists('n', $cue)){
+
+			$cue['n']='';  // no note?!
+			}
+
 				$cue_lines[] = [false, $d_total_mi, $d_segment_mi, $d_leg_mi, $cue['t'], $cue['n']];
 				$d_total = $cue['d'];
+			
 			}
 		}
 		return $cue_lines;

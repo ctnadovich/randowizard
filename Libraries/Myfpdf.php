@@ -43,7 +43,7 @@ class Myfpdf extends FPDF
 
 	public $thin_width = 0.01; // Thin lines
 	public $thick_width = 0.02; // Thick lines
-	public $font_normal = 'Helvetica';	// default font family
+	public $font_default = 'Helvetica';	// default font family
 	public $font_fixed = 'Courier';	// fixed width font
 	public $font_style = ''; // 'B', 'I'
 	public $font_current = 'Helvetica';
@@ -63,8 +63,8 @@ class Myfpdf extends FPDF
 
 	public function font_normal()
 	{
-		$this->font_current = $this->font_normal;
-		$this->SetFont($this->font_normal, $this->font_style, $this->em_points * $this->font_size);
+		$this->font_current = $this->font_default;
+		$this->SetFont($this->font_default, $this->font_style, $this->em_points * $this->font_size);
 	}
 	public function font_fixed()
 	{
@@ -96,11 +96,11 @@ class Myfpdf extends FPDF
 		$this->font_style = "";
 		$this->SetFont($this->font_current, $this->font_style, $this->em_points * $this->font_size);
 	}
-	public function font_size($x = 1)
-	{
-		$this->font_size = $x;
-		$this->SetFont($this->font_current, $this->font_style, $this->em_points * $this->font_size);
-	}
+	// public function font_size($x = 1)
+	// {
+	// 	$this->font_size = $x;
+	// 	$this->SetFont($this->font_current, $this->font_style, $this->em_points * $this->font_size);
+	// }
 	public function font_resize($x = 1)
 	{
 		$this->font_size = $x;
@@ -151,5 +151,24 @@ class Myfpdf extends FPDF
 	protected function my_utf8_decode($item)
 	{
 		return mb_convert_encoding($item, "ISO-8859-1", mb_detect_encoding($item, "UTF-8, ISO-8859-1, ISO-8859-15", true));
+	}
+
+	protected function fpdf_safe_text(string $s): string
+	{
+		$map = [
+			"\u{2018}" => "'",  // left single quote
+			"\u{2019}" => "'",  // right single quote
+			"\u{201C}" => '"',  // left double quote
+			"\u{201D}" => '"',  // right double quote
+			"\u{2013}" => '-',  // en dash
+			"\u{2014}" => '-',  // em dash
+			"\u{2026}" => '...', // ellipsis
+			"\u{00A0}" => ' ',  // non-breaking space
+		];
+
+		$s = strtr($s, $map);
+
+		// Convert remaining text to Windows-1252, replacing unrepresentable chars
+		return iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $s);
 	}
 }

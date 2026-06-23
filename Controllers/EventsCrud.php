@@ -226,6 +226,8 @@ EOT;
             ["generate/$event_code/signin_sheet", "Sign-In Sheet (for all rider)"],
             ["generate/$event_code/card_outside_roster", "Brevet Card Outsides (cards for all riders)"],
             ["generate/$event_code/card_outside_blank", "Brevet Card Outside (blank rider name)"],
+           ["generate/$event_code/waiver_roster", "Waiver (for all riders)"],
+            ["generate/$event_code/waiver_blank", "Waiver (blank rider name)"],
             ["generate/$event_code/card_inside", "Brevet Card Inside"],
             // ["roster_upload/$event_code", "Upload a Roster (CoM CSV Format)"],
             ["generate/$event_code/rusacsv", "Download Results (RUSA CSV Format)"],

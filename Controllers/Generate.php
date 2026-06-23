@@ -20,6 +20,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\Myfpdf;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use DateTimeZone;
@@ -62,7 +63,7 @@ class Generate extends EventProcessor
 			$event = $this->eventModel->eventByCode($event_code);
 			$edata = $this->get_event_data($event);
 			$route_manager_url = site_url("route_manager/$event_code");
-			if($edata['route_has_warnings']) $this->die_message_notrace('ERRORS FOUND',"The '$generate' cannot be
+			if ($edata['route_has_warnings']) $this->die_message_notrace('ERRORS FOUND', "The '$generate' cannot be
 			generated because errors have 
 			been found in the route or event data. Please <A HREF='$route_manager_url'>go to the 
 			Route Manager</A> to see what these errors
@@ -196,7 +197,7 @@ EOT;
 		extract($edata);
 		$controles = $edata['route_controles'];
 
-		$cuesheetLibrary = new \App\Libraries\Cuesheet(['edata'=>$edata]);
+		$cuesheetLibrary = new \App\Libraries\Cuesheet(['edata' => $edata]);
 		$cuesheetLibrary->set_controle_date_format($edata);
 
 		$event_tagname = $edata['event_tagname'];
@@ -206,7 +207,7 @@ EOT;
 		$cue_text = $cuesheetLibrary->cue_text_array($cues, $controles);
 
 
-// $this->die_message(__METHOD__, print_r($cue_text,true));
+		// $this->die_message(__METHOD__, print_r($cue_text,true));
 
 		$this->emit_csv(array_merge($header_text, $cue_text), $csv_filename);
 		exit();
@@ -298,6 +299,77 @@ EOT;
 
 		exit();
 	}
+
+	public function he_decode($str)
+	{
+		$non_iso = [
+			'&ldquo;' => '"',
+			'&rdquo;' => '"'
+		];
+		return html_entity_decode(strtr($str, $non_iso), ENT_QUOTES | ENT_XHTML, 'ISO-8859-1');
+	}
+
+	private function generate_waiver_roster(array $edata)
+	{
+		$this->generate_waiver($edata, true);
+	}
+
+	private function generate_waiver_blank(array $edata)
+	{
+		$this->generate_waiver($edata, false);
+	}
+
+	private function generate_waiver(array $edata, $rosterQ = false)
+	{
+		$club_acp_code = $edata['club_acp_code'];
+		$this->die_not_admin($club_acp_code);
+
+		$club = $this->regionModel->getClub($club_acp_code);
+
+		$organizing_club = $club['club_name'];
+		$event_name_dist = $edata['event_name_dist'];
+		$event_date_str = $edata['event_date_str'];
+		$event_tagname = $edata['event_tagname'];
+
+		if ($rosterQ) {
+			if (!isset($edata['roster'])) throw new \Exception("No roster in data.");
+			$roster = $edata['roster'];
+			$n_riders = count($roster);
+			if (0 == $n_riders) throw new \Exception("No Riders. No waivers generated.");
+		} else {
+			$roster = [];
+			$n_riders = 0;
+		}
+
+
+		$params = [
+			'template_name' => 'rusa_waiver_template.txt',  // this probably should be set elsewhere
+			'organizing_club' => $organizing_club,
+			'event_name' => $event_name_dist,
+			'event_date' => $event_date_str,
+			'n_riders' => $n_riders
+		];
+
+		$waiverLibrary =  new \App\Libraries\Waiver($params);
+
+
+		if ($n_riders>0) {
+			foreach ($roster as $r) {
+				$waiverLibrary->set_rider($r);
+				$waiverLibrary->AddPage();
+				$waiverLibrary->render_release();
+			}
+		} else {
+			$waiverLibrary->set_blank();
+			$waiverLibrary->AddPage();
+			$waiverLibrary->render_release();
+		}
+		$waiverLibrary->Output("I", "$event_tagname-Waiver.pdf");
+
+		exit();
+	}
+
+
 
 	// SIGN IN ROSTER SHEETS
 
@@ -399,7 +471,7 @@ EOT;
 
 		// $this->die_message(__METHOD__, print_r(array_keys(reset($rusa_results)), true));
 
-		if(empty($rusa_results)) $this->die_message_notrace('No Results', 'Nothing to download.');
+		if (empty($rusa_results)) $this->die_message_notrace('No Results', 'Nothing to download.');
 
 		return $this->csv_noquote($rusa_results, $filename);
 		// $this->load_view('upload_success');
@@ -411,34 +483,35 @@ EOT;
 		$newline = "\r\n";
 		$enclosure = "";
 		$data = $this->csv_from_result($result_array, $delimiter, $newline, $enclosure);
-		return $this->response->download($filename, $data)->setContentType('text/csv');	
+		return $this->response->download($filename, $data)->setContentType('text/csv');
 	}
 
 
-	function csv_from_result($result_array, $delimiter = ',', $newline = "\n", $enclosure = '"') {
-		
+	function csv_from_result($result_array, $delimiter = ',', $newline = "\n", $enclosure = '"')
+	{
+
 		$out = '';
 		$column_headers = array_keys(reset($result_array));
-	
+
 		// Write the column headers
 		foreach ($column_headers as $field) {
-			$out .= $enclosure.str_replace($enclosure, $enclosure.$enclosure, $field).$enclosure.$delimiter;
+			$out .= $enclosure . str_replace($enclosure, $enclosure . $enclosure, $field) . $enclosure . $delimiter;
 		}
 		$out = rtrim($out);
 		$out .= $newline;
-	
+
 		// Write the data rows
 		foreach ($result_array as $row) {
 			foreach ($row as $item) {
-				$out .= $enclosure.str_replace($enclosure, $enclosure.$enclosure, $item).$enclosure.$delimiter;
+				$out .= $enclosure . str_replace($enclosure, $enclosure . $enclosure, $item) . $enclosure . $delimiter;
 			}
 			$out = rtrim($out);
 			$out .= $newline;
 		}
-	
+
 		return $out;
 	}
-	
+
 
 	// MAP AND EP ONLY
 

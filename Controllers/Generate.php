@@ -330,6 +330,7 @@ EOT;
 		$event_name_dist = $edata['event_name_dist'];
 		$event_date_str = $edata['event_date_str'];
 		$event_tagname = $edata['event_tagname'];
+		$is_rusa = $edata['is_rusa'];
 
 		if ($rosterQ) {
 			if (!isset($edata['roster'])) throw new \Exception("No roster in data.");
@@ -347,7 +348,8 @@ EOT;
 			'organizing_club' => $organizing_club,
 			'event_name' => $event_name_dist,
 			'event_date' => $event_date_str,
-			'n_riders' => $n_riders
+			'n_riders' => $n_riders,
+			'is_rusa' => $is_rusa
 		];
 
 		$waiverLibrary =  new \App\Libraries\Waiver($params);

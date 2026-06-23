@@ -50,10 +50,12 @@ class Waiver extends Myfpdf
 
 	private string $template_name;
 	private int $n_riders;
+	private bool $is_rusa;
 
 	private $requiredParameters = [
 		'template_name',
-		'n_riders'
+		'n_riders',
+		'is_rusa'
 	];
 
 	private $replacementParameters = [
@@ -266,8 +268,9 @@ class Waiver extends Myfpdf
 
 
 		$y = $this->GetY();
+		$id_type = ($this->is_rusa)?"RUSA #":"RIDER #";
 
-		$this->put_string_centered($name_center, $y, 'NAME (PRINTED)');
+		$this->put_string_centered($name_center, $y, "NAME (PRINTED) / $id_type");
 		$this->put_string_centered($sign_center, $y, 'SIGNATURE (Only if 18 or older)');
 		$this->put_string_centered($date_center, $y, 'DATE');
 
@@ -278,9 +281,10 @@ class Waiver extends Myfpdf
 
 		$y = $this->GetY();
 
+
 		if (!empty($this->rider_name)) {
 			$this->font_largerprint();
-			$this->put_string_centered($name_center, $y - 1.2 * $this->baseline_skip, "{$this->rider_name} (ID# {$this->rider_id})");
+			$this->put_string_centered($name_center, $y - 1.2 * $this->baseline_skip, "{$this->rider_name} (#{$this->rider_id})");
 			$this->font_normalprint();
 		}
 		$this->draw_line($name_center - $line_shrink * $name_width / 2, $y, $name_center + $line_shrink * $name_width / 2, $y);

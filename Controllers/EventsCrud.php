@@ -223,49 +223,46 @@ class EventsCrud extends BaseController
 EOT;
 
         $drop_items = [
-                 ['header', 'Sheets'],
-           ["generate/$event_code/signin_sheet", "Sign-In for all riders"],
-                ['header', 'Brevet Cards'],
+            ['header', 'Sheets'],
+            ["generate/$event_code/signin_sheet", "Sign-In for all riders"],
+            ['header', 'Brevet Cards'],
             ["generate/$event_code/card_inside", "Card Inside"],
             ["generate/$event_code/card_outside_roster", "Outsides (all)"],
             ["generate/$event_code/card_outside_blank", "Outside (blank)"],
-                ['header', 'Waivers'],
-           ["generate/$event_code/waiver_roster", "Waiver (all)"],
+            ["generate/$event_code/card_bothsides_roster", "Two Sided (all)"],
+            ["generate/$event_code/card_bothsides_blank", "Two Sided (blank)"],
+            ["generate/$event_code/postcard_front", "Postcard front"],
+            ['header', 'Waivers'],
+            ["generate/$event_code/waiver_roster", "Waiver (all)"],
             ["generate/$event_code/waiver_blank", "Waiver (blank)"],
-                            ['header', 'Data'],
+            ['header', 'Data'],
             ["generate/$event_code/rusacsv", "Download Results (RUSA CSV)"],
         ];
 
-foreach ($drop_items as $item) {
+        foreach ($drop_items as $item) {
 
-    if ($item[0] === 'header') {
-        $dropdown .= sprintf(
-            '<div class="w3-bar-item w3-small w3-text-grey"><b>%s</b></div>',
-            esc($item[1])
-        );
-        continue;
-    }
+            if ($item[0] === 'header') {
+                $dropdown .= sprintf(
+                    '<div class="w3-bar-item w3-small w3-text-grey"><b>%s</b></div>',
+                    esc($item[1])
+                );
+                continue;
+            }
 
-    [$url, $desc] = $item;
+            [$url, $desc] = $item;
 
-    $dropdown .= sprintf(
-        '<a class="w3-bar-item w3-button" style="padding-left:24px" href="%s">%s</a>',
-        esc(site_url($url)),
-        esc($desc)
-    );
-}
+            $dropdown .= sprintf(
+                '<a class="w3-bar-item w3-button" style="padding-left:24px" href="%s">%s</a>',
+                esc(site_url($url)),
+                esc($desc)
+            );
+        }
 
-        // foreach ($drop_items as $i) {
-        //     list($url, $desc) = $i;
-        //     $url = site_url($url);
-        //     $dropdown .=  "<A class='w3-bar-item w3-button' HREF='$url'>$desc</A>";
-        // }
         $dropdown .= "</div></div>";
 
 
         return $dropdown;
-
-     }
+    }
 
     public function _event_info($value, $row)
     {

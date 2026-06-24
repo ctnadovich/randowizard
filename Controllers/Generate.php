@@ -240,7 +240,12 @@ EOT;
 		$this->generate_card($edata, ['side' => 'outside', 'roster' => 'true']);
 	}
 
-	private function generate_card($edata, $opts = [])
+	private function generate_card_bothsides_roster($edata)
+	{
+		$this->generate_card($edata, ['side' => 'bothsides', 'roster' => 'true']);
+	}
+
+	private function generate_card(array $edata, $opts = [])
 	{
 
 		$this->die_not_admin($edata['club_acp_code']);
@@ -262,10 +267,10 @@ EOT;
 		$brevetcardLibrary->set_controle_date_format($edata);
 
 		$event_tagname = $edata['event_tagname'];
+		$icon_url = (isset($opts['validate_first']) && isset($edata['icon_url'])) ? $edata['icon_url'] : null;
 
 		if (($opts['side'] ?? '') == 'inside') {
 			// set false if you don't want the first controle validated when cards are prined
-			$icon_url = (isset($opts['validate_first']) && isset($edata['icon_url'])) ? $edata['icon_url'] : null;
 			$brevetcardLibrary->AddPage();
 			$brevetcardLibrary->draw_card_inside($controles, $icon_url);
 			$brevetcardLibrary->Output("I", "$event_tagname-CardInside.pdf");
@@ -293,12 +298,70 @@ EOT;
 				$brevetcardLibrary->draw_card_outside($edata);
 				$brevetcardLibrary->Output("I", "$event_tagname-CardOutsideBlank.pdf");
 			}
+		} elseif (($opts['side'] ?? '') == 'bothsides') {
+
+			$edata['page3_image'] = $opts['page3_image'] ?? null;
+
+			if (isset($opts['roster'])) {
+				if (!isset($edata['roster'])) throw new \Exception("No roster in data.");
+				$roster = $edata['roster'];
+				$n_riders = count($roster);
+				if (0 == $n_riders) $this->die_message("No Riders", "No brevet cards generated.", ['backtrace' => false]);
+				$n_cards = $brevetcardLibrary->n_cards;
+
+
+				// $this->die_message($n_cards, print_r($roster,true));
+
+				for ($i = 0; $i < $n_riders; $i += $n_cards) {
+					$r = array_slice($roster, $i, $n_cards);
+					$brevetcardLibrary->AddPage();
+					$brevetcardLibrary->draw_card_outside($edata, $r);
+
+					$brevetcardLibrary->AddPage();
+					$brevetcardLibrary->draw_card_inside($controles, $icon_url);
+				}
+				$brevetcardLibrary->Output("I", "$event_tagname-CardBothSidesRoster.pdf");
+			} else {
+				$brevetcardLibrary->AddPage();
+				$brevetcardLibrary->draw_card_inside($controles, $icon_url);
+				$brevetcardLibrary->draw_card_outside($edata);
+				$brevetcardLibrary->Output("I", "$event_tagname-CardBothSidesBlank.pdf");
+			}
 		} else {
 			throw new \Exception("Unknown card side.");
 		}
 
 		exit();
 	}
+
+
+	private function generate_postcard_front(array $edata)
+	{
+		$club_acp_code = $edata['club_acp_code'];
+		$this->die_not_admin($club_acp_code);
+		$club = $this->regionModel->getClub($club_acp_code);
+		$organizing_club = $club['club_name'];
+		$tagname = $edata['event_tagname'];
+		$params = [
+			'edata' => $edata,
+			'this_organization' => $organizing_club,
+			'club' => $club,
+			'tagname' => $tagname,
+			'name_dist' => $edata['event_name_dist'],
+			'roster' => $edata['roster']
+		];
+		$postcardLibrary = new \App\Libraries\Postcard($params);
+		$postcardLibrary->render_fronts();
+		$postcardLibrary->Output("I", "$tagname-PostcardFront.pdf");
+
+		exit();
+	}
+
+
+
+
+
+
 
 	public function he_decode($str)
 	{
@@ -355,7 +418,7 @@ EOT;
 		$waiverLibrary =  new \App\Libraries\Waiver($params);
 
 
-		if ($n_riders>0) {
+		if ($n_riders > 0) {
 			foreach ($roster as $r) {
 				$waiverLibrary->set_rider($r);
 				$waiverLibrary->AddPage();

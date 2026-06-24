@@ -4,7 +4,7 @@ Randonneuring.org provides several randonneuring event management tools intended
 be used by the RBA, Event Organizer, or webmaster of a region. 
 When you enter your events and routes into randonneuring.org, you get a complete automated system for managing your 
 brevets.  Get up to speed quickly with these tools. 
-Read the RBA/Organizer [Quick Start Guide] (https://randonneuring.org/about/quick_start).
+Read the RBA/Organizer [Quick Start Guide](https://randonneuring.org/about/quick_start).
 
 The tools here can do several big things for your region.
 
@@ -28,7 +28,7 @@ When you put your events into randonneuring.org, you automatically support the [
 a Control Check-In status web page for your use. Although randonneuring.org is not required for using eBrevet, most regions will find it to be the easiest way to do so.
 
 Want to know what to tell riders about eBrevet? Send them to the 
-[eBrevet FAQ] (https://randonneuring.org/about/ebrevet_faq).
+[eBrevet FAQ](https://randonneuring.org/about/ebrevet_faq).
 
 
 

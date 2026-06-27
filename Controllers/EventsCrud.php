@@ -252,7 +252,7 @@ EOT;
             [$url, $desc] = $item;
 
             $dropdown .= sprintf(
-                '<a class="w3-bar-item w3-button" style="padding-left:24px" href="%s">%s</a>',
+                '<a class="w3-bar-item w3-button" style="padding:3px 16px 3px 24px" href="%s">%s</a>',
                 esc(site_url($url)),
                 esc($desc)
             );
@@ -272,7 +272,7 @@ EOT;
 
         $dropdown = <<<EOT
 <div class="w3-dropdown-hover">
-<button class="w3-button w3-blue">Info&nbsp;<i class="fa-solid fa-info-circle"></i></button>
+<button class="w3-button w3-blue">Share&nbsp;<i class='fa fa-share-alt'></i></button>
 <div class="w3-dropdown-content w3-bar-block w3-border">
 EOT;
 

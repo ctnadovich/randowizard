@@ -21,10 +21,14 @@
 
 namespace App\Libraries;
 
-class Waiver extends Myfpdf
+class WaiverTemplate 
 {
-    // paths
-    const template_baseurl = "https://randonneuring.org/assets/local/waivers/";
+    // This is where waivers are stored. Maybe someday a RUSA URL? 
+    private string $template_baseurl = "https://randonneuring.org/assets/local/waivers/";
+
+    public function setTemplateBaseURL(string $url){
+        $this->template_baseurl = $url;
+    }
 
     // Library provides waiver template fetching and interpolation functions. 
 
@@ -33,8 +37,6 @@ class Waiver extends Myfpdf
 
     public function __construct(string $template_name)
     {
-        parent::__construct();
-
         $this->template_name = $template_name;
         $this->waiver_template = $this->get_waiver_template();
     }
@@ -45,7 +47,7 @@ class Waiver extends Myfpdf
     private function get_waiver_template(): array
     {
 
-        $waiver_url = self::template_baseurl . $this->template_name;
+        $waiver_url = $this->template_baseurl . $this->template_name;
 
         $contents = @file_get_contents($waiver_url);
 

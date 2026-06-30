@@ -91,12 +91,24 @@
    
 
     <p>Creating an event is easy -- you click the PLUS sign next to "Add Future Event" and basically just fill out the form.
-        Enter the basic parameters of your brevet like ACP vs RUSA sanction, offical distance, start time
+        Enter the basic parameters of your brevet like the name of the event (without the distance), the distance (separately), ACP vs RUSA sanction, offical distance, start time
         etc... Most importantly, enter the URL for the RWGPS route. You can come back here to edit your event details
         should they change. Remember,
         if you change the RWGPS link, you'll need to come back here to enter the latest route, then fetch and
         re-validate
         everything.
+
+        <div class="w3-panel w3-leftbar w3-amber">
+        <p class="w3-serif">
+            <i>When you create an event, the name field should <b>not</b> include the distance.  
+                Please specify the distance only in the distance field. If you put the distance 
+                in the name, because distance is typically printed after the name, you'll see the distance 
+                printed twice in a lot of places. You'll see 
+                things like "Our Most Excellent 200K 200K". You don't want that. 
+                Please don't include the distance in the name of the event. Thank you for your cooperation. 
+            </i>
+        </p>
+    </div>
 
  
     <p>Once you've entered the basics for the event and saved out of the event editor, the buttons in the event table offer several things you can do with your event. </p>

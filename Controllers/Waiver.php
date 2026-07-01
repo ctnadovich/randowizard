@@ -1,7 +1,7 @@
 <?php
 
 //    Randonneuring.org Website Software
-//    Copyright (C) 2023 Chris Nadovich
+//    Copyright (C) 2026 Chris Nadovich
 //
 //    This program is free software: you can redistribute it and/or modify
 //    it under the terms of the GNU Affero General Public License as published by
@@ -20,23 +20,55 @@
 
 namespace App\Controllers;
 
+use CodeIgniter\HTTP\RequestInterface;
+use CodeIgniter\HTTP\ResponseInterface;
+use Psr\Log\LoggerInterface;
 
 class Waiver extends EventProcessor
 {
 
-private function generate_waiver_html(array $edata){
+    public function initController(
+        RequestInterface $request,
+        ResponseInterface $response,
+        LoggerInterface $logger
+    ) {
+        parent::initController($request, $response, $logger);
 
-		$template_name = 'rusa_waiver_template.txt'; // This shouldn't be hardcoded. 
+    }
 
-		// First rider in roster (TESTING)
-		$rider = $edata['roster'][0];
-		$body = $this->render_waiver_html($template_name, $edata, $rider);
+    public function waiver(string $event_code, string $rider_id='', string $generate='waiver_html')
+    {
+        try {
 
-		$this->viewData['output'] = $body;
+            if ($this->request->is('post')) {
+                $generate = $this->request->getVar('generate');
+            }
 
-		return $this->load_view(['echo_output']);
-		
-	}
+            if (empty($generate)) throw new \Exception("Nothing to generate -- type missing or empty.");
+            if (!method_exists($this, 'generate_' . $generate)) throw new \Exception("No such generation type: '$generate'");
+
+            $event = $this->eventModel->eventByCode($event_code);
+            $edata = $this->get_event_data($event);
+
+            return $this->{'generate_' . $generate}($edata);
+        } catch (\Exception $e) {
+            $this->die_exception($e);
+        }
+    }
+
+    private function generate_waiver_html(array $edata)
+    {
+
+        $template_name = 'rusa_waiver_template.txt'; // This shouldn't be hardcoded. 
+
+        // First rider in roster (TESTING)
+        $rider = $edata['roster'][0];
+        $body = $this->render_waiver_html($template_name, $edata, $rider);
+
+        $this->viewData['output'] = $body;
+
+        return $this->load_view(['echo_output']);
+    }
 
 
 
@@ -49,19 +81,19 @@ private function generate_waiver_html(array $edata){
     private function render_waiver_html(string $template_name, array $edata, array $rider)
     {
 
-		$waiverLibrary =  new \App\Libraries\Waiver($template_name);
+        $waiverLibrary =  new \App\Libraries\WaiverTemplate($template_name);
 
         // Event
         $event_id = $edata['event_code'];
-		$club_acp_code = $edata['club_acp_code'];
-		$event_name = $edata['event_name_dist'];
-		$event_date = $edata['event_date_str'];
-		$event_tagname = $edata['event_tagname'];
-		$is_rusa = $edata['is_rusa'];
+        $club_acp_code = $edata['club_acp_code'];
+        $event_name = $edata['event_name_dist'];
+        $event_date = $edata['event_date_str'];
+        $event_tagname = $edata['event_tagname'];
+        $is_rusa = $edata['is_rusa'];
 
         // Club
-		$club = $this->regionModel->getClub($club_acp_code);
-		$organizing_club = $club['club_name'];
+        $club = $this->regionModel->getClub($club_acp_code);
+        $organizing_club = $club['club_name'];
 
         // Rider
         $rider_name = $rider['first_name'] . ' ' . $rider['last_name'];
@@ -69,15 +101,15 @@ private function generate_waiver_html(array $edata){
 
         $waiver_id = "$event_id-$rider_id";  // This should go someplace in the template
 
-		$replacementMap = compact([
-			'rider_name',
-			'organizing_club',
-			'event_name',
-			'event_date',
-			'waiver_id'
-		]);
+        $replacementMap = compact([
+            'rider_name',
+            'organizing_club',
+            'event_name',
+            'event_date',
+            'waiver_id'
+        ]);
 
-        $interpolated_template = $waiverLibrary->interpolate_template( $replacementMap );
+        $interpolated_template = $waiverLibrary->interpolate_template($replacementMap);
 
         // Marginal sections
         // but only the first of these
@@ -89,8 +121,8 @@ private function generate_waiver_html(array $edata){
         // and all of the clauses
         $clause = $interpolated_template['CLAUSE'] ?? [];
 
-		// BEGIN HTML Generation
-		$html_out = '';
+        // BEGIN HTML Generation
+        $html_out = '';
         $html_out .= "<div class=waiver-header>$header</div>";
         $html_out .= "<div class=waiver-title>$title</div>";
         $html_out .= "<div class=waiver-preamble>$preamble</div>";
@@ -161,9 +193,4 @@ EOF;
 
         return $html_out;
     }
-
-
-
-
-
 }

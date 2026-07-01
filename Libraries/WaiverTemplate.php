@@ -65,7 +65,7 @@ class WaiverTemplate
         foreach ($lines as $line) {
             if (preg_match('/^\[([A-Z0-9_]+)\]$/', trim($line), $matches)) {
                 if ($currentTag !== null) {
-                    $result[$currentTag][] = $this->fpdf_safe_text(rtrim($currentText));
+                    $result[$currentTag][] = $this->safe_text(rtrim($currentText));
                 }
 
                 $currentTag = $matches[1];
@@ -78,7 +78,7 @@ class WaiverTemplate
         }
 
         if ($currentTag !== null) {
-            $result[$currentTag][] = $this->fpdf_safe_text(rtrim($currentText));
+            $result[$currentTag][] = $this->safe_text(rtrim($currentText));
         }
 
         return $result;
@@ -110,5 +110,25 @@ class WaiverTemplate
 
         return $waiverTemplate;
     }
+
+
+    private function safe_text(string $s): string
+	{
+		$map = [
+			"\u{2018}" => "'",  // left single quote
+			"\u{2019}" => "'",  // right single quote
+			"\u{201C}" => '"',  // left double quote
+			"\u{201D}" => '"',  // right double quote
+			"\u{2013}" => '-',  // en dash
+			"\u{2014}" => '-',  // em dash
+			"\u{2026}" => '...', // ellipsis
+			"\u{00A0}" => ' ',  // non-breaking space
+		];
+
+		$s = strtr($s, $map);
+
+		// Convert remaining text to Windows-1252, replacing unrepresentable chars
+		return iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $s);
+	}
 
 }

@@ -77,6 +77,8 @@ class Controletimes {
 		
 	// Standard formats for Date and Time
  	public $event_datetime_format='Y-m-d H:i T';
+ 	public $event_date_format='Y-m-d';
+ 	public $event_time_format='H:i T';
 	public $event_datetime_format_verbose='l j F Y, H:i T';
 
 	public $default_event_date="2000-01-01";

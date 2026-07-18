@@ -21,12 +21,13 @@
 
 namespace App\Libraries;
 
-class WaiverTemplate 
+class WaiverTemplate
 {
     // This is where waivers are stored. Maybe someday a RUSA URL? 
     private string $template_baseurl = "https://randonneuring.org/assets/local/waivers/";
 
-    public function setTemplateBaseURL(string $url){
+    public function setTemplateBaseURL(string $url)
+    {
         $this->template_baseurl = $url;
     }
 
@@ -89,7 +90,7 @@ class WaiverTemplate
         $waiverTemplate = $this->waiver_template;
         foreach ($waiverTemplate as $tag => $strings) {
             foreach ($strings as $i => $text) {
-                $waiverTemplate[$tag][$i] = preg_replace_callback(
+                $text = preg_replace_callback(
                     '/\{\{([A-Za-z0-9_]+)\}\}/',
                     function ($matches) use ($replaceMap, $allowUndefined) {
                         $name = $matches[1];
@@ -105,6 +106,15 @@ class WaiverTemplate
                     },
                     $text
                 );
+
+                // Replace **text** with bold HTML
+                $text = preg_replace(
+                    '/\*\*(.+?)\*\*/s',
+                    '<b>$1</b>',
+                    $text
+                );
+                
+                $waiverTemplate[$tag][$i] = $text;
             }
         }
 
@@ -113,22 +123,21 @@ class WaiverTemplate
 
 
     private function safe_text(string $s): string
-	{
-		$map = [
-			"\u{2018}" => "'",  // left single quote
-			"\u{2019}" => "'",  // right single quote
-			"\u{201C}" => '"',  // left double quote
-			"\u{201D}" => '"',  // right double quote
-			"\u{2013}" => '-',  // en dash
-			"\u{2014}" => '-',  // em dash
-			"\u{2026}" => '...', // ellipsis
-			"\u{00A0}" => ' ',  // non-breaking space
-		];
+    {
+        $map = [
+            "\u{2018}" => "'",  // left single quote
+            "\u{2019}" => "'",  // right single quote
+            "\u{201C}" => '"',  // left double quote
+            "\u{201D}" => '"',  // right double quote
+            "\u{2013}" => '-',  // en dash
+            "\u{2014}" => '-',  // em dash
+            "\u{2026}" => '...', // ellipsis
+            "\u{00A0}" => ' ',  // non-breaking space
+        ];
 
-		$s = strtr($s, $map);
+        $s = strtr($s, $map);
 
-		// Convert remaining text to Windows-1252, replacing unrepresentable chars
-		return iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $s);
-	}
-
+        // Convert remaining text to Windows-1252, replacing unrepresentable chars
+        return iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $s);
+    }
 }

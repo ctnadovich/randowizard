@@ -23,9 +23,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<?=$style_head?>
+<?=$style_head ?? ''?>
 </head>
-<body>
+<body <?=$body_style ?? ''?>>
 
 <div class="w3-content w3-padding" style="max-width:1564px">
 

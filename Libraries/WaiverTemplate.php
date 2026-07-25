@@ -34,18 +34,19 @@ class WaiverTemplate
     // Library provides waiver template fetching and interpolation functions. 
 
     public string $template_name;
-    public array $waiver_template;
+    public array $data;
 
+    
     public function __construct(string $template_name)
     {
         $this->template_name = $template_name;
-        $this->waiver_template = $this->get_waiver_template();
+        $this->data = $this->get_data();
     }
+
 
     // Waiver fetcher, no interpolation
 
-
-    private function get_waiver_template(): array
+    private function get_data(): array
     {
 
         $waiver_url = $this->template_baseurl . $this->template_name;
@@ -87,7 +88,7 @@ class WaiverTemplate
 
     public function interpolate_template(array $replaceMap, $allowUndefined = true): array
     {
-        $waiverTemplate = $this->waiver_template;
+        $waiverTemplate = $this->data;
         foreach ($waiverTemplate as $tag => $strings) {
             foreach ($strings as $i => $text) {
                 $text = preg_replace_callback(
@@ -113,7 +114,14 @@ class WaiverTemplate
                     '<b>$1</b>',
                     $text
                 );
-                
+
+                               // Replace !!text!! with red HTML
+                $text = preg_replace(
+                    '/!!(.+?)!!/s',
+                    '<span class=w3-text-red>$1</span>',
+                    $text
+                );
+
                 $waiverTemplate[$tag][$i] = $text;
             }
         }

@@ -10,7 +10,7 @@
 <form id="waiver-form" method="post" action="/waiver/submit">
    <input type="hidden"
       name="waiver_session_id"
-      value="<?= htmlspecialchars($waiver_session_id, ENT_QUOTES, 'UTF-8') ?>">
+      value="<?= htmlspecialchars($session_id, ENT_QUOTES, 'UTF-8') ?>">
 
    <input type="hidden" name="signature_png" id="signature-png">
    <input type="hidden" name="initials_png" id="initials-png">
@@ -24,7 +24,7 @@
 
             <!-- Left column -->
             <div class="w3-center">
-               <img src="<?= $indemnified_logo ?>"
+               <img src="<?= $logo_url ?>"
                   alt="Logo"
                   class="w3-image"
                   style="max-width:180px;">
@@ -34,7 +34,7 @@
             <!-- Right column -->
             <div>
 
-               <p class="w3-center w3-text-red">
+               <p class="w3-center">
                   <?= $header ?>
                </p>
 
@@ -53,13 +53,8 @@
 
       <div class="w3-card w3-round-large w3-white w3-padding w3-margin-bottom">
 
-         <p class="w3-large w3-text-red"><b><?= $initial ?></b></p>
-
-
-         <!-- Initials location inside the document -->
+         <p class="w3-large"><b><?= $initial ?></b></p>
          <div class="w3-margin-top">
-
-
             <div class="w3-panel w3-leftbar w3-border-blue w3-light-grey">
 
                <div id="initials-placeholder"
@@ -87,38 +82,45 @@
 
          </div>
 
-         <p><?= $preamble ?></p>
-
-
          <?php foreach ($clause as $c):  ?>
             <p><?= $c ?></p>
          <?php endforeach; ?>
-         <p>Date: <?= $waiver_date ?>; Time: <?= $waiver_time ?></p>
-         <p>Waiver ID: <?= $waiver_session_id ?></p>
-         <p class="w3-center w3-text-red"><b><?= $footer ?></b></p>
+
+
+         Date: <?= $waiver_timestamp  ?><br>
+         Session ID: <?= $session_id ?><br>
+         <p class="w3-center"><b><?= $footer ?></b></p>
 
       </div>
 
       <div class="w3-card w3-round-large w3-white w3-padding w3-margin-bottom">
-         <h2>Rider Name</h2>
+         <h2>Participant Name</h2>
 
-
-         <div class="w3-white w3-border w3-padding w3-xlarge">
-            <strong><?= $rider_name ?></strong>
+         <div class="w3-container">
+            <div class="w3-padding w3-xlarge">
+               <strong><?= $participant_name ?></strong>
+            </div>
          </div>
 
+         <h2>Participant Age Acknowledgement</h2>
+         <div class="w3-container">
+            <p class="w3-large"><input class="w3-check"
+                  id="age-acknowledgement-checkbox"
+                  name="age-acknowledged"
+                  type="checkbox"
+                  value="1"> I certify that I am 18 years of age or older.</p>
+         </div>
 
-         <h2>Rider Age Acknowledgement</h2>
-         <p class="w3-large"><input class="w3-check"
-               id="age-acknowledgement-checkbox"
-               name="age-acknowledged"
-               type="checkbox"
-               value="1"> I certify that I am 18 years of age or older.</p>
          <h2>Event Information</h2>
+         <div class="w3-container">
+            Event: <?= $event_name ?><br>
+            Start Date: <?= $event_date ?><br>
+            Start Time: <?= $event_time ?><br>
+         </div>
+
          <h2>Rider Signature</h2>
 
-         <!-- Signature location inside the document -->
-         <div class="w3-margin-top">
+         <div class="w3-container">
 
             <div class="w3-panel w3-leftbar w3-border-blue w3-light-grey">
 
@@ -140,11 +142,14 @@
 
             </div>
 
-            <button type="button"
-               id="sign-document-button"
-               class="w3-button w3-small w3-blue">
-               Sign Document
-            </button>
+            <div class="w3-container">
+               <button type="button"
+                  id="sign-document-button"
+                  class="w3-button w3-small w3-blue">
+                  Sign Document
+               </button>
+            </div>
+            <br>
 
          </div>
 

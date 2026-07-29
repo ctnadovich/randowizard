@@ -48,7 +48,10 @@ class WaiverSessionModel extends Model
         'template_name',
         'revision',
         'created_at',
+        'completed_at',
         'expires_at',
+        'document_key',
+        'document_sha256',
         'status',
     ];
 
@@ -155,6 +158,26 @@ class WaiverSessionModel extends Model
     }
 
     /**
+     * Retrieve a session only when it has been completed.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getCompletedSession(string $sessionId): ?array
+    {
+        $session = $this->findBySessionId($sessionId);
+
+        if ($session === null) {
+            return null;
+        }
+
+        if ($session['status'] !== self::STATUS_COMPLETED) {
+            return null;
+        }
+
+        return $session;
+    }
+
+    /**
      * Retrieve a session only when it is pending and unexpired.
      *
      * If the session has passed its expiration time, its status is
@@ -204,20 +227,35 @@ class WaiverSessionModel extends Model
      * This uses a conditional UPDATE so two simultaneous submissions
      * cannot both change a pending session to completed.
      */
-    public function completeSession(string $sessionId): bool
-    {
+
+    public function completeSession(
+        string $sessionId,
+        string $documentKey,
+        string $documentSha256
+    ): bool {
         if (!$this->isValidSessionIdFormat($sessionId)) {
             return false;
         }
 
-        $now = $this->nowUtc();
+        $this->assertNonEmpty($documentKey, 'document key');
+
+        $documentSha256 = strtolower($documentSha256);
+
+        if (!preg_match('/\A[a-f0-9]{64}\z/', $documentSha256)) {
+            throw new \InvalidArgumentException(
+                'Invalid SHA-256 document digest.'
+            );
+        }
 
         $this->builder()
             ->where('session_id', strtolower($sessionId))
             ->where('status', self::STATUS_PENDING)
-            ->where('expires_at >=', $this->formatDateTime($now))
-            ->set('status', self::STATUS_COMPLETED)
-            ->update();
+            ->update([
+                'status'          => self::STATUS_COMPLETED,
+                'completed_at'    => $this->formatDateTime($this->nowUtc()),
+                'document_key'    => $documentKey,
+                'document_sha256' => $documentSha256,
+            ]);
 
         return $this->db->affectedRows() === 1;
     }
@@ -341,7 +379,7 @@ class WaiverSessionModel extends Model
         if ($id === false) {
             throw new RuntimeException(
                 'Unable to create the waiver session: ' .
-                implode('; ', $this->errors())
+                    implode('; ', $this->errors())
             );
         }
 
@@ -429,18 +467,21 @@ class WaiverSessionModel extends Model
         );
 
         $updated = $this->update($id, [
-            'session_id'   => $this->generateSessionId(),
-            'template_name' => $templateName,
-            'revision'     => $revision,
-            'created_at'   => $this->formatDateTime($createdAt),
-            'expires_at'   => $this->formatDateTime($expiresAt),
-            'status'       => self::STATUS_PENDING,
+            'session_id'      => $this->generateSessionId(),
+            'template_name'   => $templateName,
+            'revision'        => $revision,
+            'created_at'      => $this->formatDateTime($createdAt),
+            'expires_at'      => $this->formatDateTime($expiresAt),
+            'completed_at'    => null,
+            'document_key'    => null,
+            'document_sha256' => null,
+            'status'           => self::STATUS_PENDING,
         ]);
 
         if ($updated === false) {
             throw new RuntimeException(
                 'Unable to reset the waiver session: ' .
-                implode('; ', $this->errors())
+                    implode('; ', $this->errors())
             );
         }
 

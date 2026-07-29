@@ -1,3 +1,26 @@
+<!-- Lightweight markup -->
+
+<?php
+function lm($text)
+{
+   // Replace **text** with bold HTML
+   $text = preg_replace(
+      '/\*\*(.+?)\*\*/s',
+      '<b>$1</b>',
+      $text
+   );
+
+   // Replace !!text!! with red HTML
+   $text = preg_replace(
+      '/!!(.+?)!!/s',
+      '<span class=w3-text-red>$1</span>',
+      $text
+   );
+   return $text;
+}
+?>
+
+
 <!-- Top bar -->
 <div class="w3-dark-grey" style="padding:2px 8px;">
    <a href="<?= $this_waiver_url ?>" class="w3-text-white w3-button">
@@ -7,7 +30,7 @@
 
 <!-- Main content -->
 
-<form id="waiver-form" method="post" action="/waiver/submit">
+<form id="waiver-form" method="post" action="<?= site_url('waiver/finalize') ?>">
    <input type="hidden"
       name="waiver_session_id"
       value="<?= htmlspecialchars($session_id, ENT_QUOTES, 'UTF-8') ?>">
@@ -24,7 +47,7 @@
 
             <!-- Left column -->
             <div class="w3-center">
-               <img src="<?= $logo_url ?>"
+               <img src="<?= $waiver_logo_url ?>"
                   alt="Logo"
                   class="w3-image"
                   style="max-width:180px;">
@@ -35,12 +58,12 @@
             <div>
 
                <p class="w3-center">
-                  <?= $header ?>
+                  <?= lm($header) ?>
                </p>
 
                <p class="w3-center">
                   <b>
-                     <?= $title ?>
+                     <?= lm($title) ?>
                   </b>
                </p>
 
@@ -53,7 +76,7 @@
 
       <div class="w3-card w3-round-large w3-white w3-padding w3-margin-bottom">
 
-         <p class="w3-large"><b><?= $initial ?></b></p>
+         <p class="w3-large"><b><?= lm($initial) ?></b></p>
          <div class="w3-margin-top">
             <div class="w3-panel w3-leftbar w3-border-blue w3-light-grey">
 
@@ -83,13 +106,13 @@
          </div>
 
          <?php foreach ($clause as $c):  ?>
-            <p><?= $c ?></p>
+            <p><?= lm($c) ?></p>
          <?php endforeach; ?>
 
 
          Date: <?= $waiver_timestamp  ?><br>
          Session ID: <?= $session_id ?><br>
-         <p class="w3-center"><b><?= $footer ?></b></p>
+         <p class="w3-center"><b><?= lm($footer) ?></b></p>
 
       </div>
 
@@ -172,7 +195,7 @@
 
             <!-- Text column -->
             <div style="flex:1;">
-               <p style="margin-top:0;"><?= $esc ?></p>
+               <p style="margin-top:0;"><?= lm($esc) ?></p>
             </div>
 
          </div>
@@ -392,48 +415,58 @@
       /*
        * Determine whether the document is ready for submission.
        */
-      function updateCompletionState() {
-         const hasSignature = signatureInput.value !== '';
-         const hasInitials = initialsInput.value !== '';
-         const acknowledged = acknowledgementCheckbox.checked;
-         const ageAcknowledged = ageAcknowledgementCheckbox.checked;
 
-         const complete =
-            hasSignature &&
-            hasInitials &&
-            ageAcknowledged &&
-            acknowledged;
-
-         submitButton.disabled = !complete;
-
-         const missing = [];
-
-
-         if (!hasInitials) {
-            missing.push('initials');
+      const requirements = [{
+            label: 'Signature',
+            isComplete: () => signatureInput.value !== ''
+         },
+         {
+            label: 'Initials',
+            isComplete: () => initialsInput.value !== ''
+         },
+         {
+            label: 'Age acknowledgement',
+            isComplete: () => ageAcknowledgementCheckbox.checked,
+            watch: ageAcknowledgementCheckbox
+         },
+         {
+            label: 'Electronic signature acknowledgement',
+            isComplete: () => acknowledgementCheckbox.checked,
+            watch: acknowledgementCheckbox
          }
+      ];
 
-         if (!ageAcknowledged) {
-            missing.push('Age acknowledgement');
-         }
-
-         if (!acknowledged) {
-            missing.push('Electronic signature acknowledgement');
-         }
-
-         if (!hasSignature) {
-            missing.push('signature');
-         }
-
-
-         if (complete) {
-            completionMessage.textContent =
-               'The document is ready to submit.';
-         } else {
-            completionMessage.textContent =
-               'Still required: ' + missing.join(', ') + '.';
-         }
+      function getMissingRequirements() {
+         return requirements.filter(
+            requirement => !requirement.isComplete()
+         );
       }
+
+      function updateCompletionState() {
+         const missing = getMissingRequirements();
+
+         submitButton.disabled = missing.length !== 0;
+
+         completionMessage.textContent =
+            missing.length === 0 ?
+            'The document is ready to submit.' :
+            'Still required: ' +
+            missing
+            .map(requirement => requirement.label)
+            .join(', ') +
+            '.';
+      }
+
+     /*
+       * Checkbox behavior.
+       */
+      requirements.forEach(requirement => {
+         requirement.watch?.addEventListener(
+            'change',
+            updateCompletionState
+         );
+      });
+
 
       /*
        * Signature dialog behavior.
@@ -553,33 +586,24 @@
             updateCompletionState();
          });
 
-      /*
-       * Checkbox behavior.
-       */
-      acknowledgementCheckbox.addEventListener(
-         'change',
-         updateCompletionState
-      );
-
-      ageAcknowledgementCheckbox.addEventListener(
-         'change',
-         updateCompletionState
-      );
+ 
 
       /*
        * Final browser-side validation.
        */
-      form.addEventListener('submit', event => {
-         const hasSignature = signatureInput.value !== '';
-         const hasInitials = initialsInput.value !== '';
-         const acknowledged = acknowledgementCheckbox.checked;
 
-         if (!hasSignature || !hasInitials || !acknowledged) {
+      form.addEventListener('submit', event => {
+         const missing = getMissingRequirements();
+
+         if (missing.length !== 0) {
             event.preventDefault();
 
             alert(
-               'Please provide your signature, initials, ' +
-               'and acknowledgement before submitting.'
+               'Still required: ' +
+               missing
+               .map(requirement => requirement.label)
+               .join(', ') +
+               '.'
             );
 
             updateCompletionState();
@@ -589,6 +613,10 @@
          submitButton.disabled = true;
          submitButton.textContent = 'Submitting…';
       });
+
+
+
+
 
       updateCompletionState();
    });

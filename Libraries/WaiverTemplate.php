@@ -108,20 +108,6 @@ class WaiverTemplate
                     $text
                 );
 
-                // Replace **text** with bold HTML
-                $text = preg_replace(
-                    '/\*\*(.+?)\*\*/s',
-                    '<b>$1</b>',
-                    $text
-                );
-
-                               // Replace !!text!! with red HTML
-                $text = preg_replace(
-                    '/!!(.+?)!!/s',
-                    '<span class=w3-text-red>$1</span>',
-                    $text
-                );
-
                 $waiverTemplate[$tag][$i] = $text;
             }
         }

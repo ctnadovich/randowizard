@@ -130,7 +130,7 @@
 <body>
 
     <?php
-    echo view('waiver/rusa_waiver_document', array_merge(
+    echo view('waiver/default_theme/document', array_merge(
         $replacementMap,
         [
             'render_mode' => 'pdf',

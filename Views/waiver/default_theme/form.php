@@ -27,7 +27,7 @@
         id="initials-png">
 
     <?= view(
-        'waiver/rusa_waiver_document',
+        'waiver/default_theme/document',
         $documentData
     ) ?>
 

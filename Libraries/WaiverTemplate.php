@@ -16,47 +16,68 @@
 //    https://randonneuring.org/LICENSE.txt
 //
 //    You should have received a copy of the GNU Affero General Public License
-//    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+//    along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 namespace App\Libraries;
 
 class WaiverTemplate
 {
-    // This is where waivers are stored. Maybe someday a RUSA URL? 
-    private string $template_baseurl = "https://randonneuring.org/assets/local/waivers/";
+    /*
+     * Paths are relative to the CodeIgniter application base URL.
+     *
+     * IndemnifiedParty supplies only simple filenames. This class
+     * determines where those resources live.
+     */
+    private const TEMPLATE_PATH =
+    'assets/local/waivers/';
 
-    public function setTemplateBaseURL(string $url)
-    {
-        $this->template_baseurl = $url;
-    }
+    private const LOGO_PATH =
+    'assets/local/waiver-logos/';
 
-    // Library provides waiver template fetching and interpolation functions. 
+    public readonly string $template_name;
+    public readonly string $template_url;
 
-    public string $template_name;
+    private readonly string $raw_contents;
+
     public array $data;
 
-    
     public function __construct(string $template_name)
     {
+        self::assertValidResourceName(
+            $template_name,
+            'template'
+        );
+
         $this->template_name = $template_name;
-        $this->data = $this->get_data();
+        $this->template_url =
+            self::templateUrl($template_name);
+
+        $this->raw_contents = $this->fetchTemplate();
+
+        $this->data = $this->parseTemplate(
+            $this->raw_contents
+        );
     }
 
-
-    // Waiver fetcher, no interpolation
-
-    private function get_data(): array
+    private function fetchTemplate(): string
     {
-
-        $waiver_url = $this->template_baseurl . $this->template_name;
-
-        $contents = @file_get_contents($waiver_url);
+        $contents = @file_get_contents(
+            $this->template_url
+        );
 
         if ($contents === false) {
-            throw new \RuntimeException("Unable to fetch waiver template from $waiver_url");
+            throw new \RuntimeException(
+                'Unable to fetch waiver template from '
+                    . $this->template_url
+            );
         }
 
+        return $contents;
+    }
+
+    private function parseTemplate(
+        string $contents
+    ): array {
         $result = [];
 
         $currentTag = null;
@@ -64,49 +85,190 @@ class WaiverTemplate
 
         $lines = preg_split('/\R/', $contents);
 
+        if ($lines === false) {
+            throw new \RuntimeException(
+                'Unable to split waiver template into lines: '
+                    . $this->template_url
+            );
+        }
+
         foreach ($lines as $line) {
-            if (preg_match('/^\[([A-Z0-9_]+)\]$/', trim($line), $matches)) {
+            if (
+                preg_match(
+                    '/^\[([A-Z0-9_]+)\]$/',
+                    trim($line),
+                    $matches
+                ) === 1
+            ) {
                 if ($currentTag !== null) {
-                    $result[$currentTag][] = $this->safe_text(rtrim($currentText));
+                    $result[$currentTag][] =
+                        $this->safe_text(
+                            rtrim($currentText)
+                        );
                 }
 
                 $currentTag = $matches[1];
                 $currentText = '';
-            } else {
-                if ($currentTag !== null) {
-                    $currentText .= $line . "\n";
-                }
+            } elseif ($currentTag !== null) {
+                $currentText .= $line . "\n";
             }
         }
 
         if ($currentTag !== null) {
-            $result[$currentTag][] = $this->safe_text(rtrim($currentText));
+            $result[$currentTag][] =
+                $this->safe_text(
+                    rtrim($currentText)
+                );
         }
 
         return $result;
     }
 
-    public function interpolate_template(array $replaceMap, $allowUndefined = true): array
-    {
+    /**
+     * Construct the full URL for a waiver template.
+     */
+    public static function templateUrl(
+        string $templateName
+    ): string {
+        self::assertValidResourceName(
+            $templateName,
+            'template'
+        );
+
+        return base_url(
+            self::TEMPLATE_PATH . $templateName
+        );
+    }
+
+    /**
+     * Construct the full URL for a waiver logo.
+     */
+    public static function logoUrl(
+        string $logoName
+    ): string {
+        self::assertValidResourceName(
+            $logoName,
+            'logo'
+        );
+
+        return base_url(
+            self::LOGO_PATH . $logoName
+        );
+    }
+
+    /**
+     * Require a simple filename rather than an arbitrary URL or path.
+     *
+     * Valid examples:
+     *
+     *     rusa_waiver.txt
+     *     rusa-logo.png
+     *
+     * Invalid examples:
+     *
+     *     ../private/file
+     *     https://example.com/file.txt
+     *     subdirectory/file.txt
+     */
+    private static function assertValidResourceName(
+        string $name,
+        string $resourceType
+    ): void {
+        if (
+            $name === ''
+            || preg_match(
+                '/\A[A-Za-z0-9][A-Za-z0-9._-]*\z/',
+                $name
+            ) !== 1
+        ) {
+            throw new \InvalidArgumentException(
+                "Invalid waiver $resourceType name: $name"
+            );
+        }
+    }
+
+    // Template validation methods 
+
+    public function missingReplacementFields(
+        array $contextData
+    ): array {
+        $missing = [];
+
+        foreach ($this->replacementFields() as $field) {
+            if (!array_key_exists($field, $contextData)) {
+                $missing[] = $field;
+            }
+        }
+
+        return $missing;
+    }
+
+    public function validateReplacementFields(
+        array $contextData
+    ): void {
+        $missing = $this->missingReplacementFields(
+            $contextData
+        );
+
+        if ($missing !== []) {
+            throw new \RuntimeException(
+                'Missing waiver context fields required '
+                    . 'by template '
+                    . $this->template_name
+                    . ': '
+                    . implode(', ', $missing)
+            );
+        }
+    }
+
+    // Interpolate all {{replace}} strings and return revised data (doesn't change $this->data)
+    //
+    // The default here is to allow undefined fields because we 
+    // presume that validation was done earlier if desired. 
+
+    public function interpolate_template(
+        array $replaceMap,
+        bool $allowUndefined = true
+    ): array {
         $waiverTemplate = $this->data;
+
         foreach ($waiverTemplate as $tag => $strings) {
             foreach ($strings as $i => $text) {
                 $text = preg_replace_callback(
                     '/\{\{([A-Za-z0-9_]+)\}\}/',
-                    function ($matches) use ($replaceMap, $allowUndefined) {
+                    function (
+                        array $matches
+                    ) use (
+                        $replaceMap,
+                        $allowUndefined
+                    ): string {
                         $name = $matches[1];
 
-                        if (!array_key_exists($name, $replaceMap)) {
-                            if ($allowUndefined)
-                                return '{{' . $name . '}}';   // if no mapping, leave tag in place
-                            else
-                                throw new \RuntimeException("Undefined replacement: $name");
-                        } else {
-                            return (string)$replaceMap[$name];
+                        if (
+                            !array_key_exists(
+                                $name,
+                                $replaceMap
+                            )
+                        ) {
+                            if ($allowUndefined) {
+                                return '{{' . $name . '}}';
+                            }
+
+                            throw new \RuntimeException(
+                                "Undefined replacement: $name"
+                            );
                         }
+
+                        return (string) $replaceMap[$name];
                     },
                     $text
                 );
+
+                if ($text === null) {
+                    throw new \RuntimeException(
+                        'Error interpolating waiver template.'
+                    );
+                }
 
                 $waiverTemplate[$tag][$i] = $text;
             }
@@ -114,24 +276,55 @@ class WaiverTemplate
 
         return $waiverTemplate;
     }
+    
+    // returns a list of replacement fields that could be 
+    // used to validate context fields
 
+    public function replacementFields(): array
+    {
+        preg_match_all(
+            '/\{\{([A-Za-z0-9_]+)\}\}/',
+            $this->raw_contents,
+            $matches
+        );
+
+        $fields = array_values(
+            array_unique($matches[1] ?? [])
+        );
+
+        sort($fields);
+
+        return $fields;
+    }
 
     private function safe_text(string $s): string
     {
         $map = [
-            "\u{2018}" => "'",  // left single quote
-            "\u{2019}" => "'",  // right single quote
-            "\u{201C}" => '"',  // left double quote
-            "\u{201D}" => '"',  // right double quote
-            "\u{2013}" => '-',  // en dash
-            "\u{2014}" => '-',  // em dash
-            "\u{2026}" => '...', // ellipsis
-            "\u{00A0}" => ' ',  // non-breaking space
+            "\u{2018}" => "'",
+            "\u{2019}" => "'",
+            "\u{201C}" => '"',
+            "\u{201D}" => '"',
+            "\u{2013}" => '-',
+            "\u{2014}" => '-',
+            "\u{2026}" => '...',
+            "\u{00A0}" => ' ',
         ];
 
         $s = strtr($s, $map);
 
-        // Convert remaining text to Windows-1252, replacing unrepresentable chars
-        return iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $s);
+        $converted = iconv(
+            'UTF-8',
+            'windows-1252//TRANSLIT//IGNORE',
+            $s
+        );
+
+        if ($converted === false) {
+            throw new \RuntimeException(
+                'Unable to convert waiver template text '
+                    . 'to Windows-1252.'
+            );
+        }
+
+        return $converted;
     }
 }

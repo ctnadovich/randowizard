@@ -9,6 +9,9 @@ use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
+use App\Models\Region;
+
+
 /**
  * Class BaseController
  *
@@ -45,7 +48,7 @@ abstract class BaseController extends Controller
     protected $viewData = [];
 
     protected $userModel;
-    protected $regionModel;
+    protected Region $regionModel;
 
     /**
      * Constructor.

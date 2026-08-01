@@ -39,12 +39,12 @@
 
     <div class="w3-margin-top">
 
-        <a href="<?= site_url('waiver/document/' . $session['session_id']) ?>"
+        <a href="<?= site_url("waiver/document/$session_id") ?>"
            class="w3-button w3-blue w3-margin-right">
             View Signed PDF
         </a>
 
-        <a href="<?= site_url('event/' . $session['event_code']) ?>"
+        <a href="<?= site_url("event_info/$event_code") ?>"
            class="w3-button w3-light-grey">
             Return to Event
         </a>

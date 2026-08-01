@@ -25,13 +25,18 @@ use CodeIgniter\HTTP\ResponseInterface;
 use DateTimeZone;
 use Psr\Log\LoggerInterface;
 
+use App\Models\Event;
+use App\Models\Roster;
+use App\Models\Checkin;
+use App\Models\Rusa;
+
+
 class EventProcessor extends BaseController
 {
-	protected $eventModel;
-	protected $regionModel;
-	protected $checkinModel;
-	protected $rosterModel;
-	protected $rusaModel;
+	protected Event $eventModel;
+	protected Checkin $checkinModel;
+	protected Roster $rosterModel;
+	protected Rusa $rusaModel;
 
 	protected $rwgpsLibrary;
 	protected $controletimesLibrary;
@@ -111,7 +116,8 @@ class EventProcessor extends BaseController
 		if (empty($club)) {
 			throw new \Exception("Fatal Error in Event ID=$event_code: UNKNOWN CLUB");
 		}
-		$is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');
+		$is_rusa = $this->regionModel->hasOption($club_acp_code, 'rusa');  // DEPRECIATED
+		$indemnified_party_id = ($is_rusa)?'rusa':'other';
 
 
 		// Try to get route data
@@ -275,7 +281,9 @@ class EventProcessor extends BaseController
 		$event_location = "$start_city, $start_state";
 		$event_name = $event['name'];
 		$distance = $event['distance'];
-		$event_name_dist = $event_name . ' ' . $distance . 'K';
+		$event_name_dist = $this->eventModel->nameDist($event);
+		
+		$event_name . ' ' . $distance . 'K';
 		$gravel_distance = $event['gravel_distance'];
 		$sanction = $event['sanction'];
 		$type = $event['type'];
@@ -456,6 +464,7 @@ class EventProcessor extends BaseController
 			'has_cuesheet',
 			'has_rwgps_route',
 			'is_rusa',
+			'indemnified_party_id',
 			'last_download',
 			'last_event_change_datetime',
 			'last_event_change_str',

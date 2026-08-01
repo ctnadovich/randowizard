@@ -28,32 +28,45 @@ use DateTimeImmutable;
 use DateTimeZone;
 use RuntimeException;
 
-class WaiverSessionModel extends Model
+class WaiverSession extends Model
 {
+
+    private const SESSION_IDENTITY_FIELDS = [
+        'event_waiver_context_id',
+        'participant_id',
+    ];
+
+    private const ACTIVE_SESSION_FIELDS = [
+        'session_id',
+        'created_at',
+        'expires_at',
+        'participant_name',
+        'status',
+    ];
+
+    private const COMPLETION_FIELDS = [
+        'completed_at',
+        'document_key',
+        'document_sha256',
+    ];
+
+
+    /**
+     * Complete set of database columns accepted by the model.
+     */
+    protected $allowedFields = [
+        ...self::SESSION_IDENTITY_FIELDS,
+        ...self::ACTIVE_SESSION_FIELDS,
+        ...self::COMPLETION_FIELDS,
+    ];
     protected $table            = 'waiver';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-
     protected $returnType = 'array';
-
     protected $useSoftDeletes = false;
     protected $useTimestamps  = false;
-
     protected $protectFields = true;
 
-    protected $allowedFields = [
-        'session_id',
-        'event_code',
-        'participant_id',
-        'template_name',
-        'revision',
-        'created_at',
-        'completed_at',
-        'expires_at',
-        'document_key',
-        'document_sha256',
-        'status',
-    ];
 
     /*
      * Waiver session statuses
@@ -63,79 +76,135 @@ class WaiverSessionModel extends Model
     public const STATUS_EXPIRED   = 'expired';
     public const STATUS_CANCELLED = 'cancelled';
 
+
     /**
-     * Create a new waiver session, or reuse the existing pending,
-     * unexpired session for this participant and event.
+     * Create a new waiver session, or reuse the existing session for the
+     * same participant and immutable event waiver context.
      *
-     * Because the table has a unique constraint on
-     * (event_code, participant_id), there can only be one row for
-     * each participant/event combination.
+     * Because the waiver table has a unique constraint on
+     * (event_waiver_context_id, participant_id), there can be only one
+     * waiver row for each participant/event combination.
      *
      * @return array<string, mixed>
      */
     public function createOrReuseSession(
-        string $eventCode,
-        string $participantId,
-        string $templateName,
-        string $revision,
+        int $event_waiver_context_id,
+        string $participant_id,
+        string $participant_name,
         int $lifetimeSeconds = 3600
     ): array {
-        $this->assertNonEmpty($eventCode, 'event code');
-        $this->assertNonEmpty($participantId, 'participant ID');
-        $this->assertNonEmpty($templateName, 'template name');
-        $this->assertNonEmpty($revision, 'template revision');
+        if ($event_waiver_context_id <= 0) {
+            throw new RuntimeException(
+                'Event waiver context ID must be greater than zero.'
+            );
+        }
 
+        $this->assertNonEmpty(
+            $participant_id,
+            'participant ID'
+        );
+
+        $this->assertNonEmpty(
+            $participant_name,
+            'participant name'
+        );
         if ($lifetimeSeconds <= 0) {
             throw new RuntimeException(
                 'Waiver session lifetime must be greater than zero.'
             );
         }
 
-        $existing = $this->findByParticipantAndEvent(
-            $eventCode,
-            $participantId
-        );
+        $existing =
+            $this->findByParticipantAndEventContext(
+                $event_waiver_context_id,
+                $participant_id
+            );
+
 
         if ($existing !== null) {
+
+            if (
+                (string) $existing['participant_name']
+                !== $participant_name
+            ) {
+                throw new RuntimeException(
+                    'The supplied participant name does not match '
+                        . 'the participant identity previously stored '
+                        . 'for this event and participant ID.'
+                );
+            }
+
             return $this->handleExistingSession(
                 $existing,
-                $templateName,
-                $revision,
                 $lifetimeSeconds
             );
         }
 
+
+
         /*
-         * A simultaneous request could insert the same
-         * event/participant combination after our SELECT but before
-         * this INSERT. If that happens, retrieve the row that won
-         * the race.
-         */
+     * A simultaneous request could insert the same event/participant
+     * combination after the SELECT above but before this INSERT.
+     *
+     * If the unique constraint rejects our insert, retrieve the row
+     * that won the race and process it as an existing session.
+     */
         try {
             return $this->insertNewSession(
-                $eventCode,
-                $participantId,
-                $templateName,
-                $revision,
+                $event_waiver_context_id,
+                $participant_id,
+                $participant_name,
                 $lifetimeSeconds
             );
         } catch (DatabaseException $e) {
-            $existing = $this->findByParticipantAndEvent(
-                $eventCode,
-                $participantId
-            );
+            $existing =
+                $this->findByParticipantAndEventContext(
+                    $event_waiver_context_id,
+                    $participant_id
+                );
 
             if ($existing !== null) {
                 return $this->handleExistingSession(
                     $existing,
-                    $templateName,
-                    $revision,
                     $lifetimeSeconds
                 );
             }
 
             throw $e;
         }
+    }
+
+    /**
+     * Find the single waiver session belonging to a participant and
+     * immutable event waiver context.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findByParticipantAndEventContext(
+        int $event_waiver_context_id,
+        string $participant_id
+    ): ?array {
+        if ($event_waiver_context_id <= 0) {
+            throw new RuntimeException(
+                'Event waiver context ID must be greater than zero.'
+            );
+        }
+
+        $this->assertNonEmpty(
+            $participant_id,
+            'participant ID'
+        );
+
+        return $this
+            ->where(
+                'event_waiver_context_id',
+                $event_waiver_context_id
+            )
+            ->where(
+                'participant_id',
+                $participant_id
+            )
+            ->first();
     }
 
     /**
@@ -177,49 +246,66 @@ class WaiverSessionModel extends Model
         return $session;
     }
 
+
+
     /**
-     * Retrieve a session only when it is pending and unexpired.
-     *
-     * If the session has passed its expiration time, its status is
-     * changed to "expired" and null is returned.
+     * Retrieve a session only when it is pending, unexpired, and the
+     * associated event has not started.
      *
      * @return array<string, mixed>|null
      */
-    public function getActiveSession(string $sessionId): ?array
-    {
+    public function getActiveSession(
+        string $sessionId
+    ): ?array {
+        if (!$this->isValidSessionIdFormat($sessionId)) {
+            return null;
+        }
+
+        $now = $this->formatDateTime(
+            $this->nowUtc()
+        );
+
+        $session = $this
+            ->select('waiver.*')
+            ->join(
+                'event_waiver_context AS e',
+                'e.id = waiver.event_waiver_context_id'
+            )
+            ->where(
+                'waiver.session_id',
+                strtolower($sessionId)
+            )
+            ->where(
+                'waiver.status',
+                self::STATUS_PENDING
+            )
+            ->where('waiver.expires_at >', $now)
+            ->where('e.event_start_at >', $now)
+            ->first();
+
+        if ($session !== null) {
+            return $session;
+        }
+
+        /*
+     * Preserve the prior behavior of marking an overdue pending
+     * session expired.
+     */
         $session = $this->findBySessionId($sessionId);
 
-        if ($session === null) {
-            return null;
+        if (
+            $session !== null
+            && $session['status'] === self::STATUS_PENDING
+            && $this->isExpired($session)
+        ) {
+            $this->markExpiredById(
+                (int) $session['id']
+            );
         }
 
-        if ($session['status'] !== self::STATUS_PENDING) {
-            return null;
-        }
-
-        if ($this->isExpired($session)) {
-            $this->markExpiredById((int) $session['id']);
-
-            return null;
-        }
-
-        return $session;
+        return null;
     }
 
-    /**
-     * Find the single session belonging to a participant at an event.
-     *
-     * @return array<string, mixed>|null
-     */
-    public function findByParticipantAndEvent(
-        string $eventCode,
-        string $participantId
-    ): ?array {
-        return $this
-            ->where('event_code', $eventCode)
-            ->where('participant_id', $participantId)
-            ->first();
-    }
 
     /**
      * Mark a waiver session completed.
@@ -247,15 +333,42 @@ class WaiverSessionModel extends Model
             );
         }
 
-        $this->builder()
-            ->where('session_id', strtolower($sessionId))
-            ->where('status', self::STATUS_PENDING)
-            ->update([
-                'status'          => self::STATUS_COMPLETED,
-                'completed_at'    => $this->formatDateTime($this->nowUtc()),
-                'document_key'    => $documentKey,
-                'document_sha256' => $documentSha256,
-            ]);
+        $now = $this->formatDateTime(
+            $this->nowUtc()
+        );
+
+
+
+        $sql = <<<'SQL'
+UPDATE waiver AS w
+JOIN event_waiver_context AS e
+  ON e.id = w.event_waiver_context_id
+SET
+    w.status = ?,
+    w.completed_at = ?,
+    w.document_key = ?,
+    w.document_sha256 = ?
+WHERE w.session_id = ?
+  AND w.status = ?
+  AND w.expires_at > ?
+  AND e.event_start_at > ?
+SQL;
+
+        $this->db->query(
+            $sql,
+            [
+                self::STATUS_COMPLETED,
+                $now,
+                $documentKey,
+                $documentSha256,
+                strtolower($sessionId),
+                self::STATUS_PENDING,
+                $now,
+                $now,
+            ]
+        );
+
+
 
         return $this->db->affectedRows() === 1;
     }
@@ -296,17 +409,39 @@ class WaiverSessionModel extends Model
         return $this->db->affectedRows();
     }
 
+
     /**
-     * Determine whether this participant has completed the waiver.
+     * Determine whether a participant has already completed a waiver
+     * for the specified immutable event waiver context.
      */
     public function participantHasCompletedWaiver(
-        string $eventCode,
-        string $participantId
+        int $event_waiver_context_id,
+        string $participant_id
     ): bool {
-        return $this
-            ->where('event_code', $eventCode)
-            ->where('participant_id', $participantId)
-            ->where('status', self::STATUS_COMPLETED)
+        if ($event_waiver_context_id <= 0) {
+            throw new RuntimeException(
+                'Event waiver context ID must be greater than zero.'
+            );
+        }
+
+        $this->assertNonEmpty(
+            $participant_id,
+            'participant ID'
+        );
+
+        return $this->builder()
+            ->where(
+                'event_waiver_context_id',
+                $event_waiver_context_id
+            )
+            ->where(
+                'participant_id',
+                $participant_id
+            )
+            ->where(
+                'status',
+                self::STATUS_COMPLETED
+            )
             ->countAllResults() > 0;
     }
 
@@ -347,113 +482,114 @@ class WaiverSessionModel extends Model
     }
 
     /**
-     * Insert a new session row.
+     * Insert a new waiver session row.
      *
      * @return array<string, mixed>
      */
     private function insertNewSession(
-        string $eventCode,
-        string $participantId,
-        string $templateName,
-        string $revision,
+        int $event_waiver_context_id,
+        string $participant_id,
+        string $participant_name,
         int $lifetimeSeconds
     ): array {
         $createdAt = $this->nowUtc();
-        $expiresAt = $createdAt->add(
-            new DateInterval('PT' . $lifetimeSeconds . 'S')
+
+        $expiresAt = $createdAt->modify(
+            "+{$lifetimeSeconds} seconds"
         );
 
         $data = [
-            'session_id'    => $this->generateSessionId(),
-            'event_code'    => $eventCode,
-            'participant_id' => $participantId,
-            'template_name' => $templateName,
-            'revision'      => $revision,
-            'created_at'    => $this->formatDateTime($createdAt),
-            'expires_at'    => $this->formatDateTime($expiresAt),
-            'status'        => self::STATUS_PENDING,
+            'event_waiver_context_id' =>
+            $event_waiver_context_id,
+            'participant_id' => $participant_id,
+            'participant_name'        => $participant_name,
+            'session_id'     => $this->generateSessionId(),
+            'created_at'     => $this->formatDateTime($createdAt),
+            'expires_at'     => $this->formatDateTime($expiresAt),
+            'status'         => self::STATUS_PENDING,
         ];
 
         $id = $this->insert($data, true);
 
         if ($id === false) {
             throw new RuntimeException(
-                'Unable to create the waiver session: ' .
-                    implode('; ', $this->errors())
+                'Unable to create the waiver session: '
+                    . implode('; ', $this->errors())
             );
         }
 
-        $session = $this->find((int) $id);
-
-        if ($session === null) {
-            throw new RuntimeException(
-                'The waiver session was inserted but could not be retrieved.'
-            );
-        }
-
-        return $session;
+        return $this->requireSessionById(
+            (int) $id,
+            'The waiver session was inserted but could not be retrieved.'
+        );
     }
 
     /**
-     * Decide what to do with an existing participant/event row.
+     * Decide whether to reuse, return, or renew an existing waiver row.
      *
      * @param array<string, mixed> $existing
      * @return array<string, mixed>
      */
     private function handleExistingSession(
         array $existing,
-        string $templateName,
-        string $revision,
         int $lifetimeSeconds
     ): array {
-        /*
-         * A completed waiver must never silently become pending again.
-         */
-        if ($existing['status'] === self::STATUS_COMPLETED) {
+        $status = $existing['status'] ?? null;
+
+        if ($status === self::STATUS_COMPLETED) {
             return $existing;
         }
 
-        /*
-         * Reuse an active pending session only if it represents the same
-         * template and revision.
-         */
         if (
-            $existing['status'] === self::STATUS_PENDING
+            $status === self::STATUS_PENDING
             && !$this->isExpired($existing)
-            && $existing['template_name'] === $templateName
-            && $existing['revision'] === $revision
         ) {
             return $existing;
         }
 
-        /*
-         * The unique event/participant constraint prevents inserting
-         * another row. Reset this non-completed row as a fresh session.
-         */
-        return $this->resetSession(
-            (int) $existing['id'],
-            $templateName,
-            $revision,
-            $lifetimeSeconds
+        if (
+            $status === self::STATUS_PENDING
+            || $status === self::STATUS_EXPIRED
+            || $status === self::STATUS_CANCELLED
+        ) {
+            return $this->resetSession(
+                (int) $existing['id'],
+                $lifetimeSeconds
+            );
+        }
+
+        throw new RuntimeException(
+            'Invalid waiver session status.'
         );
     }
 
     /**
-     * Reset a non-completed row as a fresh signing session.
+     * Reset a non-completed waiver row as a fresh signing session.
+     *
+     * The participant and immutable event identity remain unchanged.
      *
      * @return array<string, mixed>
      */
     private function resetSession(
         int $id,
-        string $templateName,
-        string $revision,
         int $lifetimeSeconds
     ): array {
-        $existing = $this->find($id);
-
-        if ($existing === null) {
-            throw new RuntimeException('Waiver session not found.');
+        if ($id <= 0) {
+            throw new RuntimeException(
+                'Waiver session ID must be greater than zero.'
+            );
         }
+
+        if ($lifetimeSeconds <= 0) {
+            throw new RuntimeException(
+                'Waiver session lifetime must be greater than zero.'
+            );
+        }
+
+        $existing = $this->requireSessionById(
+            $id,
+            'Waiver session not found.'
+        );
 
         if ($existing['status'] === self::STATUS_COMPLETED) {
             throw new RuntimeException(
@@ -462,35 +598,49 @@ class WaiverSessionModel extends Model
         }
 
         $createdAt = $this->nowUtc();
-        $expiresAt = $createdAt->add(
-            new DateInterval('PT' . $lifetimeSeconds . 'S')
+
+        $expiresAt = $createdAt->modify(
+            "+{$lifetimeSeconds} seconds"
         );
 
-        $updated = $this->update($id, [
-            'session_id'      => $this->generateSessionId(),
-            'template_name'   => $templateName,
-            'revision'        => $revision,
-            'created_at'      => $this->formatDateTime($createdAt),
-            'expires_at'      => $this->formatDateTime($expiresAt),
-            'completed_at'    => null,
-            'document_key'    => null,
-            'document_sha256' => null,
-            'status'           => self::STATUS_PENDING,
-        ]);
+        $resetData = array_merge(
+            [
+                'session_id'   => $this->generateSessionId(),
+                'created_at'   => $this->formatDateTime($createdAt),
+                'expires_at'   => $this->formatDateTime($expiresAt),
+                'status'       => self::STATUS_PENDING,
+            ],
+            array_fill_keys(
+                self::COMPLETION_FIELDS,
+                null
+            )
+        );
 
-        if ($updated === false) {
+        if ($this->update($id, $resetData) === false) {
             throw new RuntimeException(
-                'Unable to reset the waiver session: ' .
-                    implode('; ', $this->errors())
+                'Unable to reset the waiver session: '
+                    . implode('; ', $this->errors())
             );
         }
 
+        return $this->requireSessionById(
+            $id,
+            'The reset waiver session could not be retrieved.'
+        );
+    }
+
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function requireSessionById(
+        int $id,
+        string $errorMessage
+    ): array {
         $session = $this->find($id);
 
         if ($session === null) {
-            throw new RuntimeException(
-                'The reset waiver session could not be retrieved.'
-            );
+            throw new RuntimeException($errorMessage);
         }
 
         return $session;
@@ -531,6 +681,7 @@ class WaiverSessionModel extends Model
     {
         return $dateTime->format('Y-m-d H:i:s');
     }
+
 
     private function assertNonEmpty(string $value, string $description): void
     {

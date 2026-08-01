@@ -22,26 +22,25 @@ namespace App\Controllers;
 
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use DateTimeZone;
-use DateTimeImmutable;
-// use RuntimeException;
-use Throwable;
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
 use Psr\Log\LoggerInterface;
-use CodeIgniter\HTTP\RedirectResponse;
-use App\Models\WaiverSessionModel;
 use App\Libraries\WaiverStorage;
+use App\Libraries\WaiverContext;
+
+use App\Models\EventWaiverContext;
+use App\Models\WaiverSession;
+
 
 class Waiver extends EventProcessor
 {
 
-    private const MAX_SIGNATURE_BYTES = 2_000_000;
-
-    private WaiverSessionModel $waiverSessionModel;
+    private WaiverSession $waiverSessionModel;
     private WaiverStorage $waiverStorage;
+    private WaiverContext $waiverContext;
+    private EventWaiverContext $eventWaiverContextModel;
 
     public function initController(
         RequestInterface $request,
@@ -50,8 +49,16 @@ class Waiver extends EventProcessor
     ) {
         parent::initController($request, $response, $logger);
         $this->waiverSessionModel = model('WaiverSession');
-        $this->waiverStorage =
-            new WaiverStorage();
+        $this->waiverStorage = new WaiverStorage();
+        $this->eventWaiverContextModel = model('EventWaiverContext');
+
+        $this->waiverContext = new WaiverContext(
+            eventModel: $this->eventModel,
+            regionModel: $this->regionModel,
+            eventWaiverContextModel: $this->eventWaiverContextModel,
+            waiverSessionModel: $this->waiverSessionModel,
+            rosterModel: $this->rosterModel
+        );
     }
 
     public function start(
@@ -61,377 +68,189 @@ class Waiver extends EventProcessor
         try {
             helper('waiver_helper');
 
-            $waiverData = $this->buildWaiverData(
-                $event_code,
-                $participant_id
+            $waiver_data = $this->waiverContext
+                ->createFromLocalData(
+                    $event_code,
+                    $participant_id
+                );
+
+            return $this->renderWaiverForm(
+                $waiver_data
             );
-
-            $replacementMap =
-                $waiverData['replacementMap'];
-
-            $waiver_view =
-                $waiverData['waiverView'];
-
-            $documentData = array_merge(
-                $replacementMap,
-                [
-                    'render_mode' => 'html',
-                    'signature_png' => '',
-                    'initials_png' => '',
-                    'age_acknowledged' => false,
-                    'acknowledged' => false,
-                ]
-            );
-
-            $this->viewData = array_merge(
-                $this->viewData,
-                $replacementMap,
-                [
-                    'documentData' => $documentData,
-                ]
-            );
-
-            $this->viewData['style_head'] = view(
-                'default_style_head',
-                $this->viewData
-            );
-
-            $this->viewData['body_style'] =
-                'class="w3-light-grey"';
-
-            return
-                view('head', $this->viewData)
-                . view($waiver_view, $this->viewData)
-                . view('foot', $this->viewData);
         } catch (\Throwable $e) {
             return $this->die_exception($e);
         }
     }
 
-    /**
-     * Build and validate all authoritative waiver data.
-     *
-     * When $waiverSession is null, a session is created or reused.
-     * When supplied, the session's event, participant, template and revision
-     * are treated as authoritative and verified.
-     *
-     * @return array<string, mixed>
-     */
-    private function buildWaiverData(
-        string $event_code,
-        string $participant_id,
-        ?array $waiverSession = null
-    ): array {
-        // Validate event.
-        $event = $this->eventModel->eventByCode($event_code);
+    public function startExternal()
+    {
+        try {
+            $this->authenticateExternalRequest();
 
-        if (empty($event)) {
-            throw new \RuntimeException(
-                "Event $event_code was not found."
-            );
-        }
+            $context_data = $this->request->getJSON(true);
 
-        $edata = $this->get_event_data($event);
-
-        if (empty($edata) || empty($edata['event_code'])) {
-            throw new \RuntimeException(
-                "Event data missing for $event_code."
-            );
-        }
-
-        $event_name = $edata['event_name_dist'];
-        $event_date = $edata['event_date_str'];
-        $event_time = $edata['event_time_str'];
-        $event_tagname = $edata['event_tagname'];
-        $event_is_rusa = $edata['is_rusa'];
-
-        // Validate organizing club.
-        $club_acp_code = $edata['club_acp_code'];
-        $club = $this->regionModel->getClub($club_acp_code);
-
-        if (empty($club)) {
-            throw new \RuntimeException(
-                "Organizing club $club_acp_code was not found."
-            );
-        }
-
-        if (empty($club['club_name'])) {
-            throw new \RuntimeException(
-                "Club name missing for $club_acp_code."
-            );
-        }
-
-        if (empty($club['event_timezone_name'])) {
-            throw new \RuntimeException(
-                "Event timezone missing for club $club_acp_code."
-            );
-        }
-
-        $organizing_club = $club['club_name'];
-        $event_timezone_name = $club['event_timezone_name'];
-        $event_tz = new \DateTimeZone($event_timezone_name);
-
-        // Validate participant.
-        if ($participant_id === '') {
-            throw new \RuntimeException(
-                'Rider ID not specified.'
-            );
-        }
-
-        $participant = [];
-
-        foreach ($edata['roster'] as $r) {
-            if ((string) $r['rider_id'] === $participant_id) {
-                $participant = $r;
-                break;
-            }
-        }
-
-        if (empty($participant)) {
-            throw new \RuntimeException(
-                "Participant ID $participant_id not found "
-                    . "in roster for event $event_code."
-            );
-        }
-
-        $participant_name =
-            $participant['first_name']
-            . ' '
-            . $participant['last_name'];
-
-        // Select template and view.
-        if ($event_is_rusa) {
-            $template_name = 'rusa_waiver_template.txt';
-            $waiver_view = 'waiver/rusa_waiver_form';
-        } else {
-            throw new \RuntimeException(
-                'Waiver for non-RUSA event is not defined.'
-            );
-        }
-
-        /*
-     * If finalizing an existing session, its stored template name must
-     * agree with the template selected for this event.
-     */
-        if (
-            $waiverSession !== null
-            && $waiverSession['template_name'] !== $template_name
-        ) {
-            throw new \RuntimeException(
-                'Waiver template does not match the stored session.'
-            );
-        }
-
-        $waiverTemplate =
-            new \App\Libraries\WaiverTemplate($template_name);
-
-        // Template-derived values.
-        $waiver_logo_url = trim(
-            $waiverTemplate->data['LOGO'][0] ?? ''
-        );
-
-        if ($waiver_logo_url === '') {
-            $waiver_logo_url =
-                'https://randonneuring.org/assets/'
-                . 'local/images/rusa-logo.png';
-        }
-
-        if (
-            filter_var(
-                $waiver_logo_url,
-                FILTER_VALIDATE_URL
-            ) === false
-        ) {
-            throw new \RuntimeException(
-                "Invalid Waiver LOGO URL: $waiver_logo_url"
-            );
-        }
-
-        $revision = trim(
-            $waiverTemplate->data['REVISION'][0] ?? ''
-        );
-
-        if ($revision === '') {
-            throw new \RuntimeException(
-                "REVISION not specified in template: $template_name"
-            );
-        }
-
-        /*
-     * Either create/reuse a session or verify the existing one.
-     */
-        if ($waiverSession === null) {
-            $waiverSession =
-                $this->waiverSessionModel->createOrReuseSession(
-                    eventCode: $event_code,
-                    participantId: $participant_id,
-                    templateName: $template_name,
-                    revision: $revision,
-                );
-        } else {
-            if (
-                $waiverSession['event_code'] !== $event_code
-                || $waiverSession['participant_id'] !== $participant_id
-            ) {
+            if (!is_array($context_data)) {
                 throw new \RuntimeException(
-                    'Waiver session context does not match.'
+                    'Request body must contain a JSON object.'
                 );
             }
 
-            if ($waiverSession['revision'] !== $revision) {
-                throw new \RuntimeException(
-                    'The waiver template revision has changed '
-                        . 'since this session was created.'
+            $context_data = $this->waiverContext
+                ->normalizeExternalContext(
+                    $context_data
                 );
-            }
-        }
 
-        $session_id = $waiverSession['session_id'];
-        $created_at = $waiverSession['created_at'];
-        $expires_at = $waiverSession['expires_at'];
+            $waiver_data = $this->waiverContext
+                ->createFromExternalData(
+                    $context_data
+                );
 
-        $created_utc = new \DateTimeImmutable(
-            $created_at,
-            new \DateTimeZone('UTC')
-        );
+            $waiver_session =
+                $waiver_data['waiverSession'];
 
-        $created_local =
-            $created_utc->setTimezone($event_tz);
+            $session_id =
+                (string) $waiver_session['session_id'];
 
-        $waiver_timestamp = $created_local->format(
-            'F j, Y \a\t g:i A T \(P\)'
-        );
-
-        $this_waiver_url = site_url(
-            "waiver/start/$event_code/$participant_id"
-        );
-
-        $sessionData = compact([
-            'event_code',
-            'participant_id',
-            'template_name',
-            'revision',
-            'session_id',
-            'waiver_timestamp',
-            'created_at',
-            'expires_at',
-        ]);
-
-        $waiverReplacements = compact([
-            'waiver_logo_url',
-            'this_waiver_url',
-        ]);
-
-        $eventClubRiderReplacements = compact([
-            'event_name',
-            'event_date',
-            'event_time',
-            'event_timezone_name',
-            'organizing_club',
-            'club_acp_code',
-            'participant_name',
-            'event_is_rusa',
-            'template_name',
-            'waiver_view',
-        ]);
-
-        $interpolated_template =
-            $waiverTemplate->interpolate_template(
-                array_merge(
-                    $sessionData,
-                    $waiverReplacements,
-                    $eventClubRiderReplacements
-                )
+            $waiver_url = site_url(
+                'waiver/session/'
+                    . rawurlencode($session_id)
             );
 
-        $title =
-            $interpolated_template['TITLE'][0] ?? '';
-
-        $header =
-            $interpolated_template['HEADER'][0] ?? '';
-
-        $initial =
-            $interpolated_template['INITIAL'][0] ?? '';
-
-        $preamble =
-            $interpolated_template['PREAMBLE'][0] ?? '';
-
-        $footer =
-            $interpolated_template['FOOTER'][0] ?? '';
-
-        $signature =
-            $interpolated_template['SIGNATURE'][0] ?? '';
-
-        $esc =
-            $interpolated_template['ESC'][0] ?? '';
-
-        $clause =
-            $interpolated_template['CLAUSE'] ?? [];
-
-        $sectionMap = compact([
-            'title',
-            'header',
-            'initial',
-            'preamble',
-            'footer',
-            'revision',
-            'clause',
-            'esc',
-            'signature',
-        ]);
-
-        $replacementMap = array_merge(
-            $sessionData,
-            $waiverReplacements,
-            $eventClubRiderReplacements,
-            $sectionMap
-        );
-
-        /*
-     * Return both the flattened replacement map and a few useful
-     * authoritative objects.
-     */
-        return [
-            'replacementMap' => $replacementMap,
-            'waiverSession' => $waiverSession,
-            'waiverTemplate' => $waiverTemplate,
-            'eventData' => $edata,
-            'club' => $club,
-            'participant' => $participant,
-            'eventTimezone' => $event_tz,
-            'waiverView' => $waiver_view,
-        ];
+            return $this->response->setJSON([
+                'session_id' => $session_id,
+                'waiver_url' => $waiver_url,
+                'expires_at' =>
+                $waiver_session['expires_at'],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON([
+                    'error' => $e->getMessage(),
+                ]);
+        }
     }
+
+    private function authenticateExternalRequest()
+    {
+        throw new \RuntimeException(
+            'External request authentication is unimplemented.'
+        );
+    }
+
+    public function session(string $session_id)
+    {
+        try {
+            helper('waiver_helper');
+
+            $waiver_session = $this->waiverSessionModel
+                ->getActiveSession($session_id);
+
+            if (empty($waiver_session)) {
+                throw new \RuntimeException(
+                    'This waiver session is invalid, expired, '
+                        . 'or already completed.'
+                );
+            }
+
+            $waiver_data = $this->waiverContext
+                ->buildFromSession($waiver_session);
+
+            return $this->renderWaiverForm(
+                $waiver_data
+            );
+        } catch (\Throwable $e) {
+            return $this->die_exception($e);
+        }
+    }
+
+    private const DEFAULT_THEME = 'default_theme';
+
+    private static function themeView(string $viewName): string
+    {
+        return sprintf(
+            'waiver/%s/%s',
+            self::DEFAULT_THEME,
+            $viewName
+        );
+    }
+
+    private function renderWaiverForm(array $waiverData)
+    {
+        $replacementMap = $waiverData['replacementMap'];
+
+        $documentData = array_merge(
+            $replacementMap,
+            [
+                'render_mode' => 'html',
+                'signature_png' => '',
+                'initials_png' => '',
+                'age_acknowledged' => false,
+                'acknowledged' => false,
+            ]
+        );
+
+        $this->viewData = array_merge(
+            $this->viewData,
+            $replacementMap,
+            [
+                'documentData' => $documentData,
+            ]
+        );
+
+        $this->viewData['style_head'] = view(
+            'default_style_head',
+            $this->viewData
+        );
+
+        $this->viewData['body_style'] =
+            'class="w3-light-grey"';
+
+        return
+            view('head', $this->viewData)
+            . view(self::themeView('form'), $this->viewData)
+            . view('foot', $this->viewData);
+    }
+
 
     public function finalize()
     {
         try {
-
             helper('waiver_helper');
+
             $requirements = [
                 'waiver_session_id' => [
                     'label' => 'Waiver session ID',
-                    'value' => trim((string) $this->request->getPost(
-                        'waiver_session_id'
-                    )),
+                    'value' => trim(
+                        (string) $this->request->getPost(
+                            'waiver_session_id'
+                        )
+                    ),
                     'valid' => static fn(string $value): bool =>
-                    preg_match('/\A[0-9a-f]{32}\z/', $value) === 1,
+                    preg_match(
+                        '/\A[0-9a-f]{32}\z/',
+                        $value
+                    ) === 1,
                 ],
 
                 'signature_png' => [
                     'label' => 'Participant signature',
-                    'value' => trim((string) $this->request->getPost(
-                        'signature_png'
-                    )),
+                    'value' => trim(
+                        (string) $this->request->getPost(
+                            'signature_png'
+                        )
+                    ),
                     'valid' => static fn(string $value): bool =>
                     $value !== '',
                 ],
 
                 'initials_png' => [
                     'label' => 'Participant initials',
-                    'value' => trim((string) $this->request->getPost(
-                        'initials_png'
-                    )),
+                    'value' => trim(
+                        (string) $this->request->getPost(
+                            'initials_png'
+                        )
+                    ),
                     'valid' => static fn(string $value): bool =>
                     $value !== '',
                 ],
@@ -456,16 +275,14 @@ class Waiver extends EventProcessor
             ];
 
             /*
-            * Validate the required fields.
-            *
-            * Client-side validation is useful for the user interface,
-            * but all requirements must be independently enforced here.
-            */
-
+         * Client-side validation is useful for the user interface,
+         * but all requirements must be independently enforced here.
+         */
             foreach ($requirements as $requirement) {
                 if (!$requirement['valid']($requirement['value'])) {
                     throw new \RuntimeException(
-                        $requirement['label'] . ' is missing or invalid.'
+                        $requirement['label']
+                            . ' is missing or invalid.'
                     );
                 }
             }
@@ -479,10 +296,9 @@ class Waiver extends EventProcessor
             $initials_png =
                 $requirements['initials_png']['value'];
 
-
             /*
-         * Validate that both image fields are PNG data URLs and
-         * decode them into binary PNG data.
+         * Validate the submitted image fields and decode them into
+         * binary PNG data.
          */
             $signature_bytes = $this->decodePngDataUrl(
                 $signature_png,
@@ -495,73 +311,68 @@ class Waiver extends EventProcessor
             );
 
             /*
-            * Load the authoritative waiver session.
-            *
-            * Do not trust event code, participant ID, template name,
-            * or revision from browser input. None of those fields are
-            * posted by the form anyway.
-            */
+         * Load the authoritative pending waiver session.
+         */
+            $waiver_session =
+                $this->waiverSessionModel->getActiveSession(
+                    $session_id
+                );
 
-            $waiverSession =
-                $this->waiverSessionModel
-                ->getActiveSession($session_id);
-
-            if (empty($waiverSession)) {
+            if (empty($waiver_session)) {
                 throw new \RuntimeException(
-                    "This waiver session is invalid, expired, "
-                        . "or already completed. ID=$session_id"
+                    'This waiver session is invalid, expired, '
+                        . 'or already completed. '
+                        . "ID=$session_id"
                 );
             }
 
+            /*
+         * Reconstruct the waiver using the immutable event context
+         * and the participant/session fields stored in the waiver row.
+         */
+            $waiver_data = $this->waiverContext
+                ->buildFromSession($waiver_session);
+
+            $event_context = $waiver_data['eventContext'];
+
             $event_code =
-                (string) $waiverSession['event_code'];
+                (string) $event_context['event_code'];
 
             $participant_id =
-                (string) $waiverSession['participant_id'];
+                (string) $waiver_session['participant_id'];
+
+            $template_name =
+                (string) $event_context['template_name'];
+
+            $revision =
+                (string) $event_context['revision'];
+
+            $replacement_map =
+                $waiver_data['replacementMap'];
 
             /*
-            * Reconstruct and validate the same waiver content that
-            * was used by waiver().
-            *
-            * This assumes buildWaiverData() accepts the existing
-            * session as its third argument and does not create or
-            * reset a session when one is supplied.
-            */
-
-            $waiverData = $this->buildWaiverData(
-                $event_code,
-                $participant_id,
-                $waiverSession
-            );
-
-            $replacementMap =
-                $waiverData['replacementMap'];
-
-            /*
-            * Add the submitted marks to the document-generation data.
-            *
-            * These are binary PNG strings. Whether the PDF generator
-            * accepts bytes, temporary filenames, or data URLs will
-            * determine the eventual representation used here.
-            */
-
-            $replacementMap['signature_png_bytes'] =
+         * Add the submitted marks and acknowledgements to the
+         * document-generation data.
+         */
+            $replacement_map['signature_png_bytes'] =
                 $signature_bytes;
 
-            $replacementMap['initials_png_bytes'] =
+            $replacement_map['initials_png_bytes'] =
                 $initials_bytes;
 
-            $replacementMap['age_acknowledged'] = $requirements['age-acknowledged']['value'];
-            $replacementMap['acknowledged'] = $requirements['acknowledged']['value'];
+            $replacement_map['age_acknowledged'] =
+                $requirements['age-acknowledged']['value'];
 
+            $replacement_map['acknowledged'] =
+                $requirements['acknowledged']['value'];
 
             /*
-         * Render the signed PDF using the shared document partial.
+         * Render the signed PDF.
          */
             $pdf_bytes = $this->renderWaiverPdf([
-                'replacementMap' => $replacementMap,
-                'signature_png' => $signature_png,
-                'initials_png' => $initials_png,
+                'replacementMap' => $replacement_map,
+                'signature_png'  => $signature_png,
+                'initials_png'   => $initials_png,
             ]);
 
             $document_sha256 = hash(
@@ -570,8 +381,7 @@ class Waiver extends EventProcessor
             );
 
             /*
-         * Construct a stable storage key.
-         *
+         * Construct a stable immutable-storage key.
          */
             $document_key = sprintf(
                 '%s/%s/%s.pdf',
@@ -579,31 +389,27 @@ class Waiver extends EventProcessor
                 $participant_id,
                 $session_id
             );
+
             /*
-         * Store first. Do not mark the session completed unless
-         * storage succeeds.
+         * Store the document before marking the session completed.
          */
             $this->waiverStorage->storeImmutable(
                 documentKey: $document_key,
                 contents: $pdf_bytes,
                 contentType: 'application/pdf',
                 metadata: [
-                    'session_id' => $session_id,
-                    'event_code' => $event_code,
+                    'session_id'     => $session_id,
+                    'event_code'     => $event_code,
                     'participant_id' => $participant_id,
-                    'template_name' =>
-                    $waiverSession['template_name'],
-                    'revision' =>
-                    $waiverSession['revision'],
-                    'sha256' => $document_sha256,
+                    'template_name'  => $template_name,
+                    'revision'       => $revision,
+                    'sha256'         => $document_sha256,
                 ]
             );
 
             /*
-         * Complete the session only after durable storage.
-         *
-         * Ideally this model update should require status='active'
-         * so duplicate submissions cannot both complete it.
+         * Atomically mark the pending, unexpired session completed.
+         * completeSession() also enforces the event-start deadline.
          */
             $completed = $this->waiverSessionModel
                 ->completeSession(
@@ -619,9 +425,6 @@ class Waiver extends EventProcessor
                 );
             }
 
-            /*
-         * Clear large variables as soon as practical.
-         */
             unset(
                 $signature_bytes,
                 $initials_bytes,
@@ -629,7 +432,9 @@ class Waiver extends EventProcessor
             );
 
             return redirect()->to(
-                site_url("waiver/completed/$session_id")
+                site_url(
+                    "waiver/completed/$session_id"
+                )
             );
         } catch (\Throwable $e) {
             return $this->die_exception($e);
@@ -638,62 +443,119 @@ class Waiver extends EventProcessor
 
     public function completed(string $session_id)
     {
-        $session = $this->waiverSessionModel->getCompletedSession($session_id);
+        $waiver_session =
+            $this->waiverSessionModel->getCompletedSession(
+                $session_id
+            );
 
-        if ($session === null) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound();
+        if ($waiver_session === null) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException
+                ::forPageNotFound();
         }
 
-        if ($session['status'] !== WaiverSessionModel::STATUS_COMPLETED) {
-            return redirect()->to(site_url("waiver/start/$session_id"));
-        }
+        $waiverData = $this->waiverContext->buildFromSession(
+            $waiver_session
+        );
 
-        $viewData = [
-            'session' => $session,
-        ];
+        $replacementMap =
+            $waiverData['replacementMap'];
 
+        $viewData = array_merge(
+            $this->viewData,
+            $replacementMap,
+            [
+                'session' => $waiver_session,
+            ]
+        );
+
+        $viewData['style_head'] = view(
+            'default_style_head',
+            $viewData
+        );
+
+        $viewData['body_style'] =
+            'class="w3-light-grey"';
 
         return
             view('head', $viewData)
-            . view('waiver/completed', $viewData)
+            . view(
+                self::themeView('completed'),
+                $viewData
+            )
             . view('foot', $viewData);
     }
 
-    public function document(string $sessionId)
+    
+    public function document(string $session_id)
     {
-        $session = $this->waiverSessionModel
-            ->getCompletedSession($sessionId);
-
-        if ($session === null) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
-                'The completed waiver could not be found.'
+        $waiver_session =
+            $this->waiverSessionModel->getCompletedSession(
+                $session_id
             );
+
+        if ($waiver_session === null) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException
+                ::forPageNotFound(
+                    'The completed waiver could not be found.'
+                );
         }
 
-        if (empty($session['document_key'])) {
+        $document_key =
+            (string) ($waiver_session['document_key'] ?? '');
+
+        if ($document_key === '') {
             throw new \RuntimeException(
                 'The completed waiver has no stored document key.'
             );
         }
 
-        $pdf = $this->waiverStorage->retrieve(
-            $session['document_key']
+        $event_context_id = (int) (
+            $waiver_session['event_waiver_context_id'] ?? 0
+        );
+
+        if ($event_context_id <= 0) {
+            throw new \RuntimeException(
+                'The completed waiver has no event waiver context.'
+            );
+        }
+
+        $event_context =
+            $this->eventWaiverContextModel->requireById(
+                $event_context_id
+            );
+
+        $event_code =
+            (string) $event_context['event_code'];
+
+        $participant_id =
+            (string) $waiver_session['participant_id'];
+
+        $pdf_bytes = $this->waiverStorage->retrieve(
+            $document_key
         );
 
         $filename = sprintf(
             'waiver-%s-%s.pdf',
-            $this->safeFilenamePart($session['event_code']),
-            $this->safeFilenamePart($session['participant_id'])
+            $this->safeFilenamePart($event_code),
+            $this->safeFilenamePart($participant_id)
         );
+
         return $this->response
-            ->setHeader('Content-Type', 'application/pdf')
+            ->setHeader(
+                'Content-Type',
+                'application/pdf'
+            )
             ->setHeader(
                 'Content-Disposition',
                 'inline; filename="' . $filename . '"'
             )
-            ->setHeader('Content-Length', (string) strlen($pdf))
-            ->setBody($pdf);
+            ->setHeader(
+                'Content-Length',
+                (string) strlen($pdf_bytes)
+            )
+            ->setBody($pdf_bytes);
     }
+
 
     private function safeFilenamePart(string $value): string
     {
@@ -701,6 +563,8 @@ class Waiver extends EventProcessor
 
         return trim($value ?? '', '-');
     }
+
+    private const MAX_ENCODED_IMAGE_BYTES = 2_000_000;
 
     private function decodePngDataUrl(
         string $data_url,
@@ -732,9 +596,10 @@ class Waiver extends EventProcessor
      * this. This mainly prevents an unexpectedly large POST from
      * consuming excessive memory.
      */
-        $maximum_encoded_size = 2 * 1024 * 1024;
-
-        if (strlen($encoded) > $maximum_encoded_size) {
+        if (
+            strlen($encoded)
+            > self::MAX_ENCODED_IMAGE_BYTES
+        ) {
             throw new \RuntimeException(
                 ucfirst($field_name)
                     . ' image is too large.'
@@ -770,7 +635,7 @@ class Waiver extends EventProcessor
 
     private function renderWaiverPdf(array $pdfData): string
     {
-        $html = view('waiver/rusa_waiver_pdf', $pdfData);
+        $html = view(self::themeView('pdf'), $pdfData);
 
         $options = new Options();
 

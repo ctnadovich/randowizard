@@ -31,20 +31,21 @@ use RuntimeException;
 class WaiverSession extends Model
 {
 
-    private const SESSION_IDENTITY_FIELDS = [
+    public const SESSION_IDENTITY_FIELDS = [
         'event_waiver_context_id',
         'participant_id',
+        'participant_name',
+        'callback_url',
     ];
 
-    private const ACTIVE_SESSION_FIELDS = [
+    public const ACTIVE_SESSION_FIELDS = [
         'session_id',
         'created_at',
         'expires_at',
-        'participant_name',
         'status',
     ];
 
-    private const COMPLETION_FIELDS = [
+    public const COMPLETION_FIELDS = [
         'completed_at',
         'document_key',
         'document_sha256',
@@ -91,7 +92,8 @@ class WaiverSession extends Model
         int $event_waiver_context_id,
         string $participant_id,
         string $participant_name,
-        int $lifetimeSeconds = 3600
+        ?string $callback_url,
+        int $lifetime_seconds = 3600
     ): array {
         if ($event_waiver_context_id <= 0) {
             throw new RuntimeException(
@@ -108,7 +110,8 @@ class WaiverSession extends Model
             $participant_name,
             'participant name'
         );
-        if ($lifetimeSeconds <= 0) {
+
+        if ($lifetime_seconds <= 0) {
             throw new RuntimeException(
                 'Waiver session lifetime must be greater than zero.'
             );
@@ -123,20 +126,15 @@ class WaiverSession extends Model
 
         if ($existing !== null) {
 
-            if (
-                (string) $existing['participant_name']
-                !== $participant_name
-            ) {
-                throw new RuntimeException(
-                    'The supplied participant name does not match '
-                        . 'the participant identity previously stored '
-                        . 'for this event and participant ID.'
-                );
-            }
+            $this->assertImmutableFieldsMatch(
+                $existing,
+                $participant_name,
+                $callback_url
+            );
 
             return $this->handleExistingSession(
                 $existing,
-                $lifetimeSeconds
+                $lifetime_seconds
             );
         }
 
@@ -154,7 +152,8 @@ class WaiverSession extends Model
                 $event_waiver_context_id,
                 $participant_id,
                 $participant_name,
-                $lifetimeSeconds
+                $callback_url,
+                $lifetime_seconds
             );
         } catch (DatabaseException $e) {
             $existing =
@@ -164,13 +163,48 @@ class WaiverSession extends Model
                 );
 
             if ($existing !== null) {
+
+                $this->assertImmutableFieldsMatch(
+                    $existing,
+                    $participant_name,
+                    $callback_url
+                );
+
                 return $this->handleExistingSession(
                     $existing,
-                    $lifetimeSeconds
+                    $lifetime_seconds
                 );
             }
 
             throw $e;
+        }
+    }
+
+    private function assertImmutableFieldsMatch(
+        array $existing,
+        string $participant_name,
+        ?string $callback_url
+    ): void {
+        if (
+            (string) ($existing['participant_name'] ?? '')
+            !== $participant_name
+        ) {
+            throw new RuntimeException(
+                'The supplied participant name does not match '
+                    . 'the participant identity previously stored '
+                    . 'for this event and participant ID.'
+            );
+        }
+
+        if (
+            ($existing['callback_url'] ?? null)
+            !== $callback_url
+        ) {
+            throw new RuntimeException(
+                'The supplied callback URL does not match '
+                    . 'the callback URL previously stored for '
+                    . 'this waiver.'
+            );
         }
     }
 
@@ -490,19 +524,20 @@ SQL;
         int $event_waiver_context_id,
         string $participant_id,
         string $participant_name,
-        int $lifetimeSeconds
+        ?string $callback_url,
+        int $lifetime_seconds
     ): array {
         $createdAt = $this->nowUtc();
 
         $expiresAt = $createdAt->modify(
-            "+{$lifetimeSeconds} seconds"
+            "+{$lifetime_seconds} seconds"
         );
 
         $data = [
-            'event_waiver_context_id' =>
-            $event_waiver_context_id,
+            'event_waiver_context_id' => $event_waiver_context_id,
             'participant_id' => $participant_id,
             'participant_name'        => $participant_name,
+            'callback_url'     => $callback_url,
             'session_id'     => $this->generateSessionId(),
             'created_at'     => $this->formatDateTime($createdAt),
             'expires_at'     => $this->formatDateTime($expiresAt),
@@ -532,7 +567,7 @@ SQL;
      */
     private function handleExistingSession(
         array $existing,
-        int $lifetimeSeconds
+        int $lifetime_seconds
     ): array {
         $status = $existing['status'] ?? null;
 
@@ -554,7 +589,7 @@ SQL;
         ) {
             return $this->resetSession(
                 (int) $existing['id'],
-                $lifetimeSeconds
+                $lifetime_seconds
             );
         }
 
@@ -572,7 +607,7 @@ SQL;
      */
     private function resetSession(
         int $id,
-        int $lifetimeSeconds
+        int $lifetime_seconds
     ): array {
         if ($id <= 0) {
             throw new RuntimeException(
@@ -580,7 +615,7 @@ SQL;
             );
         }
 
-        if ($lifetimeSeconds <= 0) {
+        if ($lifetime_seconds <= 0) {
             throw new RuntimeException(
                 'Waiver session lifetime must be greater than zero.'
             );
@@ -600,7 +635,7 @@ SQL;
         $createdAt = $this->nowUtc();
 
         $expiresAt = $createdAt->modify(
-            "+{$lifetimeSeconds} seconds"
+            "+{$lifetime_seconds} seconds"
         );
 
         $resetData = array_merge(

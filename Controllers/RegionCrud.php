@@ -42,13 +42,7 @@ class RegionCrud extends BaseController
 
     public function region()
     {
-
-        $this->login_check();
-        $member_id = $this->getMemberID();
-        $rbaModel = model('Rba');
-        $authorized_regions = $rbaModel->getAuthorizedRegions($member_id);
-        if (empty($authorized_regions) && false == $this->isSuperuser())
-            $this->die_info('Access Denied', "No regions authorized for this user.");
+        $authorized_regions = $this->getAuthorizedRegionsOrDie();
 
         $crud = new GroceryCrud();
         $crud->setTable('region');
@@ -68,53 +62,55 @@ class RegionCrud extends BaseController
         }
         $crud->setRead();
         $crud->setSubject('Region', 'Regions');
-        $crud->columns(['state_id', 'region_name', 'club_name', 'event_timezone_name', 'administrator', 'events']);
+        $crud->columns(['state_id', 'region_name', 'club_name', 'event_timezone_name', 'administrator', 'events', 'api_key']);
 
- // Define a list of timezones
-$timezones = \DateTimeZone::listIdentifiers();
+        // Define a list of timezones
+        $timezones = \DateTimeZone::listIdentifiers();
 
-$tz_regions = [];
-    foreach (\DateTimeZone::listIdentifiers() as $timezone) {
-        $parts = explode('/', $timezone, 2);
-        $tz_region = $parts[0];
-        $name = isset($parts[1]) ? str_replace('_', ' ', $parts[1]) : $tz_region;
+        $tz_regions = [];
+        foreach (\DateTimeZone::listIdentifiers() as $timezone) {
+            $parts = explode('/', $timezone, 2);
+            $tz_region = $parts[0];
+            $name = isset($parts[1]) ? str_replace('_', ' ', $parts[1]) : $tz_region;
 
-        if (!isset($tz_regions[$tz_region])) {
-            $tz_regions[$tz_region] = [];
+            if (!isset($tz_regions[$tz_region])) {
+                $tz_regions[$tz_region] = [];
+            }
+            $tz_regions[$tz_region][$timezone] = $name;
         }
-        $tz_regions[$tz_region][$timezone] = $name;
-    }
 
 
 
-$timezone_options = '';
+        $timezone_options = '';
 
-/* foreach ($timezones as $tz) {
+        /* foreach ($timezones as $tz) {
     $timezone_options .= "<option value='{$tz}'>{$tz}</option>";
 }
  */
 
-foreach ($tz_regions as $tz_region => $timezones) {
-    $timezone_options.= "<optgroup label=\"$tz_region\">";
-    foreach ($timezones as $tz => $name) {
-        $timezone_options.= "<option value=\"$tz\">$name</option>";
-    }
-    $timezone_options.= "</optgroup>";
-}
+        foreach ($tz_regions as $tz_region => $timezones) {
+            $timezone_options .= "<optgroup label=\"$tz_region\">";
+            foreach ($timezones as $tz => $name) {
+                $timezone_options .= "<option value=\"$tz\">$name</option>";
+            }
+            $timezone_options .= "</optgroup>";
+        }
 
 
-// Callback functions to render the dropdown in the add/edit forms
-$crud->callbackAddField('event_timezone_name', function() use ($timezone_options) {
-    return "<select name='event_timezone_name'>{$timezone_options}</select>";
-});
+        // Callback functions to render the dropdown in the add/edit forms
+        $crud->callbackAddField('event_timezone_name', function () use ($timezone_options) {
+            return "<select name='event_timezone_name'>{$timezone_options}</select>";
+        });
 
-$crud->callbackEditField('event_timezone_name', function($value, $primary_key) use ($timezone_options) {
-    return "<select name='event_timezone_name'><option value='{$value}' selected>{$value}</option>{$timezone_options}</select>";
-});
+        $crud->callbackEditField('event_timezone_name', function ($value, $primary_key) use ($timezone_options) {
+            return "<select name='event_timezone_name'><option value='{$value}' selected>{$value}</option>{$timezone_options}</select>";
+        });
 
 
         $crud->callbackColumn('events', array($this, '_event_info'));
         // $crud->callbackColumn('event_timezone_name', array($this, '_timezone_selector'));
+
+        $crud->callbackColumn('api_key', array($this, '_set_api_key_button'));
 
         // Comma separated list of authorized users to display in datagrid
         $crud->callbackColumn('administrator', function ($value, $row) {
@@ -155,7 +151,7 @@ $crud->callbackEditField('event_timezone_name', function($value, $primary_key) u
     {
         $text = "<select name='timezone'>";
         foreach (\DateTimeZone::listIdentifiers() as $timezone) {
-            $selected = $timezone==$value?'selected':'';
+            $selected = $timezone == $value ? 'selected' : '';
             $text .= "<option $selected value=\"$timezone\">$timezone</option>";
         }
         $text .= '</select>';
@@ -180,6 +176,19 @@ EOT;
         return "<input type='password' name='epp_secret' value='{$this->not_a_password}' />";
     }
 
+    public function _set_api_key_button($value, $row)
+    {
+        $region_id = $row->id;
+        $url = site_url("waiverApiKey/$region_id");
+
+        return <<<EOT
+        <div class='w3-container w3-center' >
+<A HREF='$url' class='w3-button w3-blue'><i class="fa-solid fa-key"></i></A>
+</div>
+EOT;
+    }
+
+
     public function update_callback($stateParameters)
     {
         $password = $stateParameters->data['epp_secret'];
@@ -190,5 +199,113 @@ EOT;
         }
 
         return $stateParameters;
+    }
+
+    public function waiverApiKey($region_id)
+    {
+        $authorizedRegions = $this->getAuthorizedRegionsOrDie();
+        if (!in_array(
+            $region_id,
+            $authorizedRegions,
+            true
+        )) {
+            throw new \RuntimeException(
+                "You are not authorized to set the API key for $region_id."
+            );
+        }
+        $club_acp_code = $region_id;
+
+        $club = $this->regionModel->getClub(
+            $club_acp_code
+        );
+
+        if (empty($club)) {
+            throw new \RuntimeException(
+                'The authenticated region could not be found.'
+            );
+        }
+
+        $this->viewData = array_merge([
+            'club_acp_code' => $club_acp_code,
+            'has_api_key' =>
+            !empty($club['waiver_api_key_hash']),
+        ], $this->viewData);
+
+        return $this->load_view(['change_api_key']);
+    }
+
+    public function generateWaiverApiKey()
+    {
+        try {
+            if (!$this->request->isAJAX()) {
+                throw new \RuntimeException(
+                    'This endpoint accepts AJAX requests only.'
+                );
+            }
+
+            $club_acp_code = trim(
+                (string) $this->request->getPost(
+                    'club_acp_code'
+                )
+            );
+
+            if ($club_acp_code === '') {
+                throw new \RuntimeException(
+                    'Club ACP code was not specified.'
+                );
+            }
+
+            $authorizedRegions = $this->getAuthorizedRegionsOrDie();
+            if (!in_array(
+                $club_acp_code,
+                $authorizedRegions,
+                true
+            )) {
+                throw new \RuntimeException(
+                    "You are not authorized to set the API key for $club_acp_code."
+                );
+            }
+
+            $club = $this->regionModel->getClub(
+                $club_acp_code
+            );
+
+            if (empty($club)) {
+                throw new \RuntimeException(
+                    "Region $club_acp_code was not found."
+                );
+            }
+
+            $api_key = $this->regionModel
+                ->generateWaiverApiKey(
+                    $club_acp_code
+                );
+
+            return $this->response->setJSON([
+                'api_key' => $api_key,
+                'message' =>
+                'The API key was generated successfully. '
+                    . 'Copy it now because it cannot be shown again.',
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON([
+                    'error' => $e->getMessage(),
+                ]);
+        }
+    }
+
+
+
+    private function getAuthorizedRegionsOrDie()
+    {
+        $this->login_check();
+        $member_id = $this->getMemberID();
+        $rbaModel = model('Rba');
+        $authorized_regions = $rbaModel->getAuthorizedRegions($member_id);
+        if (empty($authorized_regions) && false == $this->isSuperuser())
+            $this->die_info('Access Denied', "No regions authorized for this user.");
+        return $authorized_regions;
     }
 }

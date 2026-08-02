@@ -32,6 +32,7 @@ use App\Libraries\WaiverContext;
 
 use App\Models\EventWaiverContext;
 use App\Models\WaiverSession;
+use App\Models\WaiverAccessLog;
 
 
 class Waiver extends EventProcessor
@@ -41,6 +42,7 @@ class Waiver extends EventProcessor
     private WaiverStorage $waiverStorage;
     private WaiverContext $waiverContext;
     private EventWaiverContext $eventWaiverContextModel;
+    private WaiverAccessLog $waiverAccessLogModel;
 
     public function initController(
         RequestInterface $request,
@@ -51,6 +53,7 @@ class Waiver extends EventProcessor
         $this->waiverSessionModel = model('WaiverSession');
         $this->waiverStorage = new WaiverStorage();
         $this->eventWaiverContextModel = model('EventWaiverContext');
+        $this->waiverAccessLogModel = model('WaiverAccessLog');
 
         $this->waiverContext = new WaiverContext(
             eventModel: $this->eventModel,
@@ -74,6 +77,15 @@ class Waiver extends EventProcessor
                     $participant_id
                 );
 
+            $waiver_session =
+                $waiver_data['waiverSession'];
+
+            $this->recordWaiverAccess(
+                $waiver_session,
+                WaiverAccessLog::METHOD_LOCAL_START
+            );
+
+
             return $this->renderWaiverForm(
                 $waiver_data
             );
@@ -85,7 +97,57 @@ class Waiver extends EventProcessor
     public function startExternal()
     {
         try {
-            $this->authenticateExternalRequest();
+            $region = $this->authenticateExternalRequest();
+
+            $submitted_data = $this->request->getJSON(true);
+
+            if (!is_array($submitted_data)) {
+                throw new \RuntimeException(
+                    'Request body must contain a JSON object.'
+                );
+            }
+
+            $contextData = $this->waiverContext
+                ->normalizeExternalContext(
+                    $submitted_data,
+                    $region
+                );
+
+            $waiverData = $this->waiverContext
+                ->createFromExternalData(
+                    $contextData
+                );
+
+            $waiver_session =
+                $waiverData['waiverSession'];
+
+            $session_id =
+                (string) $waiver_session['session_id'];
+
+            $waiver_url = site_url(
+                'waiver/session/'
+                    . rawurlencode($session_id)
+            );
+
+            return $this->response->setJSON([
+                'waiver_session_id' => $session_id,
+                'waiver_url'        => $waiver_url,
+                'expires_at'        =>
+                $waiver_session['expires_at'],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON([
+                    'error' => $e->getMessage(),
+                ]);
+        }
+    }
+
+    public function OldstartExternal()
+    {
+        try {
+            $region = $this->authenticateExternalRequest();
 
             $context_data = $this->request->getJSON(true);
 
@@ -97,16 +159,22 @@ class Waiver extends EventProcessor
 
             $context_data = $this->waiverContext
                 ->normalizeExternalContext(
-                    $context_data
+                    $context_data,
+                    $region
                 );
 
-            $waiver_data = $this->waiverContext
+            $waiverData = $this->waiverContext
                 ->createFromExternalData(
                     $context_data
                 );
 
             $waiver_session =
-                $waiver_data['waiverSession'];
+                $waiverData['waiverSession'];
+
+            $this->recordWaiverAccess(
+                $waiver_session,
+                WaiverAccessLog::METHOD_EXTERNAL_START
+            );
 
             $session_id =
                 (string) $waiver_session['session_id'];
@@ -131,11 +199,41 @@ class Waiver extends EventProcessor
         }
     }
 
-    private function authenticateExternalRequest()
+    /**
+     * Authenticate an external waiver-session request.
+     *
+     * @return array<string, mixed> Authenticated region row
+     */
+    private function authenticateExternalRequest(): array
     {
-        throw new \RuntimeException(
-            'External request authentication is unimplemented.'
+        $club_acp_code = trim(
+            (string) $this->request->getServer(
+                'PHP_AUTH_USER'
+            )
         );
+
+        $api_key = (string) $this->request->getServer(
+            'PHP_AUTH_PW'
+        );
+
+        if ($club_acp_code === '' || $api_key === '') {
+            throw new \RuntimeException(
+                'External API credentials are required.'
+            );
+        }
+
+        $region = $this->regionModel->authenticateWaiverApi(
+            $club_acp_code,
+            $api_key
+        );
+
+        if ($region === null) {
+            throw new \RuntimeException(
+                'Invalid external API credentials.'
+            );
+        }
+
+        return $region;
     }
 
     public function session(string $session_id)
@@ -152,6 +250,11 @@ class Waiver extends EventProcessor
                         . 'or already completed.'
                 );
             }
+
+            $this->recordWaiverAccess(
+                $waiver_session,
+                WaiverAccessLog::METHOD_SIGNER_START
+            );
 
             $waiver_data = $this->waiverContext
                 ->buildFromSession($waiver_session);
@@ -425,6 +528,11 @@ class Waiver extends EventProcessor
                 );
             }
 
+            $this->recordWaiverAccess(
+                $waiver_session,
+                WaiverAccessLog::METHOD_SIGNER_COMPLETED
+            );
+
             unset(
                 $signature_bytes,
                 $initials_bytes,
@@ -453,6 +561,11 @@ class Waiver extends EventProcessor
                 ::forPageNotFound();
         }
 
+        $this->recordWaiverAccess(
+            $waiver_session,
+            WaiverAccessLog::METHOD_COMPLETED_VIEW
+        );
+
         $waiverData = $this->waiverContext->buildFromSession(
             $waiver_session
         );
@@ -460,11 +573,31 @@ class Waiver extends EventProcessor
         $replacementMap =
             $waiverData['replacementMap'];
 
+        $callback_url_template = trim(
+            (string) ($waiver_session['callback_url'] ?? '')
+        );
+
+        $callback_url = null;
+
+        if ($callback_url_template !== '') {
+            $callback_url = $this->interpolateCallbackUrl(
+                $callback_url_template,
+                $replacementMap
+            );
+        }
+
+        $replacementMap['status'] =
+            $waiver_session['status'];
+
+        $replacementMap['completed_at'] =
+            $waiver_session['completed_at'];
+
         $viewData = array_merge(
             $this->viewData,
             $replacementMap,
             [
-                'session' => $waiver_session,
+                'session'      => $waiver_session,
+                'callback_url' => $callback_url,
             ]
         );
 
@@ -485,7 +618,51 @@ class Waiver extends EventProcessor
             . view('foot', $viewData);
     }
 
-    
+    private function interpolateCallbackUrl(
+        string $callback_url_template,
+        array $replacementMap
+    ): string {
+        $callback_url = preg_replace_callback(
+            '/\{\{([A-Za-z0-9_]+)\}\}/',
+            static function (array $matches) use (
+                $replacementMap
+            ): string {
+                $field = $matches[1];
+
+                if (!array_key_exists($field, $replacementMap)) {
+                    throw new \RuntimeException(
+                        "Undefined callback URL field: $field"
+                    );
+                }
+
+                return rawurlencode(
+                    (string) $replacementMap[$field]
+                );
+            },
+            $callback_url_template
+        );
+
+        if ($callback_url === null) {
+            throw new \RuntimeException(
+                'Unable to interpolate callback URL.'
+            );
+        }
+
+        if (
+            filter_var(
+                $callback_url,
+                FILTER_VALIDATE_URL
+            ) === false
+        ) {
+            throw new \RuntimeException(
+                'The interpolated callback URL is invalid.'
+            );
+        }
+
+        return $callback_url;
+    }
+
+
     public function document(string $session_id)
     {
         $waiver_session =
@@ -534,6 +711,11 @@ class Waiver extends EventProcessor
             $document_key
         );
 
+        $this->recordWaiverAccess(
+            $waiver_session,
+            WaiverAccessLog::METHOD_DOCUMENT_VIEW
+        );
+
         $filename = sprintf(
             'waiver-%s-%s.pdf',
             $this->safeFilenamePart($event_code),
@@ -556,6 +738,140 @@ class Waiver extends EventProcessor
             ->setBody($pdf_bytes);
     }
 
+    /**
+     * Return waiver metadata, immutable event context, and access history.
+     */
+    public function reference(string $session_id)
+    {
+        try {
+            $waiver_session =
+                $this->waiverSessionModel->findBySessionId(
+                    $session_id
+                );
+
+            if ($waiver_session === null) {
+                throw \CodeIgniter\Exceptions\PageNotFoundException
+                    ::forPageNotFound(
+                        'The waiver session could not be found.'
+                    );
+            }
+
+            $waiver_id = (int) (
+                $waiver_session['id'] ?? 0
+            );
+
+            if ($waiver_id <= 0) {
+                throw new \RuntimeException(
+                    'The waiver session has no valid waiver ID.'
+                );
+            }
+
+            $event_waiver_context_id = (int) (
+                $waiver_session['event_waiver_context_id'] ?? 0
+            );
+
+            if ($event_waiver_context_id <= 0) {
+                throw new \RuntimeException(
+                    'The waiver session has no event waiver context.'
+                );
+            }
+
+            $event_context =
+                $this->eventWaiverContextModel->requireById(
+                    $event_waiver_context_id
+                );
+
+            /*
+         * Record the lookup before retrieving the access history so
+         * this request is included in the returned log.
+         */
+            $this->recordWaiverAccess(
+                $waiver_session,
+                WaiverAccessLog::METHOD_REFERENCE_VIEW
+            );
+
+            $access_log =
+                $this->waiverAccessLogModel->findByWaiverId(
+                    $waiver_id
+                );
+
+            /*
+         * Build waiver metadata from the model's structural field lists.
+         */
+            $waiver_metadata = array_merge(
+                $this->waiverContext->selectFields(
+                    $waiver_session,
+                    WaiverSession::SESSION_IDENTITY_FIELDS
+                ),
+                $this->waiverContext->selectFields(
+                    $waiver_session,
+                    WaiverSession::ACTIVE_SESSION_FIELDS
+                ),
+                $this->waiverContext->selectFields(
+                    $waiver_session,
+                    WaiverSession::COMPLETION_FIELDS
+                )
+            );
+
+            /*
+         * Remove internal relational and storage implementation fields.
+         */
+            unset(
+                $waiver_metadata['event_waiver_context_id'],
+                $waiver_metadata['document_key']
+            );
+
+            $waiver_metadata['document_url'] =
+                $waiver_session['status']
+                === WaiverSession::STATUS_COMPLETED
+                ? site_url(
+                    'waiver/document/'
+                        . rawurlencode($session_id)
+                )
+                : null;
+
+            /*
+         * Select only the immutable event fields, excluding the event
+         * context row's internal ID and creation metadata.
+         */
+            $event_metadata = $this->waiverContext->selectFields(
+                $event_context,
+                EventWaiverContext::EVENT_CONTEXT_FIELDS
+            );
+
+            /*
+         * Select only public access-event fields from each log row.
+         */
+            $access_history = array_map(
+                fn(array $access_entry): array =>
+                $this->waiverContext->selectFields(
+                    $access_entry,
+                    WaiverAccessLog::ACCESS_FIELDS
+                ),
+                $access_log
+            );
+
+            $referenceData = [
+                'waiver'        => $waiver_metadata,
+                'event_context' => $event_metadata,
+                'access_log'    => $access_history,
+            ];
+
+            return $this->response->setJSON(
+                $referenceData
+            );
+        } catch (
+            \CodeIgniter\Exceptions\PageNotFoundException $e
+        ) {
+            throw $e;
+        } catch (\Throwable $e) {
+            return $this->response
+                ->setStatusCode(500)
+                ->setJSON([
+                    'error' => $e->getMessage(),
+                ]);
+        }
+    }
 
     private function safeFilenamePart(string $value): string
     {
@@ -673,5 +989,35 @@ class Waiver extends EventProcessor
         }
 
         return $pdf_bytes;
+    }
+
+    private function recordWaiverAccess(
+        array $waiver_session,
+        string $method
+    ): void {
+        $waiver_id = (int) (
+            $waiver_session['id'] ?? 0
+        );
+
+        if ($waiver_id <= 0) {
+            throw new \RuntimeException(
+                'Waiver session has no valid database ID.'
+            );
+        }
+
+        $ip_address = $this->request->getIPAddress();
+
+        $user_agent = trim(
+            (string) $this->request
+                ->getUserAgent()
+                ->getAgentString()
+        );
+
+        $this->waiverAccessLogModel->record(
+            $waiver_id,
+            $method,
+            $ip_address,
+            $user_agent !== '' ? $user_agent : null
+        );
     }
 }

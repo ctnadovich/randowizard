@@ -113,7 +113,7 @@ class WaiverContext
     public function createFromLocalData(
         string $event_code,
         string $participant_id,
-        int $lifetimeSeconds = 3600
+        int $lifetime_seconds = 3600
     ): array {
         $contextData = $this->buildLocalContextData(
             $event_code,
@@ -134,7 +134,8 @@ class WaiverContext
                 event_waiver_context_id: (int) $storedEventContext['id'],
                 participant_id: $contextData['participant_id'],
                 participant_name: $contextData['participant_name'],
-                lifetimeSeconds: $lifetimeSeconds
+                callback_url: null,
+                lifetime_seconds: $lifetime_seconds
             );
 
         /*
@@ -144,6 +145,73 @@ class WaiverContext
          */
         return $this->buildFromSession($waiverSession);
     }
+
+    /**
+     * Create or reuse a waiver session from normalized external data.
+     *
+     * The supplied data must already have been normalized using an
+     * authenticated region.
+     *
+     * @param array<string, mixed> $contextData
+     * @return array<string, mixed>
+     */
+    public function createFromExternalData(
+        array $contextData,
+        int $lifetime_seconds = 3600
+    ): array {
+        $this->validateContextData(
+            $contextData
+        );
+
+        $callback_url = trim(
+            (string) ($contextData['callback_url'] ?? '')
+        );
+
+        if ($callback_url === '') {
+            throw new RuntimeException(
+                'External waiver callback_url is missing.'
+            );
+        }
+
+        /*
+     * Select and freeze only event-owned fields.
+     */
+        $eventContext = $this->selectFields(
+            $contextData,
+            self::EVENT_CONTEXT_FIELDS
+        );
+
+        $storedEventContext =
+            $this->eventWaiverContextModel
+            ->getOrCreateImmutable(
+                $eventContext
+            );
+
+        /*
+     * Participant identity and callback_url are stored directly in
+     * the waiver row.
+     */
+        $waiver_session =
+            $this->waiverSessionModel
+            ->createOrReuseSession(
+                event_waiver_context_id: (int) $storedEventContext['id'],
+                participant_id: $contextData['participant_id'],
+                participant_name: $contextData['participant_name'],
+                callback_url: $callback_url,
+                lifetime_seconds: $lifetime_seconds
+            );
+
+        /*
+     * Render from the stored event and waiver rows, not directly from
+     * the freshly supplied request.
+     */
+        return $this->buildFromSession(
+            $waiver_session
+        );
+    }
+
+
+
 
     /**
      * Build all rendering data from an existing waiver session.
@@ -227,7 +295,7 @@ class WaiverContext
         );
 
         $waiverLogoFile = $indemnifiedParty->logo_name ?? '';
-       if ($waiverLogoFile === '') {
+        if ($waiverLogoFile === '') {
             $waiverLogoFile = 'local/images/rusa-logo.png';
         }
 
@@ -235,7 +303,7 @@ class WaiverContext
             $waiverLogoFile
         );
 
- 
+
         if (
             filter_var(
                 $waiverLogoUrl,
@@ -398,12 +466,256 @@ class WaiverContext
     }
 
 
-    public function normalizeExternalContext(array $contextData): array
-    {
-        throw new \RuntimeException(
-            'External context normalization is unimplemented.'
+    /**
+     * Normalize externally supplied event and participant data.
+     *
+     * Club-owned values are derived from the authenticated region row.
+     * The external caller must not supply those values authoritatively.
+     *
+     * Required caller fields:
+     *
+     *     event_id
+     *     event_name
+     *     event_start_at
+     *     participant_id
+     *     participant_name
+     *     callback_url
+     *
+     * @param array<string, mixed> $submitted_data
+     * @param array<string, mixed> $region
+     * @return array<string, string>
+     */
+    public function normalizeExternalContext(
+        array $submitted_data,
+        array $region
+    ): array {
+        $submitted_fields = [
+            'event_id',
+            'event_name',
+            'event_start_at',
+            'participant_id',
+            'participant_name',
+            'callback_url',
+        ];
+
+        foreach ($submitted_fields as $field) {
+            if (
+                !isset($submitted_data[$field])
+                || !is_string($submitted_data[$field])
+                || trim($submitted_data[$field]) === ''
+            ) {
+                throw new RuntimeException(
+                    "External waiver field $field is missing or invalid."
+                );
+            }
+        }
+
+        /*
+     * Values controlled by the external caller.
+     */
+        $event_id = trim($submitted_data['event_id']);
+        $event_name = trim($submitted_data['event_name']);
+        $event_start_at = trim(
+            $submitted_data['event_start_at']
+        );
+        $participant_id = trim(
+            $submitted_data['participant_id']
+        );
+        $participant_name = trim(
+            $submitted_data['participant_name']
+        );
+        $callback_url = trim(
+            $submitted_data['callback_url']
+        );
+
+        /*
+     * event_id becomes the suffix of the globally namespaced
+     * event_code. Restrict it to the same character set permitted by
+     * validateEventCode().
+     */
+        if (
+            preg_match(
+                '/\A[A-Za-z0-9_-]+\z/',
+                $event_id
+            ) !== 1
+        ) {
+            throw new RuntimeException(
+                'External event_id must contain only letters, '
+                    . 'digits, underscores, and hyphens.'
+            );
+        }
+
+        /*
+     * Club-owned values come exclusively from the authenticated
+     * region row.
+     */
+        $club_acp_code = $region['club_acp_code'];
+        $organizing_club = $region['club_name'];
+        $event_timezone_name = $region['event_timezone_name'];
+        $indemnified_party_id = $region['indemnified_party_id'];
+
+        if ($organizing_club === '') {
+            throw new RuntimeException(
+                "Club name missing for $club_acp_code."
+            );
+        }
+
+        if ($event_timezone_name === '') {
+            throw new RuntimeException(
+                "Event timezone missing for $club_acp_code."
+            );
+        }
+
+        /*
+     * Construct rather than accept the globally namespaced event
+     * code.
+     */
+        $event_code =
+            $club_acp_code . '-' . $event_id;
+
+        /*
+     * Template identity is determined by the configured indemnified
+     * party, not by the external caller.
+     */
+        $indemnifiedParty = new IndemnifiedParty(
+            $indemnified_party_id
+        );
+
+        $template_name = trim(
+            (string) $indemnifiedParty->template_name
+        );
+
+        if ($template_name === '') {
+            throw new RuntimeException(
+                'The indemnified party has no waiver template.'
+            );
+        }
+
+        $waiverTemplate = new WaiverTemplate(
+            $template_name
+        );
+
+        $revision = trim(
+            $waiverTemplate->data['REVISION'][0] ?? ''
+        );
+
+        if ($revision === '') {
+            throw new RuntimeException(
+                "REVISION not specified in template: $template_name"
+            );
+        }
+
+        /*
+     * Validate the callback before storing it. WaiverSession should
+     * perform its own validation too, since it owns the column.
+     */
+$this->validateCallbackUrlTemplate(
+    $callback_url
+);
+
+        /*
+     * Ensure the supplied timestamp is valid and represents the
+     * event in the authenticated club's configured timezone.
+     */
+        $eventTimezone = $this->makeTimezone(
+            $event_timezone_name
+        );
+
+        $eventStart = $this->parseEventStartAt(
+            $event_start_at
+        );
+
+        /*
+     * Canonicalize the timestamp into the club's configured timezone.
+     * This gives equivalent timestamps one stable representation.
+     */
+        $event_start_at = $eventStart
+            ->setTimezone($eventTimezone)
+            ->format(DATE_ATOM);
+
+        /*
+     * CONTEXT_FIELDS contains the event and participant fields used
+     * by local and external creation. callback_url is session-level
+     * and is added separately.
+     */
+        $contextData = compact(
+            self::CONTEXT_FIELDS
+        );
+
+        $this->validateContextData(
+            $contextData
+        );
+
+        $contextData['callback_url'] =
+            $callback_url;
+
+        return $contextData;
+    }
+
+
+private function validateCallbackUrlTemplate(
+    string $callback_url
+): void {
+    if (trim($callback_url) === '') {
+        throw new RuntimeException(
+            'Callback URL is missing.'
         );
     }
+
+    /*
+     * Temporarily replace valid placeholders with harmless text so
+     * the surrounding URL structure can be validated.
+     */
+    $test_url = preg_replace(
+        '/\{\{[A-Za-z0-9_]+\}\}/',
+        'placeholder',
+        $callback_url
+    );
+
+    if ($test_url === null) {
+        throw new RuntimeException(
+            'Callback URL template is invalid.'
+        );
+    }
+
+    /*
+     * Reject malformed or partial placeholder syntax.
+     */
+    if (
+        str_contains($test_url, '{{')
+        || str_contains($test_url, '}}')
+        || str_contains($test_url, '{')
+        || str_contains($test_url, '}')
+    ) {
+        throw new RuntimeException(
+            'Callback URL contains an invalid replacement field.'
+        );
+    }
+
+    if (
+        filter_var(
+            $test_url,
+            FILTER_VALIDATE_URL
+        ) === false
+    ) {
+        throw new RuntimeException(
+            'Callback URL template is invalid.'
+        );
+    }
+
+    $scheme = strtolower(
+        (string) parse_url(
+            $test_url,
+            PHP_URL_SCHEME
+        )
+    );
+
+    if ($scheme !== 'https') {
+        throw new RuntimeException(
+            'Callback URL must use HTTPS.'
+        );
+    }
+}
 
     /**
      * Build normalized context from the local event, club, and roster data.
@@ -460,16 +772,7 @@ class WaiverContext
             );
         }
 
-        // At some point the regionModel will need to be enhanced to 
-        // provide the indemnified_party_id for every region. Till
-        // then, the presence of the 'rusa' option in the region 
-        // sets that id to 'rusa', otherwise 'other'. 
-
-        if ($this->regionModel->hasOption($club_acp_code, 'rusa')) {
-            $indemnified_party_id = 'rusa';
-        } else {
-            $indemnified_party_id = 'other';
-        }
+        $indemnified_party_id = $club['indemnified_party_id'];
 
         $indemnifiedParty = new \App\Libraries\IndemnifiedParty($indemnified_party_id);
         $template_name = $indemnifiedParty->template_name;
@@ -483,7 +786,10 @@ class WaiverContext
 
         // Here the $is_rusa boolean modifies the behavior of registered_riders because
         // we have a local copy of the RUSA member data it's possible to validate 
-        // rider names
+        // rider names.  This is a hack because the fact that we are using a waiver from some
+        // party shouldn't necessarily affect how participant names are normalized in rosters. But
+        // there you have it. This is the mess you get into when RUSA forces regions to create our 
+        // own rider information databases because they won't share theirs with regions. 
 
         $roster = $this->rosterModel->registered_riders($local_event_id, $indemnified_party_id == 'rusa');
 
@@ -873,7 +1179,7 @@ class WaiverContext
      * @param list<string> $fields
      * @return array<string, mixed>
      */
-    private function selectFields(
+    public function selectFields(
         array $source,
         array $fields
     ): array {

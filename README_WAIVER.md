@@ -9,10 +9,12 @@ The basic workflow is:
 3. Save the session ID.
 4. Redirect the participant to the waiver URL.
 5. Receive the participant back at your callback URL after the waiver is completed.
+6. Verify and save the waiver PDF for your reference
 
-For obscure edge cases or implementation details: **Use the source, Luke.**
 
-## Endpoint
+## Initial Request
+
+Begin with a POST to the waiver/startExternal endpoint URL.
 
 ```text
 POST https://randonneuring.org/waiver/startExternal
@@ -25,12 +27,18 @@ Username: club ACP code
 Password: API key
 ```
 
+
+
 Send and accept JSON:
 
 ```text
 Accept: application/json
 Content-Type: application/json
 ```
+
+## API Key
+
+To get an API key, log into randonneuring.org and go to the region management page. Next to each region you manage you'll find a button for generating an API key. When you generate a key be sure to record it as it is not saved anywhere. If you lose it, you can generate another, but this will invalidate any previous keys.  
 
 ## Quick Start with curl
 
@@ -55,9 +63,10 @@ curl \
 
 ### `event_id`
 
-An event identifier assigned by the calling application.
+An event identifier assigned by the calling application. This should be an alphanumeric identifier string that can have dashes or underscores but no blanks. You must make this string unique and consistent for each of your events.
 
-Treat it as an opaque string.
+Once the first waiver is initiated for a given `event_id` the event details are locked for that ID. If you change the name of the event, or the date, the system will reject new sessions for the ID. Changing events requires a new event ID and participants should sign new waivers with the new event details under the new event ID. 
+
 
 ```json
 "event_id": "my-event-2026-001"
@@ -65,7 +74,7 @@ Treat it as an opaque string.
 
 ### `event_name`
 
-The event name displayed in the waiver.
+The event name displayed in the waiver. Typically this will include the distance. Blanks and punctuation are fine. This is text for display. Event name is locked to the `event_id`.
 
 ```json
 "event_name": "Example 200K"
@@ -83,9 +92,7 @@ Use an ISO 8601 timestamp with a timezone offset:
 
 ### `participant_id`
 
-A participant identifier assigned by the calling application.
-
-Treat it as an opaque string.
+For RUSA regions, `participant_id` is nominally the rider's RUSA number, but it can be any alphanumeric string with dashes or underscores, but no blanks. 
 
 ```json
 "participant_id": "rider-12345"

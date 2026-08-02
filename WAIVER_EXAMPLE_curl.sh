@@ -6,7 +6,7 @@ set -u
 # Configuration
 # ------------------------------------------------------------------
 
-# Official Randonneuring.org WAIVER API URL
+# Official Randonneuring.org WAIVER API URL 
 BASE_URL="https://randonneuring.org"
 ENDPOINT="${BASE_URL}/waiver/startExternal"
 

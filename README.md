@@ -20,6 +20,17 @@ of the features available at randonneuring.org, read the complete documentation 
 When you put your events into randonneuring.org, you automatically support the [eBrevet](https://github.com/ctnadovich/ebrevet#ebrevet) mobile phone app for rides, including
 a Control Check-In status web page for your use. Although randonneuring.org is not required for using eBrevet, most regions will find it to be the easiest way to do so.
 
+## License
 
+The Randonneuring.org website is written in [PHP](https://www.php.net/) and requires the [CodeIgniter 4](https://www.codeigniter.com/) framework.
 
+The source code for this website [is available for free download](https://github.com/ctnadovich/randowizard) under the terms of the GNU Affero General Public License.
 
+*Copyright (C) 2026 [Chris Nadovich](https://nadovich.com/chris/contact.cgi)*
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but **WITHOUT ANY WARRANTY**; without even the implied warranty of **MERCHANTABILITY** or **FITNESS FOR A PARTICULAR PURPOSE**. See the GNU Affero General Public License for more details.
+
+> **Detailed License Terms:**  
+> https://randonneuring.org/LICENSE.txt

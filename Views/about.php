@@ -290,7 +290,7 @@ an official results CSV file is available for upload. </p>
 
             <h2>For Developers</h2>
 
-            <p>The software for the Randonneuiring.org website is written in <A HREF=https://www.php.net />PHP
+            <p>The software for the Randonneuring.org website is written in <A HREF=https://www.php.net />PHP
                 </A> and requires
                 the <A HREF=https://www.codeigniter.com />CodeIgniter 4</a> framework as well as the <A HREF=http://www.fpdf.org />FPDF</A> library
                 <A HREF=https://grocerycrud.com>GroceryCRUD Library</a>, and hosting support

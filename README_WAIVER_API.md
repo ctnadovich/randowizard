@@ -4,14 +4,13 @@ The Randonneuring.org Waiver API lets another application create a waiver-signin
 
 The basic workflow is:
 
-1. Send the event and participant information to the API.
-2. Receive a waiver session ID and waiver URL.
+1. Send the intial request with event and participant information to the API.
+2. Receive a response with waiver session ID and waiver URL.
 3. Save the session ID.
 4. Redirect the participant to the waiver URL.
-5. Receive the participant back at your callback URL after the waiver is completed.
+5. Receive the participant back at your callback URL (with embedded session ID) after the waiver is completed.
 6. Verify and save the waiver PDF for your records.
 
-For unusual edge cases or implementation details: **Use the source, Luke.**
 
 ## Initial Request
 
@@ -204,12 +203,6 @@ In summary, after receiving the response the caller should:
 After the callback is received, the caller knows the waiver has been completed. There's no obligation
 for the caller to do anything further, but some options might be to direct the participant to a payment page, or maybe just a thank-you page. If the waiver is used as part of a registration system, the callback would return to that system. 
 
-The completed PDF waiver is available at this URL
-
-```text
-"https://randonneuring.org/document/{{session_id}}"
-```
-
 
 A typical response to the callback might be: 
 
@@ -217,10 +210,25 @@ A typical response to the callback might be:
 2. Look up the session ID saved after the initial API call.
 3. Identify the participant and event associated with that waiver.
 4. Mark the waiver session as completed.
-5. Retrieve or preserve the completed waiver PDF as needed.
+5. Retrieve or preserve the completed waiver PDF and/or reference data as needed.
 6. Continue on with registration, payment, or display a thank you page
 
 ## Example Code
 
 A very basic [shell script example](https://github.com/ctnadovich/randowizard/blob/main/WAIVER_EXAMPLE_curl.sh) is available. You can use this script to test your parameters and API credentials, as well 
 as a reference implementation easily translated into your favorite web framework or language. 
+
+## License
+
+The waiver API software for the Randonneuring.org website is written in [PHP](https://www.php.net/) and requires the [CodeIgniter 4](https://www.codeigniter.com/) framework.
+
+The source code for this website [is available for free download](https://github.com/ctnadovich/randowizard) under the terms of the GNU Affero General Public License.
+
+*Copyright (C) 2026 [Chris Nadovich](https://nadovich.com/chris/contact.cgi)*
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but **WITHOUT ANY WARRANTY**; without even the implied warranty of **MERCHANTABILITY** or **FITNESS FOR A PARTICULAR PURPOSE**. See the GNU Affero General Public License for more details.
+
+> **Detailed License Terms:**  
+> https://randonneuring.org/LICENSE.txt

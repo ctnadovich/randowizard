@@ -129,9 +129,21 @@ class Waiver extends EventProcessor
                     . rawurlencode($session_id)
             );
 
+            $document_url = site_url(
+                'waiver/document/'
+                    . rawurlencode($session_id)
+            );
+
+                       $reference_url = site_url(
+                'waiver/reference/'
+                    . rawurlencode($session_id)
+            );
+
             return $this->response->setJSON([
                 'waiver_session_id' => $session_id,
                 'waiver_url'        => $waiver_url,
+                'document_url'        => $document_url,
+                'reference_url'        => $reference_url,
                 'expires_at'        =>
                 $waiver_session['expires_at'],
             ]);
@@ -144,60 +156,6 @@ class Waiver extends EventProcessor
         }
     }
 
-    public function OldstartExternal()
-    {
-        try {
-            $region = $this->authenticateExternalRequest();
-
-            $context_data = $this->request->getJSON(true);
-
-            if (!is_array($context_data)) {
-                throw new \RuntimeException(
-                    'Request body must contain a JSON object.'
-                );
-            }
-
-            $context_data = $this->waiverContext
-                ->normalizeExternalContext(
-                    $context_data,
-                    $region
-                );
-
-            $waiverData = $this->waiverContext
-                ->createFromExternalData(
-                    $context_data
-                );
-
-            $waiver_session =
-                $waiverData['waiverSession'];
-
-            $this->recordWaiverAccess(
-                $waiver_session,
-                WaiverAccessLog::METHOD_EXTERNAL_START
-            );
-
-            $session_id =
-                (string) $waiver_session['session_id'];
-
-            $waiver_url = site_url(
-                'waiver/session/'
-                    . rawurlencode($session_id)
-            );
-
-            return $this->response->setJSON([
-                'session_id' => $session_id,
-                'waiver_url' => $waiver_url,
-                'expires_at' =>
-                $waiver_session['expires_at'],
-            ]);
-        } catch (\Throwable $e) {
-            return $this->response
-                ->setStatusCode(400)
-                ->setJSON([
-                    'error' => $e->getMessage(),
-                ]);
-        }
-    }
 
     /**
      * Authenticate an external waiver-session request.

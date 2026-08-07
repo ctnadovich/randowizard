@@ -7,7 +7,8 @@ brevets and generating a variety of outputs, all automatically. These include
 
 - High Quality PDF Cue Sheets (landscape and portrait)
 - Brevet Cards in several formats
-- Waivers with event details and rider names pre-printed
+- Paper Waivers with event details and rider names pre-printed
+- Electronic waivers with signature capture, PDF generation, and archiving
 - Web Pages you can link to
 - JSON data you can incorporate into your site
 - CSV results for RUSA upload
@@ -19,6 +20,10 @@ of the features available at randonneuring.org, read the complete documentation 
 ## eBrevet Support 
 When you put your events into randonneuring.org, you automatically support the [eBrevet](https://github.com/ctnadovich/ebrevet#ebrevet) mobile phone app for rides, including
 a Control Check-In status web page for your use. Although randonneuring.org is not required for using eBrevet, most regions will find it to be the easiest way to do so.
+
+## Waiver API
+
+The Waiver API allows external randonneuring event management systems to create secure waiver-signing sessions and retrieve completed, permanently recorded PDF waivers with centralized archiving and a common template. See the [Waiver API Quick Start](README_WAIVER_API.md) for the request format and integration workflow.
 
 ## License
 

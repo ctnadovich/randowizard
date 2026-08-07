@@ -42,7 +42,6 @@ class RegionCrud extends BaseController
 
     public function region()
     {
-        $authorized_regions = $this->getAuthorizedRegionsOrDie();
 
         $crud = new GroceryCrud();
         $crud->setTable('region');
@@ -50,9 +49,10 @@ class RegionCrud extends BaseController
         $crud->setRelation('state_id', 'state', '{fullname}');
         $crud->setRelation('country_id', 'country', '{fullname}');
 
-        $crud->unsetEditFields(['epp_secret', 'id', 'state_code', 'state_id', 'country_id', 'region_name']);
+        $crud->unsetEditFields(['epp_secret', 'id', 'state_code', 'state_id', 'api_key', 'country_id', 'region_name']);
 
         if (false == $this->isSuperuser()) {
+            $authorized_regions = $this->getAuthorizedRegionsOrDie();
             $crud->unsetAdd();
             $crud->unsetDelete();
 
@@ -203,15 +203,19 @@ EOT;
 
     public function waiverApiKey($region_id)
     {
-        $authorizedRegions = $this->getAuthorizedRegionsOrDie();
-        if (!in_array(
-            $region_id,
-            $authorizedRegions,
-            true
-        )) {
-            throw new \RuntimeException(
-                "You are not authorized to set the API key for $region_id."
-            );
+
+        if (false == $this->isSuperuser()) {
+
+            $authorizedRegions = $this->getAuthorizedRegionsOrDie();
+            if (!in_array(
+                $region_id,
+                $authorizedRegions,
+                true
+            )) {
+                throw new \RuntimeException(
+                    "You are not authorized to set the API key for $region_id."
+                );
+            }
         }
         $club_acp_code = $region_id;
 
@@ -255,15 +259,18 @@ EOT;
                 );
             }
 
-            $authorizedRegions = $this->getAuthorizedRegionsOrDie();
-            if (!in_array(
-                $club_acp_code,
-                $authorizedRegions,
-                true
-            )) {
-                throw new \RuntimeException(
-                    "You are not authorized to set the API key for $club_acp_code."
-                );
+            if (false == $this->isSuperuser()) {
+
+                $authorizedRegions = $this->getAuthorizedRegionsOrDie();
+                if (!in_array(
+                    $club_acp_code,
+                    $authorizedRegions,
+                    true
+                )) {
+                    throw new \RuntimeException(
+                        "You are not authorized to set the API key for $club_acp_code."
+                    );
+                }
             }
 
             $club = $this->regionModel->getClub(

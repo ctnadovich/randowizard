@@ -52,12 +52,13 @@ stored snapshots rather than mutable current event, region, or roster records.
 
 ## Controller endpoints
 
-The controller exposes seven principal operations:
+The controller exposes eight principal operations:
 
 | Method | Purpose |
 |---|---|
 | `start(event_code, participant_id)` | Creates or reuses a session from the local event and roster database, then renders the form. |
 | `startExternal()` | Authenticates an external system, validates JSON, and returns session resource URLs. |
+| `demo()` | Demonstrates the external API using randomly generated test event and participant IDs. |
 | `session(session_id)` | Loads an active session by opaque ID and renders the signing form. |
 | `finalize()` | Validates the submission, generates and stores the PDF, and completes the session. |
 | `completed(session_id)` | Displays confirmation, checksum, PDF link, and optional callback link. |
@@ -66,6 +67,24 @@ The controller exposes seven principal operations:
 
 HTTP route declarations and framework filters live outside this repository, so
 their exact configuration cannot be assessed here.
+
+## Demo endpoint
+
+`demo()` provides a simple browser demonstration of the external Waiver API. A
+GET request generates independent random eight-character hexadecimal event and
+participant IDs and displays them with the fake event `Test Event` and
+participant `Demo Rider` in `Views/waiver/demo.php`.
+
+Selecting **Go** submits the generated IDs back to `demo()` with a CSRF-protected
+POST. The controller validates the IDs, constructs a future event timestamp,
+and makes a server-side authenticated JSON request to `startExternal()` using
+Test Region `10000`. After validating the API response, it redirects the browser
+to the returned `waiver_url`.
+
+The demo supplies `waiver/demo` as its callback URL. After completing the
+waiver, the participant can follow the completion page's **CONTINUE** link back
+to the demo, where a new random event and participant pair is generated. The
+view also links to the public Waiver API documentation on GitHub.
 
 ## Local waiver creation
 

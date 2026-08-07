@@ -231,6 +231,8 @@ EOT;
 
         $this->viewData = array_merge([
             'club_acp_code' => $club_acp_code,
+            'region_name' => $club['region_state_code'] . ': ' . $club['region_name'],
+            'club_name' => $club['club_name'],
             'has_api_key' =>
             !empty($club['waiver_api_key_hash']),
         ], $this->viewData);

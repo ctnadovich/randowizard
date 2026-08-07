@@ -2,14 +2,14 @@
 
     <p>
         External registration systems may create waiver signing
-        sessions by authenticating with this region's Waiver API.
+        sessions by authenticating with the Waiver API.
     </p>
 
     <?php if ($has_api_key): ?>
 
         <div class="w3-panel w3-pale-yellow w3-leftbar w3-border-yellow">
             <p>
-                <b>An API key has already been generated for this region.</b>
+                <b>An API key has already been generated for  <?= $region_name ?>.</b>
             </p>
 
             <p>
@@ -30,13 +30,13 @@
 
         <div class="w3-panel w3-pale-blue w3-leftbar w3-border-blue">
             <p>
-                No Waiver API key has been created for this region.
+                No Waiver API key has been created for <?= $region_name ?>.
             </p>
 
             <p>
                 Generate a key if you wish to allow an external
                 registration system to initiate waiver sessions on
-                behalf of this region.
+                behalf of  <?= $region_name ?>.
             </p>
         </div>
 
@@ -68,7 +68,7 @@
             type="text"
             readonly>
 
-        <div class="w3-margin-top">
+        <div class="w3-margin-top" style="padding-bottom:16px">
             <button
                 class="w3-button w3-green"
                 onclick="copyApiKey()">

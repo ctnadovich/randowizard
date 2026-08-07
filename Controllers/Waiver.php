@@ -167,6 +167,134 @@ class Waiver extends EventProcessor
         }
     }
 
+    public function demo()
+    {
+        $event_id = bin2hex(random_bytes(4));
+        $participant_id = bin2hex(random_bytes(4));
+        $error = null;
+
+        if ($this->request->is('post')) {
+            $event_id = strtolower(trim(
+                (string) $this->request->getPost('event_id')
+            ));
+
+            $participant_id = strtolower(trim(
+                (string) $this->request->getPost('participant_id')
+            ));
+
+            if (
+                preg_match('/\A[0-9a-f]{8}\z/', $event_id) !== 1
+                || preg_match(
+                    '/\A[0-9a-f]{8}\z/',
+                    $participant_id
+                ) !== 1
+            ) {
+                $error = 'The demo event or participant ID is invalid.';
+            } else {
+                try {
+                    $event_start_at = (
+                        new \DateTimeImmutable(
+                            '+1 day',
+                            new \DateTimeZone('UTC')
+                        )
+                    )->format(DATE_ATOM);
+
+                    $api_response = \Config\Services::curlrequest()
+                        ->post(
+                            site_url('waiver/startExternal'),
+                            [
+                                'auth' => [
+                                    '10000',
+                                    '2d6fd11dbc65a19a89a39669ff36ca97fae30c6b337a0c8ac295c6afb58879f3',
+                                    'basic',
+                                ],
+                                'http_errors' => false,
+                                'json' => [
+                                    'event_id' => $event_id,
+                                    'event_name' => 'Test Event',
+                                    'event_start_at' => $event_start_at,
+                                    'participant_id' => $participant_id,
+                                    'participant_name' => 'Demo Rider',
+                                    'callback_url' => site_url(
+                                        'waiver/demo'
+                                    ),
+                                ],
+                            ]
+                        );
+
+                    $response_data = json_decode(
+                        $api_response->getBody(),
+                        true
+                    );
+
+                    if (
+                        $api_response->getStatusCode() < 200
+                        || $api_response->getStatusCode() >= 300
+                        || !is_array($response_data)
+                    ) {
+                        $api_error = is_array($response_data)
+                            ? trim(
+                                (string) (
+                                    $response_data['error'] ?? ''
+                                )
+                            )
+                            : '';
+
+                        throw new \RuntimeException(
+                            $api_error !== ''
+                                ? $api_error
+                                : 'The Waiver API request failed.'
+                        );
+                    }
+
+                    $waiver_url = trim(
+                        (string) (
+                            $response_data['waiver_url'] ?? ''
+                        )
+                    );
+
+                    if (
+                        filter_var(
+                            $waiver_url,
+                            FILTER_VALIDATE_URL
+                        ) === false
+                    ) {
+                        throw new \RuntimeException(
+                            'The Waiver API returned an invalid waiver URL.'
+                        );
+                    }
+
+                    return redirect()->to($waiver_url);
+                } catch (\Throwable $e) {
+                    $error = $e->getMessage();
+                }
+            }
+        }
+
+        $view_data = array_merge(
+            $this->viewData,
+            [
+                'event_id' => $event_id,
+                'event_name' => 'Test Event',
+                'participant_id' => $participant_id,
+                'participant_name' => 'Demo Rider',
+                'error' => $error,
+            ]
+        );
+
+        $view_data['style_head'] = view(
+            'default_style_head',
+            $view_data
+        );
+
+        $view_data['body_style'] = 'class="w3-light-grey"';
+
+        return
+            view('head', $view_data)
+            . view('waiver/demo', $view_data)
+            . view('foot', $view_data);
+    }
+
 
     /**
      * Authenticate an external waiver-session request.

@@ -219,6 +219,10 @@ Because the participant follows the callback link manually, the callback may arr
 A fully working [shell script example](https://github.com/ctnadovich/randowizard/blob/main/WAIVER_EXAMPLE_curl.sh) is available. You can use this script to test your parameters and API credentials, as well 
 as a reference implementation easily translated into your favorite web framework or language. 
 
+## Architecture
+
+The waiver subsystem uses immutable event context and participant sessions to render, finalize, store, and audit signed PDF waivers. See the [Waiver Subsystem Architecture](docs/waiver-system.md) for a concise description of its components, lifecycle, storage, and security model.
+
 ## License
 
 The waiver API software for the Randonneuring.org website is written in [PHP](https://www.php.net/) and requires the [CodeIgniter 4](https://www.codeigniter.com/) framework.

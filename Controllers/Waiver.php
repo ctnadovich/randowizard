@@ -591,21 +591,30 @@ class Waiver extends EventProcessor
         string $callback_url_template,
         array $replacementMap
     ): string {
+        $callbackReplacements = array_intersect_key(
+            $replacementMap,
+            array_flip([
+                'session_id',
+                'event_code',
+                'participant_id',
+            ])
+        );
+
         $callback_url = preg_replace_callback(
             '/\{\{([A-Za-z0-9_]+)\}\}/',
             static function (array $matches) use (
-                $replacementMap
+                $callbackReplacements
             ): string {
                 $field = $matches[1];
 
-                if (!array_key_exists($field, $replacementMap)) {
+                if (!array_key_exists($field, $callbackReplacements)) {
                     throw new \RuntimeException(
                         "Undefined callback URL field: $field"
                     );
                 }
 
                 return rawurlencode(
-                    (string) $replacementMap[$field]
+                    (string) $callbackReplacements[$field]
                 );
             },
             $callback_url_template

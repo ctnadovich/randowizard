@@ -528,6 +528,13 @@ class WaiverContext
             $submitted_data['callback_url']
         );
 
+        if (!WaiverSession::isValidParticipantId($participant_id)) {
+            throw new RuntimeException(
+                'External participant_id must contain only letters, '
+                    . 'digits, underscores, and hyphens.'
+            );
+        }
+
         /*
      * event_id becomes the suffix of the globally namespaced
      * event_code. Restrict it to the same character set permitted by
@@ -975,6 +982,18 @@ private function validateCallbackUrlTemplate(
                 );
             }
         }
+
+        if (
+            !WaiverSession::isValidParticipantId(
+                $participantContext['participant_id']
+            )
+        ) {
+            throw new RuntimeException(
+                'Participant waiver context field participant_id '
+                    . 'must contain only letters, digits, underscores, '
+                    . 'and hyphens.'
+            );
+        }
     }
 
     public function validateContextData(
@@ -991,6 +1010,10 @@ private function validateCallbackUrlTemplate(
                 );
             }
         }
+
+        $this->validateParticipantContext(
+            $contextData
+        );
 
         $this->validateEventCode(
             $contextData['event_code'],

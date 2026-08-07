@@ -18,6 +18,15 @@
 //    You should have received a copy of the GNU Affero General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
+// TODO 
+// I think the left-bar container used to display the final signatures in PDF should be introduced with blank signatures
+// on the HTML form 
+// The order should be rearranged a bit. Maybe have signed at date/time near the final signature. Maybe have the
+// Revision. Maybe not have some other stuff. 
+// Top header text is left justified in the HTML, but centered in the PDF. 
+// THe signature block says "Rider Signature" rather than participant. 
+
 namespace App\Controllers;
 
 use CodeIgniter\HTTP\RequestInterface;
@@ -140,12 +149,14 @@ class Waiver extends EventProcessor
             );
 
             return $this->response->setJSON([
-                'waiver_session_id' => $session_id,
+                'session_id' => $session_id,
                 'waiver_url'        => $waiver_url,
                 'document_url'        => $document_url,
                 'reference_url'        => $reference_url,
                 'expires_at'        =>
-                $waiver_session['expires_at'],
+                $this->formatApiUtcTimestamp(
+                    $waiver_session['expires_at']
+                ),
             ]);
         } catch (\Throwable $e) {
             return $this->response
@@ -280,11 +291,11 @@ class Waiver extends EventProcessor
             helper('waiver_helper');
 
             $requirements = [
-                'waiver_session_id' => [
+                'session_id' => [
                     'label' => 'Waiver session ID',
                     'value' => trim(
                         (string) $this->request->getPost(
-                            'waiver_session_id'
+                            'session_id'
                         )
                     ),
                     'valid' => static fn(string $value): bool =>
@@ -349,7 +360,7 @@ class Waiver extends EventProcessor
             }
 
             $session_id =
-                $requirements['waiver_session_id']['value'];
+                $requirements['session_id']['value'];
 
             $signature_png =
                 $requirements['signature_png']['value'];
@@ -779,6 +790,11 @@ class Waiver extends EventProcessor
                 $waiver_metadata['document_key']
             );
 
+            $waiver_metadata = $this->formatApiUtcFields(
+                $waiver_metadata,
+                ['created_at', 'expires_at', 'completed_at']
+            );
+
             $waiver_metadata['document_url'] =
                 $waiver_session['status']
                 === WaiverSession::STATUS_COMPLETED
@@ -797,14 +813,22 @@ class Waiver extends EventProcessor
                 EventWaiverContext::EVENT_CONTEXT_FIELDS
             );
 
+            $event_metadata = $this->formatApiUtcFields(
+                $event_metadata,
+                ['event_start_at']
+            );
+
             /*
          * Select only public access-event fields from each log row.
          */
             $access_history = array_map(
                 fn(array $access_entry): array =>
-                $this->waiverContext->selectFields(
-                    $access_entry,
-                    WaiverAccessLog::ACCESS_FIELDS
+                $this->formatApiUtcFields(
+                    $this->waiverContext->selectFields(
+                        $access_entry,
+                        WaiverAccessLog::ACCESS_FIELDS
+                    ),
+                    ['created_at']
                 ),
                 $access_log
             );
@@ -829,6 +853,65 @@ class Waiver extends EventProcessor
                     'error' => $e->getMessage(),
                 ]);
         }
+    }
+
+    /**
+     * Convert an implicit-UTC SQL DATETIME value for an API response.
+     */
+    private function formatApiUtcTimestamp(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        $dateTime = \DateTimeImmutable::createFromFormat(
+            '!Y-m-d H:i:s',
+            $value,
+            new \DateTimeZone('UTC')
+        );
+
+        $errors = \DateTimeImmutable::getLastErrors();
+
+        if (
+            $dateTime === false
+            || $value === ''
+            || $dateTime->format('Y-m-d H:i:s') !== $value
+            || (
+                $errors !== false
+                && (
+                    $errors['warning_count'] !== 0
+                    || $errors['error_count'] !== 0
+                )
+            )
+        ) {
+            throw new \RuntimeException(
+                'Invalid UTC timestamp in waiver API data.'
+            );
+        }
+
+        return $dateTime->format(DATE_ATOM);
+    }
+
+    /**
+     * Format selected SQL DATETIME fields without changing model data.
+     *
+     * @param list<string> $fields
+     */
+    private function formatApiUtcFields(
+        array $data,
+        array $fields
+    ): array {
+        foreach ($fields as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = $this->formatApiUtcTimestamp(
+                    $data[$field]
+                );
+            }
+        }
+
+        return $data;
     }
 
     private function safeFilenamePart(string $value): string

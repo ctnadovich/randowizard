@@ -139,17 +139,14 @@ Other replacements include:
 {{session_id}}
 {{event_code}}
 {{participant_id}}
-{{created_at}}
-{{completed_at}}
-{{expires_at}}
 ```
-Before redirecting the participant back to the caller, the waiver system interpolates callback URL replacements with their actual values. There are several replacements available. None are strictly required, but in many situations ``session_id`` is critical. Whereas all the others can be looked up later using the session ID as the key, but in some cases they can be convenient to include in the URL (validation, testing, etc...)
+Before redirecting the participant back to the caller, the waiver system interpolates callback URL replacements with their actual values. There are several replacements available. None are strictly required, but in many situations ``session_id`` is critical. Whereas all the others can be looked up later using the session ID as the key, but in some cases they can be convenient to include in the URL (simplifying, validation, testing, etc...). 
 
 The `{{session_id}}` replacement is the key to connecting the completed waiver back to the caller's records.
-After the participant completes the waiver, the waiver system redirects the participant to the callback URL. The redirection is manual -- the participant will click a CONTINUE link to this URL.  With `{{session_id}}` replaced, assuming the Session ID is 'abc123xyz' the callback URL clicked by the participant might look like:
+After the participant completes the waiver, the waiver system redirects the participant to the callback URL. The redirection is manual -- the participant will click a CONTINUE link to this URL.  With `{{session_id}}` replaced, assuming the Session ID is '0123456789abcdef0123456789abcdef' the callback URL clicked by the participant might look like:
 
 ```text
-https://example.org/waiver-return/abc123xyz
+https://example.org/waiver-return/0123456789abcdef0123456789abcdef
 ```
 Without the session ID in the callback URL, the page that is called-back will not know what waiver was completed generating that callback. 
 
@@ -159,11 +156,11 @@ A successful response to the request contains:
 
 ```json
 {
-  "session_id": "abc123xyz",
-  "waiver_url": "https://randonneuring.org/waiver/abc123xyz",
-  "document_url": "https://randonneuring.org/document/abc123xyz",
-  "reference_url": "https://randonneuring.org/reference/abc123xyz",
-  "expires_at": "2026-09-12T05:00:00-04:00"
+  "session_id": "0123456789abcdef0123456789abcdef",
+  "waiver_url": "https://randonneuring.org/waiver/session/0123456789abcdef0123456789abcdef",
+  "document_url": "https://randonneuring.org/waiver/document/0123456789abcdef0123456789abcdef",
+  "reference_url": "https://randonneuring.org/waiver/reference/0123456789abcdef0123456789abcdef",
+  "expires_at": "2026-09-12T09:00:00+00:00"
 }
 ```
 ### `session_id`
@@ -186,7 +183,7 @@ A URL that returns a JSON object that gives comprehensive information about the 
 
 ### `expires_at`
 
-The waiver session will expire at this time. The caller should record this time. If a callback is not received prior to this time, the caller can assume the waiver will never arrive and should abort any activity related to this session. 
+The signing session is valid until `expires_at`, provided the event has not already started. The timestamp is returned in ISO 8601 format with an explicit UTC offset. The participant must submit the waiver before the earlier of the session expiration time and the event start time. After the waiver is completed, `expires_at` does not limit access to the completed waiver or the participant’s ability to follow the manual callback link. Therefore, the absence of a callback before `expires_at` does not prove that the waiver was not completed; use `reference_url` to verify its status. If an incomplete session expires before the event starts, the caller may submit the same request again to obtain a renewed session with a new session ID and expiration time. 
 
 In summary, after receiving the response the caller should:
 
@@ -200,27 +197,30 @@ In summary, after receiving the response the caller should:
 
 ## Callback Processing
 
-After the callback is received, the caller knows the waiver has been completed. There's no obligation
-for the caller to do anything further, but some options might be to direct the participant to a payment page, or maybe just a thank-you page. If the waiver is used as part of a registration system, the callback would return to that system. 
+No additional action is required when the callback `GET` request arrives. The waiver has already been completed and permanently recorded by the waiver system before the participant is shown the manual `CONTINUE` link. The callback does not complete, approve, or modify the waiver.
 
+When `session_id` was encoded in the callback URL, a typical callback handler may:
 
-A typical response to the callback might be: 
+1. Read `session_id` from the callback URL.
+2. Look up the event and participant associated with the session ID saved in response to the initial API request.
+3. Confirm that it identifies the expected participant and event.
+4. Optionally request the saved `reference_url` and verify that the waiver status is `completed`.
+5. Mark the caller's own registration or participant record as having a completed waiver.
+6. Retrieve or preserve the signed PDF from the saved `document_url`, if required for the caller's records.
+7. Continue with registration, payment, or a confirmation page.
 
-1. Read the session ID from the callback URL.
-2. Look up the session ID saved after the initial API call.
-3. Identify the participant and event associated with that waiver.
-4. Mark the waiver session as completed.
-5. Retrieve or preserve the completed waiver PDF and/or reference data as needed.
-6. Continue on with registration, payment, or display a thank you page
+Because the participant follows the callback link manually, the callback may arrive some time after the waiver was completed. A missing callback does not establish that the waiver is incomplete; the caller can check the saved `reference_url` when authoritative status is needed.
 
 ## Example Code
 
-A very basic [shell script example](https://github.com/ctnadovich/randowizard/blob/main/WAIVER_EXAMPLE_curl.sh) is available. You can use this script to test your parameters and API credentials, as well 
+A fully working [shell script example](https://github.com/ctnadovich/randowizard/blob/main/WAIVER_EXAMPLE_curl.sh) is available. You can use this script to test your parameters and API credentials, as well 
 as a reference implementation easily translated into your favorite web framework or language. 
 
 ## License
 
 The waiver API software for the Randonneuring.org website is written in [PHP](https://www.php.net/) and requires the [CodeIgniter 4](https://www.codeigniter.com/) framework.
+
+The waiver-signing interface also requires [Signature Pad](https://github.com/szimek/signature_pad) to capture participant signatures and initials as PNG images, and [Dompdf](https://github.com/dompdf/dompdf) to render completed waiver documents as PDF files.
 
 The source code for this website [is available for free download](https://github.com/ctnadovich/randowizard) under the terms of the GNU Affero General Public License.
 

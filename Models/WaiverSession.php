@@ -77,6 +77,19 @@ class WaiverSession extends Model
     public const STATUS_EXPIRED   = 'expired';
     public const STATUS_CANCELLED = 'cancelled';
 
+    /**
+     * Participant IDs are opaque caller identifiers restricted to a
+     * URL- and filename-safe ASCII character set.
+     */
+    public static function isValidParticipantId(
+        string $participantId
+    ): bool {
+        return preg_match(
+            '/\A[A-Za-z0-9_-]+\z/',
+            $participantId
+        ) === 1;
+    }
+
 
     /**
      * Create a new waiver session, or reuse the existing session for the
@@ -101,10 +114,12 @@ class WaiverSession extends Model
             );
         }
 
-        $this->assertNonEmpty(
-            $participant_id,
-            'participant ID'
-        );
+        if (!self::isValidParticipantId($participant_id)) {
+            throw new RuntimeException(
+                'Participant ID must contain only letters, digits, '
+                    . 'underscores, and hyphens.'
+            );
+        }
 
         $this->assertNonEmpty(
             $participant_name,

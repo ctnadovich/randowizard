@@ -32,7 +32,7 @@ function lm($text)
 
 <form id="waiver-form" method="post" action="<?= site_url('waiver/finalize') ?>">
    <input type="hidden"
-      name="waiver_session_id"
+      name="session_id"
       value="<?= htmlspecialchars($session_id, ENT_QUOTES, 'UTF-8') ?>">
 
    <input type="hidden" name="signature_png" id="signature-png">

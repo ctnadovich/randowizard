@@ -120,9 +120,9 @@ if [[ "${HTTP_STATUS}" -lt 200 || "${HTTP_STATUS}" -ge 300 ]]; then
 fi
 
 if command -v jq >/dev/null 2>&1; then
-    WAIVER_SESSION_ID=$(
+    SESSION_ID=$(
         jq -r \
-            '.waiver_session_id // .session_id // empty' \
+            '.session_id // empty' \
             "${RESPONSE_FILE}"
     )
 
@@ -138,14 +138,14 @@ if command -v jq >/dev/null 2>&1; then
             "${RESPONSE_FILE}"
     )
 
-    if [[ -z "${WAIVER_SESSION_ID}" ]]; then
+    if [[ -z "${SESSION_ID}" ]]; then
         echo \
             "ERROR: Successful response contained no waiver session ID." \
             >&2
         exit 1
     fi
 
-    echo "Waiver session ID: ${WAIVER_SESSION_ID}"
+    echo "Waiver session ID: ${SESSION_ID}"
     echo "Waiver URL:        ${WAIVER_URL}"
     echo "Expires at:        ${EXPIRES_AT}"
 fi

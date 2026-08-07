@@ -1,8 +1,4 @@
-<style>
-    .lm-red {
-        color: red;
-    }
-</style>
+<?= view('waiver/default_theme/document_styles') ?>
 
 <form
     id="waiver-form"
@@ -13,7 +9,7 @@
 
     <input
         type="hidden"
-        name="waiver_session_id"
+        name="session_id"
         value="<?= esc($session_id, 'attr') ?>">
 
     <input

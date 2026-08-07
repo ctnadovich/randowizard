@@ -34,21 +34,23 @@ $acknowledged = $acknowledged ?? false;
 ?>
 
 <div id="waiver-document"
-    class="<?= $is_pdf ? 'waiver-document-pdf' : 'w3-container w3-padding-32' ?>">
+    class="waiver-document <?= $is_pdf
+                                ? 'waiver-document-pdf'
+                                : 'waiver-document-html w3-container w3-padding-32'
+                            ?>">
 
-    <div class="<?= $is_pdf
-                    ? 'waiver-card waiver-header-card'
-                    : 'w3-card w3-round-large w3-white w3-padding w3-margin-bottom'
-                ?>">
+    <div class="waiver-card waiver-header-card <?= !$is_pdf
+                                                    ? 'w3-card w3-round-large w3-white w3-padding w3-margin-bottom'
+                                                    : ''
+                                                ?>">
 
         <div class="logo-card">
 
             <!-- Left column -->
-            <div class="w3-center">
+            <div class="logo-column">
                 <img src="<?= $waiver_logo_url ?>"
                     alt="Logo"
-                    class="w3-image"
-                    style="max-width:180px;">
+                    class="waiver-logo w3-image">
             </div>
 
 
@@ -64,10 +66,10 @@ $acknowledged = $acknowledged ?? false;
         </div>
     </div>
 
-    <div class="<?= $is_pdf
-                    ? 'waiver-card'
-                    : 'w3-card w3-round-large w3-white w3-padding w3-margin-bottom'
-                ?>">
+    <div class="waiver-card <?= !$is_pdf
+                                ? 'w3-card w3-round-large w3-white w3-padding w3-margin-bottom'
+                                : ''
+                            ?>">
 
         <p class="initial-heading">
             <strong><?= lm($initial) ?></strong>
@@ -90,12 +92,8 @@ $acknowledged = $acknowledged ?? false;
                     <img
                         id="initials-display"
                         alt="Participant initials"
-                        style="
-                            display:none;
-                            max-width:140px;
-                            max-height:75px;
-                            vertical-align:middle;
-                        ">
+                        class="initials-image"
+                        style="display:none;">
                 </div>
             <?php endif; ?>
         </div>
@@ -123,10 +121,10 @@ $acknowledged = $acknowledged ?? false;
         </p>
     </div>
 
-    <div class="<?= $is_pdf
-                    ? 'waiver-card'
-                    : 'w3-card w3-round-large w3-white w3-padding w3-margin-bottom'
-                ?>">
+    <div class="waiver-card <?= !$is_pdf
+                                ? 'w3-card w3-round-large w3-white w3-padding w3-margin-bottom'
+                                : ''
+                            ?>">
 
         <h2>Participant Name</h2>
 
@@ -182,11 +180,8 @@ $acknowledged = $acknowledged ?? false;
                     <img
                         id="signature-display"
                         alt="Participant signature"
-                        style="
-                            display:none;
-                            max-width:400px;
-                            max-height:150px;
-                        ">
+                        class="signature-image"
+                        style="display:none;">
                 </div>
             <?php endif; ?>
         </div>
@@ -201,10 +196,10 @@ $acknowledged = $acknowledged ?? false;
         <?php endif; ?>
     </div>
 
-    <div class="<?= $is_pdf
-                    ? 'waiver-card'
-                    : 'w3-card w3-round-large w3-white w3-padding w3-margin-bottom'
-                ?>">
+    <div class="waiver-card <?= !$is_pdf
+                                ? 'w3-card w3-round-large w3-white w3-padding w3-margin-bottom'
+                                : ''
+                            ?>">
 
         <h2>Electronic Signature Consent</h2>
 
@@ -219,8 +214,8 @@ $acknowledged = $acknowledged ?? false;
                 </div>
             </div>
         <?php else: ?>
-            <div style="display:flex; align-items:flex-start; gap:12px;">
-                <div style="flex:0 0 auto; padding-top:4px;">
+            <div class="interactive-consent-row">
+                <div class="interactive-consent-checkbox">
                     <input
                         class="w3-check"
                         id="acknowledgement-checkbox"
@@ -229,8 +224,8 @@ $acknowledged = $acknowledged ?? false;
                         value="1">
                 </div>
 
-                <div style="flex:1;">
-                    <p style="margin-top:0;">
+                <div class="interactive-consent-text">
+                    <p>
                         <?= lm($esc) ?>
                     </p>
                 </div>

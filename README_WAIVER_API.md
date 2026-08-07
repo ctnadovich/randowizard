@@ -1,8 +1,11 @@
 # Randonneuring.org Waiver API Quick Start
 
-The Randonneuring.org Waiver API lets another application create a waiver-signing session for a participant.
+_If you use randonneuring.org to manage your events, support eBrevet, generate paperwork, etc...  you automatically have access to registration and waiver capture capabilities through the integrated event registration system. 
+You don't need to use the API discussed below._
 
-The basic workflow is:
+On the other hand, regions that do not use randonneuring.org as their event processor may still access randonneuring.org waiver capture capabilities by means of the external Waiver API. This API lets an independent application create a waiver-signing session at randonneuring.org for a participant, and receive the signed PDF waiver with context information, with all waivers copied to the same randonneuring.org waiver archive.
+
+The basic workflow for using the external waiver API is:
 
 1. Send the intial request with event and participant information to the API.
 2. Receive a response with waiver session ID and waiver URL.

@@ -136,7 +136,7 @@ The URL to which the participant is redirected after completing the waiver. The 
 
 The callback URL may contain template replacements as a convenience to the caller. Any replacement supported by the waiver template system may be used in the callback URL. The above example shows `{{session_id}}` used as a replacement.
 
-Other replacements include:
+Possible replacements are:
 
 ```text
 {{session_id}}

@@ -50,7 +50,7 @@ Keep the key on the server. Do not place it in browser JavaScript, HTML, or a pu
 ```bash
 curl \
   --request POST \
-  --user "938017:YOUR_API_KEY" \
+  --user "YOUR_ACP_CLUB_CODE:YOUR_API_KEY" \
   --header "Accept: application/json" \
   --header "Content-Type: application/json" \
   --data '{
